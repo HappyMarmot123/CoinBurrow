@@ -1,0 +1,16 @@
+# 의존성 
+/BE/node_modules/
+/Mobile/node_modules/
+/Web/node_modules/
+
+# env
+/BE/.env
+/Mobile/.env
+/Web/.env
+
+# 빌드 파일
+/BE/dist/
+/Mobile/dist/
+/Web/dist/
+
+# 로그 파일
