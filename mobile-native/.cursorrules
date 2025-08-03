@@ -6,7 +6,8 @@
   - **Organism**: More complex components made up of molecules and atoms, representing distinct sections of a UI, like a `Header` or `Footer`.
   - **Template**: Page-level skeletons or wireframes where organisms and molecules are arranged into a layout, but without any specific content.
   - **Page**: The final instance of a template, where real data and business logic are integrated to create a complete view.
-  - **Additional Rules**
+
+  **Additional Rules**
   - Each layer should contain dedicated folders for its components. For example, the Header component and its type.ts file should be placed inside a Header folder.
   - Atoms must not combine two or more words. Manage them purely as single, indivisible units. For example, use Text, View, and Button.
 
@@ -24,8 +25,8 @@
   - Follow Expo's official documentation for setting up and configuring your projects: https://docs.expo.dev/
 
   Naming Conventions
-  - Use lowercase with dashes for directories (e.g., components/auth-wizard).
-  - Favor named exports for components.
+  - Folder names: camelCase or lowercase
+  - Component file names: PascalCase
 
   TypeScript Usage
   - Use TypeScript for all code; prefer interfaces over types.

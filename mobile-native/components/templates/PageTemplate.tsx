@@ -2,9 +2,13 @@ import React from "react";
 import { ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { View } from "@/components/atoms/view";
-import { Header } from "@/components/organisms/header";
-import { PageTemplateProps } from "./type";
+import { View } from "@/components/atoms/View";
+import { Header, HeaderProps } from "@/components/organisms/Header";
+import { PropsWithChildren } from "react";
+
+type PageTemplateProps = PropsWithChildren<{
+  headerProps: HeaderProps;
+}>;
 
 export function PageTemplate({ headerProps, children }: PageTemplateProps) {
   return (

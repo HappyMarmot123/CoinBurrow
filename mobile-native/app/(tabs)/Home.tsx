@@ -1,8 +1,8 @@
-import { Card } from "@/components/atoms/card";
+import { Card } from "@/components/atoms/Card";
 import { PageTemplate } from "@/components/templates/PageTemplate";
 import React from "react";
 
-export default function HomeScreen() {
+export default function Home() {
   return (
     <PageTemplate headerProps={{ title: "Welcome to CoinBurrow" }}>
       <Card

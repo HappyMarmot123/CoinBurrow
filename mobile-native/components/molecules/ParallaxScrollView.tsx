@@ -1,3 +1,4 @@
+import { PropsWithChildren, ReactNode } from "react";
 import { StyleSheet } from "react-native";
 import Animated, {
   interpolate,
@@ -6,9 +7,13 @@ import Animated, {
   useScrollViewOffset,
 } from "react-native-reanimated";
 
-import { View } from "@/components/atoms/view";
+import { View } from "@/components/atoms/View";
 import { useColorScheme } from "@/hooks/useColorScheme";
-import { ParallaxScrollViewProps } from "./type";
+
+export interface ParallaxScrollViewProps extends PropsWithChildren {
+  headerImage: ReactNode;
+  headerBackgroundColor: { dark: string; light: string };
+}
 
 const HEADER_HEIGHT = 250;
 

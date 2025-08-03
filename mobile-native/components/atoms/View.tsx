@@ -4,7 +4,11 @@ import {
 } from "react-native";
 
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { ViewProps } from "./type";
+
+export type ViewProps = NativeViewProps & {
+  lightColor?: string;
+  darkColor?: string;
+};
 
 export function View({
   style,

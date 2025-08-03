@@ -1,9 +1,9 @@
 import { BlurView } from "expo-blur";
-import { Platform, StyleSheet } from "react-native";
+import { Platform } from "react-native";
 
 import { useBottomTabOverflow } from "@/hooks/use-bottom-tab-overflow";
 
-export default function TabBarBackground() {
+export default function Bar() {
   const bottom = useBottomTabOverflow();
   if (Platform.OS !== "ios") {
     return null;
@@ -12,13 +12,8 @@ export default function TabBarBackground() {
     <BlurView
       intensity={95}
       tint="light"
-      style={[
-        StyleSheet.absoluteFill,
-        {
-          overflow: "hidden",
-          paddingBottom: bottom,
-        },
-      ]}
+      className="absolute inset-0 overflow-hidden"
+      style={{ paddingBottom: bottom }}
     />
   );
 }
