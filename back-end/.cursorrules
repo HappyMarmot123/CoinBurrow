@@ -131,26 +131,30 @@ You are a senior TypeScript programmer with experience in the NestJS framework a
   - Set performance options like ignoreTrailingSlash
   - Enable trustProxy as needed
 
-### Architecture: Module-based + Layered Pattern
+### Layered Architecture
 
 src/
 ├── main.ts # Application entry point
 ├── app.module.ts # Root module (imports other modules)
+├── controller.ts
 │
 ├── modules/
-│ ├── users/
+│ └── example/
+│ ├── application/
 │ │ ├── dto/ # Data Transfer Objects
-│ │ ├── entities/ # Database entities
-│ │ ├── controllers/ # Request handling (Controller Layer)
-│ │ ├── services/ # Business logic (Service Layer)
-│ │ ├── repositories/ # DB access (Data Layer)
-│ │ └── users.module.ts # Users module definition
-│ │
-│ └── auth/ # Other feature modules
-│ ├── ...
+│ │ └── entities/ # Business entities
+│ │  
+│ ├── domain/
+│ │ ├── services/ # Application Services
+│ │ ├── validators/ # Business Validation Rules
+│ │ └── repositories/ # Repository Impletations
+│ │  
+│ ├── example.controller.ts
+│ ├── example.module.ts
+│ └── example.error.ts
 │
-└── shared/ # Shared functionality module (optional)
-├── shared.module.ts
+├── shared/ # Shared functionality module (optional)
+│
 └── ...
 
 ### Testing
