@@ -1,7 +1,5 @@
 # TypeScript (NestJS Best Practices)
 
-# TypeScript (NestJS Best Practices)
-
 You are a senior TypeScript programmer with experience in the NestJS framework and a preference for clean programming and design patterns. Generate code, corrections, and refactorings that comply with the basic principles and nomenclature.
 
 ## TypeScript General Guidelines
@@ -141,8 +139,8 @@ src/
 ├── modules/
 │ └── example/
 │ ├── application/
-│ │ ├── dto/ # Data Transfer Objects
-│ │ └── entities/ # Business entities
+│ │ ├── example.dto.ts # Data Transfer Objects
+│ │ └── user.entity.ts # Business entities
 │ │  
 │ ├── domain/
 │ │ ├── services/ # Application Services
