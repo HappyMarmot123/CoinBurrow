@@ -16,6 +16,11 @@ export class UserRepository {
     return user || null;
   }
 
+  async findById(id: string): Promise<User | null> {
+    const user = this.users.find((user) => user.id === id);
+    return user || null;
+  }
+
   async createUser(
     createUserDto: CreateUserDto,
     hashedPassword,
@@ -28,5 +33,15 @@ export class UserRepository {
     });
     this.users.push(newUser);
     return newUser;
+  }
+
+  async updateRefreshToken(
+    userId: string,
+    hashedRefreshToken: string,
+  ): Promise<void> {
+    const user = await this.findById(userId);
+    if (user) {
+      user.hashedRefreshToken = hashedRefreshToken;
+    }
   }
 }
