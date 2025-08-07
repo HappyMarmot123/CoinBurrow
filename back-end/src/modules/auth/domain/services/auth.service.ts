@@ -8,7 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { User } from '@/modules/user/application/user.entity';
 import { UserRepository } from '@/modules/user/domain/repositories/user.repository';
-import { JwtPayload } from '@/modules/user/domain/strategies/jwt-access.strategy';
+import { JwtPayload } from '@/modules/auth/domain/strategies/jwt-access.strategy';
 
 export interface Tokens {
   accessToken: string;
@@ -26,7 +26,7 @@ export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-    private readonly userRepository: UserRepository, // No forwardRef needed
+    private readonly userRepository: UserRepository,
   ) {
     try {
       this.accessSecret = this.configService.get<string>(

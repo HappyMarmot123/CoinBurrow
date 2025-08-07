@@ -17,7 +17,7 @@ export class User {
   password?: string;
 
   @Exclude()
-  hashedRefreshToken?: string;
+  hashedRefreshToken?: string | null;
 
   @Expose()
   createdAt: Date;

@@ -16,8 +16,8 @@ import {
   loginUserSchema,
 } from './domain/validators/user.validator';
 import { ZodValidationPipe } from '../../shared/pipes/zod-validation.pipe';
-import { JwtAccessGuard } from './application/guards/jwt-access.guard';
-import { JwtPayload } from './domain/strategies/jwt-access.strategy';
+import { JwtPayload } from '@/modules/auth/domain/strategies/jwt-access.strategy';
+import { JwtAccessGuard } from '@/modules/auth/application/guards/jwt-access.guard';
 
 // 클라언트에서 Access Token과 함께 요청하면 UseGuards 데코레이터가 알아서 서명과 만료 기간을 확인
 // 토큰이 유효하지 않으면 JwtAccessGuard가 401 Unauthorized 오류를 반환

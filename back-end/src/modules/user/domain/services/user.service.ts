@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
   Logger,
   NotFoundException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import {
   CreateUserDto,
@@ -19,7 +20,7 @@ import { AuthService } from '@/modules/auth/domain/services/auth.service';
 export class UserService {
   private readonly logger = new Logger(UserService.name);
   private readonly SALT_ROUNDS: number = parseInt(
-    process.env.BCRYPT_SALT_ROUNDS || '10',
+    process.env.BCRYPT_SALT_ROUNDS!,
   );
 
   constructor(
@@ -38,16 +39,33 @@ export class UserService {
   }
 
   async login(loginUserDto: LoginUserDto): Promise<{ accessToken: string }> {
-    const { email, password } = loginUserDto;
-    this.logger.log(`Login attempt for email: ${email}`);
+    const user = await this.validateUserCredentials(loginUserDto);
+    const tokens = await this.authService.getTokens(user);
+    const hashedRefreshToken = await bcrypt.hash(
+      tokens.refreshToken,
+      this.SALT_ROUNDS,
+    );
 
+    await this.userRepository.updateRefreshToken(user.id, hashedRefreshToken);
+    this.logger.log(
+      `Login successful for user: ${user.username} (ID: ${user.id})`,
+    );
+    return { accessToken: tokens.accessToken };
+  }
+
+  private async validateUserCredentials(
+    loginUserDto: LoginUserDto,
+  ): Promise<User> {
+    const { email, password } = loginUserDto;
     const user = await this.userRepository.findByEmail(email);
+
     if (!user) {
       this.logger.warn(`Login failed: No user found for email ${email}`);
       throw new UnauthorizedException('Invalid credentials');
     }
 
     const isPasswordMatching = await bcrypt.compare(password, user.password!);
+
     if (!isPasswordMatching) {
       this.logger.warn(
         `Login failed: Invalid password for user ${user.username} (ID: ${user.id})`,
@@ -55,17 +73,7 @@ export class UserService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const tokens = await this.authService.getTokens(user);
-    const hashedRefreshToken = await bcrypt.hash(
-      tokens.refreshToken,
-      this.SALT_ROUNDS,
-    );
-    await this.userRepository.updateRefreshToken(user.id, hashedRefreshToken);
-
-    this.logger.log(
-      `Login successful for user: ${user.username} (ID: ${user.id})`,
-    );
-    return { accessToken: tokens.accessToken };
+    return user;
   }
 
   async createUser(createUserDto: CreateUserDto): Promise<User> {
