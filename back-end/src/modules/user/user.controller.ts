@@ -7,17 +7,21 @@ import {
   Req,
   Get,
   Put,
+  Query,
 } from '@nestjs/common';
 import { UserService } from './domain/services/user.service';
 import {
   CreateUserDto,
   createUserSchema,
+  emailSchema,
+  EmailDto,
   LoginUserDto,
   loginUserSchema,
 } from './domain/validators/user.validator';
 import { ZodValidationPipe } from '../../shared/pipes/zod-validation.pipe';
 import { JwtPayload } from '@/modules/auth/domain/strategies/jwt-access.strategy';
 import { JwtAccessGuard } from '@/modules/auth/application/guards/jwt-access.guard';
+import { EmailService } from '@/shared/services/email.service';
 
 // 클라언트에서 Access Token과 함께 요청하면 UseGuards 데코레이터가 알아서 서명과 만료 기간을 확인
 // 토큰이 유효하지 않으면 JwtAccessGuard가 401 Unauthorized 오류를 반환
@@ -27,7 +31,10 @@ import { JwtAccessGuard } from '@/modules/auth/application/guards/jwt-access.gua
 
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly emailService: EmailService,
+  ) {}
 
   @Get('profile')
   @UseGuards(JwtAccessGuard)
@@ -45,5 +52,11 @@ export class UserController {
   @UsePipes(new ZodValidationPipe(createUserSchema))
   async signUp(@Body() createUserDto: CreateUserDto) {
     return await this.userService.createUser(createUserDto);
+  }
+
+  @Get('send-reset-email')
+  @UsePipes(new ZodValidationPipe(emailSchema))
+  async resetPassword(@Query() email: EmailDto) {
+    return await this.emailService.sendResetPWEmail(email.email);
   }
 }

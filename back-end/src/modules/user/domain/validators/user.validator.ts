@@ -1,8 +1,11 @@
 import { z } from 'zod';
 
-export const createUserSchema = z.object({
-  username: z.string().min(1, { message: 'Username is required.' }),
+export const emailSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
+});
+
+export const createUserSchema = emailSchema.extend({
+  username: z.string().min(1, { message: 'Username is required.' }),
   password: z
     .string()
     .min(8, { message: 'Password must be at least 8 characters long.' })
@@ -12,10 +15,10 @@ export const createUserSchema = z.object({
     }),
 });
 
-export const loginUserSchema = z.object({
-  email: z.string().email({ message: 'Invalid email address.' }),
+export const loginUserSchema = emailSchema.extend({
   password: z.string().min(1, { message: 'Password is required.' }),
 });
 
+export type EmailDto = z.infer<typeof emailSchema>;
 export type CreateUserDto = z.infer<typeof createUserSchema>;
 export type LoginUserDto = z.infer<typeof loginUserSchema>;
