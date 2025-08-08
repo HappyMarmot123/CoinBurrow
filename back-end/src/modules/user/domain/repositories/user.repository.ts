@@ -60,4 +60,11 @@ export class UserRepository {
       .set({ hashedRefreshToken })
       .where(eq(schema.users.id, userId));
   }
+
+  async updatePassword(userId: string, password_new: string): Promise<void> {
+    await this.db
+      .update(schema.users)
+      .set({ password: password_new })
+      .where(eq(schema.users.id, userId));
+  }
 }

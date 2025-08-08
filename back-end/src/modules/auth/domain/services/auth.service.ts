@@ -29,9 +29,7 @@ export class AuthService {
     private readonly userRepository: UserRepository,
   ) {
     try {
-      this.accessSecret = this.configService.get<string>(
-        'ACCESS_TOKEN_SECRET_KEY',
-      )!;
+      this.accessSecret = this.configService.get<string>('JWT_SECRET_KEY')!;
       this.refreshSecret = this.configService.get<string>(
         'REFRESH_TOKEN_SECRET_KEY',
       )!;

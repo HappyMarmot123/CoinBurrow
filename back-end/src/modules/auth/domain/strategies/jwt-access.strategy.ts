@@ -14,9 +14,9 @@ export class JwtAccessStrategy extends PassportStrategy(
   'jwt-access',
 ) {
   constructor(private readonly configService: ConfigService) {
-    const secretKey = configService.get<string>('ACCESS_TOKEN_SECRET_KEY');
+    const secretKey = configService.get<string>('JWT_SECRET_KEY');
     if (!secretKey) {
-      throw new Error('ACCESS_TOKEN_SECRET_KEY is not defined in config');
+      throw new Error('JWT_SECRET_KEY is not defined in config');
     }
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
