@@ -1,9 +1,7 @@
-import TestComponent from "@/components/feature/TestComponent";
+"use client";
+
+import { Landing } from "@/widgets/landing/Landing";
 
 export default function Home() {
-  return (
-    <main>
-      <TestComponent />
-    </main>
-  );
+  return <Landing />;
 }
