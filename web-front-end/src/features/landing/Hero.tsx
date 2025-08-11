@@ -38,6 +38,7 @@ export const Hero = () => {
           <Button
             variant="primaryGreen"
             className="text-lg"
+            size="large"
             onClick={() => alert("Get Started clicked")}
           >
             Get Started

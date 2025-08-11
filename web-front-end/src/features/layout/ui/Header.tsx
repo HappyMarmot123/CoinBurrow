@@ -2,10 +2,12 @@
 
 import { Button } from "@/shared/ui/Button";
 import React, { useEffect, useRef } from "react";
+import { useModal } from "@/shared/contexts/ModalContext";
 
 export const Header = () => {
   const headerRef = useRef<HTMLElement>(null);
   const animationFrameId = useRef<number | null>(null);
+  const { openModal } = useModal();
 
   useEffect(() => {
     const header = headerRef.current;
@@ -61,11 +63,7 @@ export const Header = () => {
           <Button variant="primaryGreen" onClick={() => alert("Login clicked")}>
             Login
           </Button>
-          <Button
-            variant="secondary"
-            className="ml-4"
-            onClick={() => alert("Sign Up clicked")}
-          >
+          <Button variant="secondary" className="ml-4" onClick={openModal}>
             Sign Up
           </Button>
         </nav>
