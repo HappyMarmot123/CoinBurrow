@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import React from "react";
 import { useModal } from "@/shared/contexts/ModalContext";
 import { SignUpModal } from "@/features/auth/ui/SignUpModal";
+import { Toaster } from "sonner";
 
 type LayoutProps = {
   children: React.ReactNode;
@@ -15,6 +16,7 @@ export const Layout = ({ children }: LayoutProps) => {
   const { isModalOpen } = useModal();
   return (
     <>
+      <Toaster richColors closeButton />
       <Header />
       <div id="noise" />
       <main>{children}</main>

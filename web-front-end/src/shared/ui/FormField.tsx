@@ -119,9 +119,9 @@ export const FormField = <T extends FieldValues>({
           )}
         </div>
       </div>
-      <div className="min-h-[1.25rem]">
+      <div className="min-h-6  mt-1">
         {error && (
-          <p id={errorId} className="text-red-500 text-xs mt-1">
+          <p id={errorId} className="text-red-500 !text-base">
             {error.message}
           </p>
         )}

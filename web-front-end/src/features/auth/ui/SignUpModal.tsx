@@ -1,10 +1,11 @@
 "use client";
 
 import { useModal } from "@/shared/contexts/ModalContext";
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { toast } from "sonner";
 import { Button } from "@/shared/ui/Button";
 import { FormField } from "@/shared/ui/FormField";
 
@@ -23,6 +24,7 @@ type SignUpFormInputs = z.infer<typeof signUpSchema>;
 
 export const SignUpModal = () => {
   const { closeModal } = useModal();
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -34,13 +36,14 @@ export const SignUpModal = () => {
     mode: "onChange",
   });
 
+  const values = watch();
+
   const handleClear = (fieldName: keyof SignUpFormInputs) => {
     setValue(fieldName, "");
   };
 
-  const values = watch();
-
   const onSubmit = async (data: SignUpFormInputs) => {
+    setSubmissionError(null);
     try {
       const response = await fetch("/api/auth/signup", {
         method: "PUT",
@@ -53,20 +56,15 @@ export const SignUpModal = () => {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Something went wrong");
+        throw new Error(result.message);
       }
 
-      console.log("Successfully signed up:", result);
-      alert("Sign up successful!");
+      toast.success("Sign up successful!");
       closeModal();
     } catch (error) {
-      if (error instanceof Error) {
-        console.error("Sign up failed:", error.message);
-        alert(`Sign up failed: ${error.message}`);
-      } else {
-        console.error("An unexpected error occurred:", error);
-        alert("An unexpected error occurred.");
-      }
+      const errorMessage = (error as Error).message;
+      toast.error(errorMessage);
+      setSubmissionError(errorMessage);
     }
   };
 
@@ -112,11 +110,17 @@ export const SignUpModal = () => {
             register={register}
             error={errors.password}
             placeholder="6-digit numeric password"
+            maxLength={6}
             onClear={handleClear}
             value={values.password}
             isPassword
             required
           />
+          {submissionError && (
+            <p className="text-red-500 text-sm text-center">
+              {submissionError}
+            </p>
+          )}
           <div className="flex items-center justify-between mt-8 gap-4">
             <Button
               type="button"
