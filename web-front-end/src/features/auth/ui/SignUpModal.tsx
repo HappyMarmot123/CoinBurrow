@@ -13,9 +13,9 @@ const signUpSchema = z.object({
   username: z.string().min(1, { message: "Username is required." }),
   password: z
     .string()
-    .length(6, { message: "비밀번호는 6자리여야 합니다." })
+    .length(6, { message: "Password must be 6 characters." })
     .regex(/^\d+$/, {
-      message: "비밀번호는 숫자만 입력 가능합니다.",
+      message: "Password must contain only numbers.",
     }),
 });
 
