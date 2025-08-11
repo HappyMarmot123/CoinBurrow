@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+  background-color: #1a1a1a; /* Dark background */
+  color: #f5f5eb; /* Light text color */
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: dark;
+  }
+}
+
+/* Add custom landing page styles */
+.landing-default-style {
+  color: #f2f0dd;
+}
+
+.landing-default-style > section {
+  padding: 10rem 2rem;
+  margin: 0 auto;
+  text-align: center;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 700;
+}
+
+h2 {
+  font-size: 2.5rem;
+}
+
+h3 {
+  font-size: 1.5rem;
+}
+
+p {
+  font-size: 1.125rem;
+  line-height: 1.8;
+  max-width: 800px;
+}
+
+button {
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: transform 0.2s ease-in-out, background-color 0.2s ease;
+}
+
+button:hover {
+  transform: scale(1.05);
+}
+
+#noise {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 20;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  background: url("/noise.webp") no-repeat center center;
+  background-size: cover;
+  mix-blend-mode: overlay;
+}
+
+.logo-gradient {
+  background: -webkit-linear-gradient(315deg, #a8d1a3, #5f8d4e);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
