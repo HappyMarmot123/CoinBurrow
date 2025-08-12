@@ -6,7 +6,6 @@ import {
   UseGuards,
   Req,
   Get,
-  Put,
   Query,
   HttpCode,
   HttpStatus,
@@ -14,12 +13,8 @@ import {
 } from '@nestjs/common';
 import { UserService } from './domain/services/user.service';
 import {
-  CreateUserDto,
-  createUserSchema,
   emailSchema,
   EmailDto,
-  LoginUserDto,
-  loginUserSchema,
   ResetPasswordDto,
   resetPasswordSchema,
 } from './domain/validators/user.validator';
@@ -41,18 +36,6 @@ export class UserController {
   @UseGuards(JwtAccessGuard)
   async getProfile(@Req() req: { user: JwtPayload }) {
     return await this.userService.getUserProfile(req.user.userId);
-  }
-
-  @Post('login')
-  @UsePipes(new ZodValidationPipe(loginUserSchema))
-  async login(@Body() loginUserDto: LoginUserDto) {
-    return await this.userService.login(loginUserDto);
-  }
-
-  @Put('signup')
-  @UsePipes(new ZodValidationPipe(createUserSchema))
-  async signUp(@Body() createUserDto: CreateUserDto) {
-    return await this.userService.createUser(createUserDto);
   }
 
   @Post('send-reset-email')

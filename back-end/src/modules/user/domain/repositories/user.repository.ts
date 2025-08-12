@@ -61,6 +61,16 @@ export class UserRepository {
       .where(eq(schema.users.id, userId));
   }
 
+  async updateMobileToken(
+    userId: string,
+    hashedMobileToken: string | null,
+  ): Promise<void> {
+    await this.db
+      .update(schema.users)
+      .set({ hashedMobileToken })
+      .where(eq(schema.users.id, userId));
+  }
+
   async updatePassword(userId: string, password_new: string): Promise<void> {
     await this.db
       .update(schema.users)
