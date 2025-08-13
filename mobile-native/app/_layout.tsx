@@ -9,6 +9,7 @@ import "react-native-reanimated";
 import "../global.css";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
+import StorybookUIRoot from "../.rnstorybook";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 // SplashScreen.preventAutoHideAsync();
@@ -29,11 +30,16 @@ export default function RootLayout() {
     return null;
   }
 
+  if (process.env.EXPO_PUBLIC_STORYBOOK_ENABLED) {
+    return <StorybookUIRoot />;
+  }
+
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
+        <Stack.Screen name="storybook" options={{ headerShown: false }} />
       </Stack>
     </ThemeProvider>
   );
