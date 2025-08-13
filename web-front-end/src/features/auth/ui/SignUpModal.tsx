@@ -6,8 +6,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Button } from "@/shared/ui/Button";
-import { FormField } from "@/shared/ui/FormField";
+import { SignUpFormView } from "@/features/auth/components/SignUpFormView";
+import { SignUpSuccessView } from "@/features/auth/components/SignUpSuccessView";
+import { ModalLayout } from "@/shared/ui/ModalLayout";
 
 const signUpSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -20,11 +21,12 @@ const signUpSchema = z.object({
     }),
 });
 
-type SignUpFormInputs = z.infer<typeof signUpSchema>;
+export type SignUpFormInputs = z.infer<typeof signUpSchema>;
 
 export const SignUpModal = () => {
   const { closeModal } = useModal();
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const {
     register,
     handleSubmit,
@@ -60,7 +62,7 @@ export const SignUpModal = () => {
       }
 
       toast.success("Sign up successful!");
-      closeModal();
+      setIsSubmitted(true);
     } catch (error) {
       const errorMessage = (error as Error).message;
       toast.error(errorMessage);
@@ -69,79 +71,22 @@ export const SignUpModal = () => {
   };
 
   return (
-    <section
-      aria-label="Sign up modal"
-      className="fixed inset-0 bg-black/50 flex justify-center items-center z-[100]"
-    >
+    <ModalLayout>
       <div className="bg-white p-8 rounded-lg w-full max-w-md">
-        <h2 className="text-4xl font-extrabold mb-2 text-center text-gray-900">
-          Sign Up
-        </h2>
-        <p className="text-center text-gray-600 mb-6">
-          Welcome! Create an account to get started
-        </p>
-        <form onSubmit={handleSubmit(onSubmit)} noValidate>
-          <FormField<SignUpFormInputs>
-            label="Email"
-            name="email"
-            type="email"
+        {isSubmitted ? (
+          <SignUpSuccessView closeModal={() => closeModal("signup")} />
+        ) : (
+          <SignUpFormView
+            onSubmit={handleSubmit(onSubmit)}
             register={register}
-            error={errors.email}
-            placeholder="Enter your email"
-            onClear={handleClear}
-            value={values.email}
-            required
+            errors={errors}
+            handleClear={handleClear}
+            values={values}
+            submissionError={submissionError}
+            closeModal={() => closeModal("signup")}
           />
-          <FormField<SignUpFormInputs>
-            label="Username"
-            name="username"
-            type="text"
-            register={register}
-            error={errors.username}
-            placeholder="Choose a username"
-            onClear={handleClear}
-            value={values.username}
-            required
-          />
-          <FormField<SignUpFormInputs>
-            label="Password"
-            name="password"
-            type="password"
-            register={register}
-            error={errors.password}
-            placeholder="6-digit numeric password"
-            maxLength={6}
-            onClear={handleClear}
-            value={values.password}
-            isPassword
-            required
-          />
-          {submissionError && (
-            <p className="text-red-500 text-sm text-center">
-              {submissionError}
-            </p>
-          )}
-          <div className="flex items-center justify-between mt-8 gap-4">
-            <Button
-              type="button"
-              onClick={closeModal}
-              className="flex-1/2"
-              variant="secondary"
-              size="large"
-            >
-              Close
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1/2"
-              variant="primaryGreen"
-              size="large"
-            >
-              Create Account
-            </Button>
-          </div>
-        </form>
+        )}
       </div>
-    </section>
+    </ModalLayout>
   );
 };

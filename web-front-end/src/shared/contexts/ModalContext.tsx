@@ -2,19 +2,32 @@
 
 import React, { createContext, useState, useContext, ReactNode } from "react";
 
+export type ModalName = "signup" | "qrForm";
+
+type ModalState = {
+  [key in ModalName]?: boolean;
+};
+
 interface ModalContextType {
-  isModalOpen: boolean;
-  openModal: () => void;
-  closeModal: () => void;
+  isModalOpen: (modalName: ModalName) => boolean;
+  openModal: (modalName: ModalName) => void;
+  closeModal: (modalName: ModalName) => void;
 }
 
 const ModalContext = createContext<ModalContextType | undefined>(undefined);
 
 export const ModalProvider = ({ children }: { children: ReactNode }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modals, setModals] = useState<ModalState>({});
 
-  const openModal = () => setIsModalOpen(true);
-  const closeModal = () => setIsModalOpen(false);
+  const openModal = (modalName: ModalName) => {
+    setModals((prev) => ({ ...prev, [modalName]: true }));
+  };
+
+  const closeModal = (modalName: ModalName) => {
+    setModals((prev) => ({ ...prev, [modalName]: false }));
+  };
+
+  const isModalOpen = (modalName: ModalName) => !!modals[modalName];
 
   return (
     <ModalContext.Provider value={{ isModalOpen, openModal, closeModal }}>

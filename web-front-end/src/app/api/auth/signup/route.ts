@@ -6,11 +6,10 @@ export async function PUT(request: Request) {
     const { email, username, password } = body;
 
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-    if (!backendUrl) {
+    if (!backendUrl)
       throw new Error("Backend URL is not defined in environment variables.");
-    }
 
-    const res = await fetch(`${backendUrl}/users/signup`, {
+    const res = await fetch(`${backendUrl}/auth/signup`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
