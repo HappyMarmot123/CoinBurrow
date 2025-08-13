@@ -1,4 +1,4 @@
-import { IconName } from "@/components/atoms/Icon";
+import { IconName } from "@/components/atoms/IconAtom";
 
 declare global {
   namespace ReactNavigation {

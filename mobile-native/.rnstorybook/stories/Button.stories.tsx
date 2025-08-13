@@ -1,53 +1,52 @@
-import type { Meta, StoryObj } from '@storybook/react';
-
-import { View } from 'react-native';
-import { fn } from 'storybook/test';
-
-import { Button } from './Button';
+import type { Meta, StoryObj } from "@storybook/react-native";
+import { View } from "react-native";
+import { Button } from "./Button";
+import React from "react";
 
 const meta = {
-  title: 'Example/Button',
+  title: "Example/Button",
   component: Button,
   decorators: [
     (Story) => (
-      <View style={{ flex: 1, alignItems: 'flex-start' }}>
+      <View style={{ padding: 20, flex: 1, justifyContent: "center" }}>
         <Story />
       </View>
     ),
   ],
-  // This component will have an automatically generated Autodocs entry: https://storybook.js.org/docs/writing-docs/autodocs
-  tags: ['autodocs'],
-  // Use `fn` to spy on the onPress arg, which will appear in the actions panel once invoked: https://storybook.js.org/docs/essentials/actions#action-args
-  args: { onPress: fn() },
+  args: {
+    title: "Press me",
+    onPress: () => {
+      console.log("Button pressed");
+    },
+  },
+  argTypes: {
+    onPress: { action: "pressed" },
+  },
 } satisfies Meta<typeof Button>;
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Primary: Story = {
+export const Default: Story = {};
+
+export const Loading: Story = {
   args: {
-    primary: true,
-    label: 'Button',
+    isLoading: true,
   },
 };
 
-export const Secondary: Story = {
+export const Disabled: Story = {
   args: {
-    label: 'Button',
+    disabled: true,
   },
 };
 
-export const Large: Story = {
+export const CustomStyle: Story = {
   args: {
-    size: 'large',
-    label: 'Button',
-  },
-};
-
-export const Small: Story = {
-  args: {
-    size: 'small',
-    label: 'Button',
+    title: "Custom Style",
+    style: {
+      backgroundColor: "blue",
+    },
   },
 };

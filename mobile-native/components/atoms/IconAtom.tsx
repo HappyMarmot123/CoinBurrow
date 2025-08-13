@@ -10,7 +10,7 @@ const MAPPING = {
 
 export type IconName = keyof typeof MAPPING;
 
-export interface IconProps {
+export interface IconAtomProps {
   name: IconName;
   size?: number;
   color?: string | OpaqueColorValue;
@@ -26,7 +26,7 @@ export interface IconProps {
     | "black";
 }
 
-export function Icon({ name, size = 24, color, style }: IconProps) {
+export function IconAtom({ name, size = 24, color, style }: IconAtomProps) {
   return (
     <MaterialIcons
       color={color}

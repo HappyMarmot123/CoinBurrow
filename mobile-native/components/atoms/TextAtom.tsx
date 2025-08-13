@@ -6,21 +6,21 @@ import {
 
 import { useThemeColor } from "@/hooks/useThemeColor";
 
-export interface TextProps extends NativeTextProps {
+export interface TextAtomProps extends NativeTextProps {
   lightColor?: string;
   darkColor?: string;
   type?: "default" | "title" | "defaultSemiBold" | "subtitle" | "link";
   className?: string;
 }
 
-export function Text({
+export function TextAtom({
   style,
   lightColor,
   darkColor,
   type = "default",
   className,
   ...rest
-}: TextProps) {
+}: TextAtomProps) {
   const color = useThemeColor({ light: lightColor, dark: darkColor }, "text");
 
   const typeStyles = {

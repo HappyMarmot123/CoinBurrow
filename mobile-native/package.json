@@ -10,7 +10,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "jest",
-    "storybook": "EXPO_PUBLIC_STORYBOOK_ENABLED=true expo start",
+    "storybook": "cross-env EXPO_PUBLIC_STORYBOOK_ENABLED=true expo start",
     "storybook-generate": "sb-rn-get-stories"
   },
   "dependencies": {
@@ -52,6 +52,7 @@
     "react-native-vector-icons": "^10.3.0",
     "react-native-web": "~0.20.0",
     "react-native-webview": "13.13.5",
+    "storybook-css-modules-preset": "^1.1.1",
     "zustand": "^5.0.6"
   },
   "devDependencies": {
@@ -67,6 +68,7 @@
     "@types/react": "~19.0.10",
     "babel-loader": "^8.4.1",
     "babel-plugin-module-resolver": "^5.0.2",
+    "cross-env": "^10.0.0",
     "detox": "^20.21.0",
     "eslint": "^8.57.0",
     "eslint-config-expo": "~9.2.0",

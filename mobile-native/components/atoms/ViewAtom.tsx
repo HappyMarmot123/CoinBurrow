@@ -5,17 +5,17 @@ import {
 
 import { useThemeColor } from "@/hooks/useThemeColor";
 
-export type ViewProps = NativeViewProps & {
+export type ViewAtomProps = NativeViewProps & {
   lightColor?: string;
   darkColor?: string;
 };
 
-export function View({
+export function ViewAtom({
   style,
   lightColor,
   darkColor,
   ...otherProps
-}: ViewProps) {
+}: ViewAtomProps) {
   const backgroundColor = useThemeColor(
     { light: lightColor, dark: darkColor },
     "background"
