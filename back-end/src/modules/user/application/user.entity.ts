@@ -4,23 +4,24 @@ import { Exclude, Expose } from 'class-transformer';
 // @Expose(): 응답에 포함할 필드
 
 export class User {
-  @Expose()
-  id: string;
-
-  @Expose()
-  username: string;
-
-  @Expose()
-  email: string;
+  id!: string;
+  email!: string;
 
   @Exclude()
-  password?: string;
+  password?: string | null;
+  username!: string;
 
   @Exclude()
   hashedRefreshToken?: string | null;
 
+  @Exclude()
+  hashedMobileToken?: string | null;
+
   @Expose()
-  createdAt: Date;
+  createdAt!: Date;
+
+  @Expose()
+  updatedAt: Date;
 
   constructor(partial: Partial<User>) {
     Object.assign(this, partial);

@@ -6,14 +6,17 @@ import {
   UseGuards,
   Req,
   Get,
-  Put,
+  Query,
+  HttpCode,
+  HttpStatus,
+  Patch,
 } from '@nestjs/common';
 import { UserService } from './domain/services/user.service';
 import {
-  CreateUserDto,
-  createUserSchema,
-  LoginUserDto,
-  loginUserSchema,
+  emailSchema,
+  EmailDto,
+  ResetPasswordDto,
+  resetPasswordSchema,
 } from './domain/validators/user.validator';
 import { ZodValidationPipe } from '../../shared/pipes/zod-validation.pipe';
 import { JwtPayload } from '@/modules/auth/domain/strategies/jwt-access.strategy';
@@ -35,15 +38,19 @@ export class UserController {
     return await this.userService.getUserProfile(req.user.userId);
   }
 
-  @Post('login')
-  @UsePipes(new ZodValidationPipe(loginUserSchema))
-  async login(@Body() loginUserDto: LoginUserDto) {
-    return await this.userService.login(loginUserDto);
+  @Post('send-reset-email')
+  @HttpCode(HttpStatus.OK)
+  @UsePipes(new ZodValidationPipe(emailSchema))
+  async sendResetEmail(@Body() emailDto: EmailDto) {
+    await this.userService.sendPasswordResetEmail(emailDto);
+    return { message: 'Password reset email sent successfully.' };
   }
 
-  @Put('signup')
-  @UsePipes(new ZodValidationPipe(createUserSchema))
-  async signUp(@Body() createUserDto: CreateUserDto) {
-    return await this.userService.createUser(createUserDto);
+  @Patch('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @UsePipes(new ZodValidationPipe(resetPasswordSchema))
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    await this.userService.resetPassword(resetPasswordDto);
+    return { message: 'Password has been reset successfully.' };
   }
 }

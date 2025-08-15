@@ -15,6 +15,13 @@
       "when": 1754479101965,
       "tag": "0001_known_mantis",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1755007427501,
+      "tag": "0002_old_tinkerer",
+      "breakpoints": true
     }
   ]
 }

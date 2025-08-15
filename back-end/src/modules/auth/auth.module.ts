@@ -6,6 +6,7 @@ import { AuthService } from './domain/services/auth.service';
 import { JwtAccessStrategy } from './domain/strategies/jwt-access.strategy';
 import { UserModule } from '../user/user.module';
 import { AuthController } from './auth.controller';
+import { AuthGateway } from './application/gateways/auth.gateway';
 
 @Module({
   imports: [
@@ -13,7 +14,7 @@ import { AuthController } from './auth.controller';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('ACCESS_TOKEN_SECRET_KEY'),
+        secret: configService.get<string>('JWT_SECRET_KEY'),
         signOptions: {
           expiresIn: configService.get<string>('ACCESS_TOKEN_EXPIRATION_KEY'),
         },
@@ -23,7 +24,7 @@ import { AuthController } from './auth.controller';
     forwardRef(() => UserModule),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtAccessStrategy],
+  providers: [AuthService, JwtAccessStrategy, AuthGateway],
   exports: [AuthService, PassportModule, JwtAccessStrategy],
 })
 export class AuthModule {}
