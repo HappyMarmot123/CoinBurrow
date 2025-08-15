@@ -1,46 +1,50 @@
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import React from "react";
-import { useLoginMutation } from "../../../app/core/hooks/useLoginMutation";
-import { LoginForm } from "../../../components/organisms/LoginForm";
+import { useSignupMutation } from "../../../app/core/hooks/useAuthMutation";
+import { SignupForm } from "../../../components/organisms/SignupForm";
 
-jest.mock("../../../app/core/hooks/useLoginMutation", () => ({
-  useLoginMutation: jest.fn(),
+jest.mock("../../../app/core/hooks/useAuthMutation", () => ({
+  useSignupMutation: jest.fn(),
 }));
 
 const mockMutate = jest.fn();
 
-describe("LoginForm", () => {
+describe("SignupForm", () => {
   beforeEach(() => {
-    (useLoginMutation as jest.Mock).mockReturnValue({
+    (useSignupMutation as jest.Mock).mockReturnValue({
       mutate: mockMutate,
     });
     mockMutate.mockClear();
   });
 
-  it("renders email and password fields", () => {
-    const { getByPlaceholderText, getByText } = render(<LoginForm />);
+  it("renders username, email, and password fields", () => {
+    const { getByPlaceholderText, getByText } = render(<SignupForm />);
+    expect(getByPlaceholderText("Enter your username")).toBeTruthy();
     expect(getByPlaceholderText("Enter your email")).toBeTruthy();
     expect(getByPlaceholderText("Enter your password")).toBeTruthy();
-    expect(getByText("Log In")).toBeTruthy();
+    expect(getByText("Sign Up")).toBeTruthy();
   });
 
   it("shows validation errors for empty fields", async () => {
-    const { getByText, findByText } = render(<LoginForm />);
-    fireEvent.press(getByText("Log In"));
+    const { getByText, findByText } = render(<SignupForm />);
+    fireEvent.press(getByText("Sign Up"));
 
+    expect(await findByText("Username is required.")).toBeTruthy();
     expect(await findByText("Invalid email address.")).toBeTruthy();
-    expect(await findByText("Password is required.")).toBeTruthy();
+    expect(
+      await findByText("Password must be at least 8 characters long.")
+    ).toBeTruthy();
   });
 
   it("shows validation error for invalid email", async () => {
     const { getByPlaceholderText, getByText, findByText } = render(
-      <LoginForm />
+      <SignupForm />
     );
     fireEvent.changeText(
       getByPlaceholderText("Enter your email"),
       "invalid-email"
     );
-    fireEvent.press(getByText("Log In"));
+    fireEvent.press(getByText("Sign Up"));
 
     expect(await findByText("Invalid email address.")).toBeTruthy();
   });
@@ -48,24 +52,29 @@ describe("LoginForm", () => {
   it("submits the form with valid data", async () => {
     const onSuccess = jest.fn();
     const { getByPlaceholderText, getByText } = render(
-      <LoginForm onSuccess={onSuccess} />
+      <SignupForm onSuccess={onSuccess} />
     );
 
+    fireEvent.changeText(
+      getByPlaceholderText("Enter your username"),
+      "testuser"
+    );
     fireEvent.changeText(
       getByPlaceholderText("Enter your email"),
       "test@example.com"
     );
     fireEvent.changeText(
       getByPlaceholderText("Enter your password"),
-      "password123"
+      "Password123"
     );
-    fireEvent.press(getByText("Log In"));
+    fireEvent.press(getByText("Sign Up"));
 
     await waitFor(() => {
       expect(mockMutate).toHaveBeenCalledWith(
         {
+          username: "testuser",
           email: "test@example.com",
-          password: "password123",
+          password: "Password123",
         },
         expect.any(Object)
       );
@@ -74,8 +83,10 @@ describe("LoginForm", () => {
     // Simulate successful mutation
     const successCallback = mockMutate.mock.calls[0][1].onSuccess;
     const mockResponse = {
-      accessToken: "access-token",
-      refreshToken: "refresh-token",
+      id: "1",
+      username: "testuser",
+      email: "test@example.com",
+      createdAt: new Date(),
     };
     successCallback(mockResponse);
 
@@ -84,4 +95,3 @@ describe("LoginForm", () => {
     });
   });
 });
-

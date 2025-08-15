@@ -68,12 +68,6 @@
   - Leverage deep linking and universal links for better user engagement and navigation flow.
   - Use dynamic routes with expo-router for better navigation handling.
 
-  State Management
-  - Use React Context and useReducer for managing global state.
-  - Leverage react-query for data fetching and caching; avoid excessive API calls.
-  - For complex state management, consider using Zustand or Redux Toolkit.
-  - Handle URL search parameters using libraries like expo-linking.
-
   Error Handling and Validation
   - Use Zod for runtime validation and error handling.
   - Implement proper error logging using Sentry or a similar service.

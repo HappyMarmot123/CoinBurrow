@@ -2,19 +2,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import React from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Alert, TextInput, View } from "react-native";
-import { z } from "zod";
+
+import { LoginRequestDto, LoginResponseDto } from "@/app/core/dto/auth.dto";
+import { useLoginMutation } from "@/app/core/hooks/useLoginMutation";
+import { loginSchema } from "@/app/core/schemas/auth.schema";
 import { ButtonAtom } from "../atoms/ButtonAtom";
 import { Field } from "../molecules/Field";
 
-const loginSchema = z.object({
-  email: z.string().email("유효한 이메일을 입력해주세요."),
-  password: z.string().min(6, "비밀번호는 6자 이상이어야 합니다."),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
-
 interface LoginFormProps {
-  onSuccess?: (data: LoginFormValues) => void;
+  onSuccess?: (data: LoginResponseDto) => void;
 }
 
 export const LoginForm = ({ onSuccess }: LoginFormProps) => {
@@ -23,7 +19,7 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
-  } = useForm<LoginFormValues>({
+  } = useForm<LoginRequestDto>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
@@ -31,19 +27,23 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
     },
   });
 
+  const { mutate: login } = useLoginMutation();
+
   const passwordRef = React.useRef<TextInput>(null);
 
-  const onSubmit = (data: LoginFormValues) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        if (onSuccess) {
-          onSuccess(data);
-        } else {
-          Alert.alert("로그인 성공", JSON.stringify(data));
-        }
+  const onSubmit = (data: LoginRequestDto) => {
+    login(data, {
+      onSuccess: (response) => {
         reset();
-        resolve(true);
-      }, 1000);
+        if (onSuccess) {
+          onSuccess(response);
+        } else {
+          Alert.alert("Login Successful", JSON.stringify(response));
+        }
+      },
+      onError: (error) => {
+        Alert.alert("Login Failed", error.message);
+      },
     });
   };
 
@@ -54,8 +54,8 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
         name="email"
         render={({ field: { onChange, onBlur, value } }) => (
           <Field
-            label="이메일"
-            placeholder="이메일을 입력하세요"
+            label="Email"
+            placeholder="Enter your email"
             onBlur={onBlur}
             onChangeText={onChange}
             value={value}
@@ -75,8 +75,8 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
         render={({ field: { onChange, onBlur, value } }) => (
           <Field
             ref={passwordRef}
-            label="비밀번호"
-            placeholder="비밀번호를 입력하세요"
+            label="Password"
+            placeholder="Enter your password"
             onBlur={onBlur}
             onChangeText={onChange}
             value={value}
@@ -89,7 +89,7 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
       />
 
       <ButtonAtom
-        title="로그인"
+        title="Log In"
         onPress={handleSubmit(onSubmit)}
         isLoading={isSubmitting}
         className="mt-4"
