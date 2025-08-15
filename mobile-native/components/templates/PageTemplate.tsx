@@ -2,7 +2,7 @@ import React from "react";
 import { ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { View } from "@/components/atoms/View";
+import { ViewAtom } from "@/components/atoms/ViewAtom";
 import { Header, HeaderProps } from "@/components/organisms/Header";
 import { PropsWithChildren } from "react";
 
@@ -15,7 +15,7 @@ export function PageTemplate({ headerProps, children }: PageTemplateProps) {
     <SafeAreaView style={styles.safeArea}>
       <Header {...headerProps} />
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.content}>{children}</View>
+        <ViewAtom style={styles.content}>{children}</ViewAtom>
       </ScrollView>
     </SafeAreaView>
   );
