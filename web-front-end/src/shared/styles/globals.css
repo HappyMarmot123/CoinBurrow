@@ -67,10 +67,9 @@ h3 {
   font-size: 1.5rem;
 }
 
-p {
+p,
+label {
   font-size: 1.125rem;
-  line-height: 1.8;
-  max-width: 800px;
 }
 
 button {

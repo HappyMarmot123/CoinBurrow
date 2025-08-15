@@ -6,11 +6,10 @@ export async function PUT(request: Request) {
     const { email, username, password } = body;
 
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-    if (!backendUrl) {
+    if (!backendUrl)
       throw new Error("Backend URL is not defined in environment variables.");
-    }
 
-    const res = await fetch(`${backendUrl}/users/signup`, {
+    const res = await fetch(`${backendUrl}/auth/signup`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -22,17 +21,17 @@ export async function PUT(request: Request) {
 
     if (!res.ok) {
       return NextResponse.json(
-        { error: data.message || "An error occurred" },
+        { message: data.message || "An error occurred" },
         { status: res.status }
       );
     }
 
-    return NextResponse.json(data, { status: 200 });
+    return NextResponse.json(data, { status: 201 });
   } catch (error) {
     let errorMessage = "An unexpected error occurred.";
     if (error instanceof Error) {
       errorMessage = error.message;
     }
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json({ message: errorMessage }, { status: 500 });
   }
 }

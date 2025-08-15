@@ -9,12 +9,12 @@ import React from "react";
 export const Landing = () => {
   return (
     <div className="landing-default-style">
-      <Hero />
+      {/* <Hero />
       <KeyFeatures />
       <AiCoach />
       <TechStack />
       <FinalCTA />
-      <Features />
+      <Features /> */}
     </div>
   );
 };
