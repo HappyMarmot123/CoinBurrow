@@ -20,6 +20,7 @@ import {
   LoginUserDto,
   loginUserSchema,
 } from '../user/domain/validators/user.validator';
+import { User } from '../user/application/user.entity';
 
 @Controller('auth')
 export class AuthController {
@@ -27,11 +28,6 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly jwtService: JwtService,
   ) {}
-
-  @Get('qr-form')
-  async qrForm() {
-    return await this.authService.qrForm();
-  }
 
   @Post('qr-login')
   @HttpCode(HttpStatus.OK)
@@ -44,7 +40,7 @@ export class AuthController {
   @UsePipes(new ZodValidationPipe(loginUserSchema))
   async login(
     @Body() loginUserDto: LoginUserDto,
-  ): Promise<{ mobileToken: string }> {
+  ): Promise<{ mobileToken: string; user: User }> {
     return await this.authService.login(loginUserDto);
   }
 

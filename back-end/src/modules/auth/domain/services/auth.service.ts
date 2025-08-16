@@ -61,12 +61,15 @@ export class AuthService {
     }
   }
 
-  async login(loginUserDto: LoginUserDto): Promise<{ mobileToken: string }> {
+  async login(
+    loginUserDto: LoginUserDto,
+  ): Promise<{ mobileToken: string; user: User }> {
     const user = await this.validateUserCredentials(loginUserDto);
 
     const mobileToken = await this.generateToken(
       { userId: user.id, username: user.username },
       this.accessSecret,
+      undefined,
     );
 
     const hashedMobileToken = await bcrypt.hash(mobileToken, this.SALT_ROUNDS);
@@ -75,18 +78,7 @@ export class AuthService {
     this.logger.log(
       `Mobile login successful for user: ${user.username} (ID: ${user.id})`,
     );
-    return { mobileToken };
-  }
-
-  async qrForm(): Promise<{ sessionToken: string }> {
-    const payload = { timestamp: Date.now() };
-    const sessionToken = this.jwtService.sign(payload, {
-      secret: this.configService.get('JWT_SECRET_KEY'),
-      expiresIn: '5m',
-    });
-
-    this.logger.log('Generated session token for QR login');
-    return { sessionToken };
+    return { mobileToken, user };
   }
 
   async createUser(createUserDto: CreateUserDto): Promise<User> {
@@ -143,8 +135,8 @@ export class AuthService {
         secret: this.accessSecret,
       });
     } catch (error) {
-      this.logger.warn('Invalid or expired session token');
-      throw new UnauthorizedException('Invalid or expired session token.');
+      this.logger.warn(`QR code has expired: ${error.message}`);
+      throw new UnauthorizedException('QR code has expired');
     }
 
     try {
@@ -188,7 +180,10 @@ export class AuthService {
 
       this.authGateway.sendTokenToClient(sessionToken, tokens);
     } catch (error) {
-      this.logger.error(`QR login failed: ${error.message}`, error.stack);
+      this.logger.error(
+        `QR login failed for user ${user.id}: ${error.message}`,
+        error.stack,
+      );
       if (error instanceof UnauthorizedException) {
         throw error;
       }
