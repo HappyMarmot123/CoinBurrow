@@ -22,18 +22,21 @@ SplashScreen.preventAutoHideAsync();
 function useProtectedRoute() {
   const segments = useSegments();
   const router = useRouter();
-  const { mobileToken } = useAuthStore();
+  const { mobileToken, isRehydrated } = useAuthStore();
   const inAuthGroup = (segments[0] as string) === "(auth)";
 
   React.useEffect(() => {
+    if (!isRehydrated) {
+      return;
+    }
     // The `router.replace` will not work until the layout is mounted.
     if (!mobileToken && !inAuthGroup) {
-      router.replace("/login" as any);
+      router.replace("/Login" as any);
     }
     if (mobileToken && inAuthGroup) {
       router.replace("/" as any);
     }
-  }, [mobileToken, segments]);
+  }, [mobileToken, segments, isRehydrated]);
 }
 
 function RootLayoutNav() {
@@ -55,6 +58,7 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
+  const { isRehydrated } = useAuthStore();
   const [loaded, error] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
@@ -64,12 +68,12 @@ export default function RootLayout() {
   }, [error]);
 
   useEffect(() => {
-    if (loaded) {
+    if (loaded && isRehydrated) {
       SplashScreen.hideAsync();
     }
-  }, [loaded]);
+  }, [loaded, isRehydrated]);
 
-  if (!loaded) {
+  if (!loaded || !isRehydrated) {
     return null;
   }
 

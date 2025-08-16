@@ -1,9 +1,9 @@
 import React from "react";
 import {
-  TouchableOpacity,
-  Text,
-  type TouchableOpacityProps,
   ActivityIndicator,
+  Text,
+  TouchableOpacity,
+  type TouchableOpacityProps,
 } from "react-native";
 
 export interface ButtonAtomProps extends TouchableOpacityProps {

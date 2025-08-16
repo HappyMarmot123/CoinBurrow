@@ -1,9 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "expo-router";
 import React from "react";
 import { useForm } from "react-hook-form";
 import { Alert, TextInput, View } from "react-native";
 
-import { LoginRequestDto, LoginResponseDto } from "@/core/dto/auth.dto";
+import { LoginRequestDto } from "@/core/dto/auth.dto";
 import { useLoginMutation } from "@/core/hooks/useLoginMutation";
 import { loginSchema } from "@/core/schemas/auth.schema";
 import { ButtonAtom } from "../atoms/ButtonAtom";
@@ -13,11 +14,7 @@ import { InputField } from "../molecules/InputField";
 
 const MAX_PASSWORD_LENGTH = 6;
 
-interface LoginFormProps {
-  onSuccess?: (data: LoginResponseDto) => void;
-}
-
-export const LoginForm = ({ onSuccess }: LoginFormProps) => {
+export const LoginForm = () => {
   const {
     control,
     handleSubmit,
@@ -31,6 +28,7 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
     },
   });
 
+  const router = useRouter();
   const passwordRef = React.useRef<TextInput>(null);
   const { mutate: login } = useLoginMutation();
 
@@ -38,11 +36,7 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
     login(data, {
       onSuccess: (response) => {
         reset();
-        if (onSuccess) {
-          onSuccess(response);
-        } else {
-          Alert.alert("Login Successful", JSON.stringify(response));
-        }
+        router.replace("/Home");
       },
       onError: (error) => {
         Alert.alert("Login Failed", error.message);

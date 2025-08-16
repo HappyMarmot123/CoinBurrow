@@ -43,7 +43,7 @@ export default function Home() {
 
   return (
     <PageTemplate headerProps={{ title: "Home" }}>
-      <View className="flex-1 items-center justify-center p-4">
+      <View>
         <TextAtom>Welcome, {user?.username}!</TextAtom>
         <TextAtom>Email: {user?.email}</TextAtom>
 

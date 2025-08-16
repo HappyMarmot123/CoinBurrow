@@ -4,6 +4,8 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "expo start",
+    "start:prod": "cross-env NODE_ENV=production expo start",
+    "build": "eas build",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
     "ios": "expo start --ios",

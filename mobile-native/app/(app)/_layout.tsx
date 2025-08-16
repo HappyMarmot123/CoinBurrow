@@ -13,7 +13,7 @@ export default function TabLayout() {
         options={{
           title: "Home",
           // @ts-ignore
-          tabBarIconName: "house.fill",
+          tabBarIconName: "house",
         }}
       />
       <Tabs.Screen
@@ -21,10 +21,9 @@ export default function TabLayout() {
         options={{
           title: "Explore",
           // @ts-ignore
-          tabBarIconName: "paperplane.fill",
+          tabBarIconName: "paperplane",
         }}
       />
     </Tabs>
   );
 }
-
