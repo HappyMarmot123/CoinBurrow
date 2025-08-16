@@ -36,7 +36,7 @@ export const LoginForm = () => {
     login(data, {
       onSuccess: (response) => {
         reset();
-        router.replace("/Home");
+        router.replace("/");
       },
       onError: (error) => {
         Alert.alert("Login Failed", error.message);
