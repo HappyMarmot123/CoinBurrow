@@ -1,7 +1,7 @@
-import { useAuthStore } from "@/app/core/store/useAuthStore";
 import { ButtonAtom } from "@/components/atoms/ButtonAtom";
 import { TextAtom } from "@/components/atoms/TextAtom";
 import { PageTemplate } from "@/components/templates/PageTemplate";
+import { useAuthStore } from "@/core/store/useAuthStore";
 import React from "react";
 import { View } from "react-native";
 
@@ -17,4 +17,3 @@ export default function Home() {
     </PageTemplate>
   );
 }
-

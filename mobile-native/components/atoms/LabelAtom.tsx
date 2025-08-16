@@ -1,14 +1,17 @@
 import React from "react";
 import { Text, type TextProps } from "react-native";
 
-export const LabelAtom = ({
-  className,
-  ...props
-}: TextProps & { className?: string }) => {
+interface LabelAtomProps extends TextProps {
+  children: React.ReactNode;
+}
+
+export function LabelAtom({ children, className, ...props }: LabelAtomProps) {
   return (
     <Text
-      className={`text-sm font-bold text-gray-700 mb-2 ${className}`}
+      className={`text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 ${className}`}
       {...props}
-    />
+    >
+      {children}
+    </Text>
   );
-};
+}

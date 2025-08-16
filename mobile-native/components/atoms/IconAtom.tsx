@@ -1,38 +1,21 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import React from "react";
-import { OpaqueColorValue, TextStyle, type StyleProp } from "react-native";
+import { type ComponentProps } from "react";
 
-const MAPPING = {
-  "house.fill": "home",
-  "paperplane.fill": "send",
-  "chevron.right": "chevron-right",
-} as const;
-
-export type IconName = keyof typeof MAPPING;
+export type IconName = ComponentProps<typeof MaterialIcons>["name"];
 
 export interface IconAtomProps {
   name: IconName;
-  size?: number;
-  color?: string | OpaqueColorValue;
-  style?: StyleProp<TextStyle>;
-  weight?:
-    | "thin"
-    | "light"
-    | "regular"
-    | "medium"
-    | "semibold"
-    | "bold"
-    | "heavy"
-    | "black";
+  color: string;
+  size: number;
 }
 
-export function IconAtom({ name, size = 24, color, style }: IconAtomProps) {
+export function IconAtom({ name, color, size }: IconAtomProps) {
   return (
     <MaterialIcons
-      color={color}
+      name={name}
       size={size}
-      name={MAPPING[name]}
-      style={style}
+      color={color}
+      style={{ lineHeight: size, height: size, width: size }}
     />
   );
 }

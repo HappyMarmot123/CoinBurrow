@@ -74,8 +74,14 @@ describe("LoginForm", () => {
     // Simulate successful mutation
     const successCallback = mockMutate.mock.calls[0][1].onSuccess;
     const mockResponse = {
-      accessToken: "access-token",
-      refreshToken: "refresh-token",
+      mobileToken: "sample-token",
+      user: {
+        id: "sample-user-id",
+        username: "testuser",
+        email: "test@example.com",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     };
     successCallback(mockResponse);
 
@@ -84,4 +90,3 @@ describe("LoginForm", () => {
     });
   });
 });
-

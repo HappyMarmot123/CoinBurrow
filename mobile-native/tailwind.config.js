@@ -13,6 +13,7 @@ module.exports = {
         ...defaultColors,
         primary: "#FF5C00",
         secondary: "#F5F5F5",
+        error: "#ef0f0f",
       },
       fontFamily: {
         ...defaultFontFamily,

@@ -4,17 +4,20 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import { Stack, useRouter, useSegments } from "expo-router";
+import { SplashScreen, Stack, useRouter, useSegments } from "expo-router";
 import "react-native-reanimated";
 import "../global.css";
 
-import { useAuthStore } from "@/app/core/store/useAuthStore";
+import { useAuthStore } from "@/core/store/useAuthStore";
 import { useColorScheme } from "@/hooks/useColorScheme";
-import React from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import React, { useEffect } from "react";
 import StorybookUIRoot from "../.rnstorybook";
 
+const queryClient = new QueryClient();
+
 // Prevent the splash screen from auto-hiding before asset loading is complete.
-// SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync();
 
 function useProtectedRoute() {
   const segments = useSegments();
@@ -23,6 +26,7 @@ function useProtectedRoute() {
   const inAuthGroup = (segments[0] as string) === "(auth)";
 
   React.useEffect(() => {
+    // The `router.replace` will not work until the layout is mounted.
     if (!mobileToken && !inAuthGroup) {
       router.replace("/login" as any);
     }
@@ -32,13 +36,38 @@ function useProtectedRoute() {
   }, [mobileToken, segments]);
 }
 
-export default function RootLayout() {
+function RootLayoutNav() {
   const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
+  useProtectedRoute();
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="(app)" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" />
+          <Stack.Screen name="storybook" options={{ headerShown: false }} />
+        </Stack>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+}
+
+export default function RootLayout() {
+  const [loaded, error] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
 
-  useProtectedRoute();
+  useEffect(() => {
+    if (error) throw error;
+  }, [error]);
+
+  useEffect(() => {
+    if (loaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [loaded]);
 
   if (!loaded) {
     return null;
@@ -48,14 +77,5 @@ export default function RootLayout() {
     return <StorybookUIRoot />;
   }
 
-  return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(app)" options={{ headerShown: false }} />
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-        <Stack.Screen name="storybook" options={{ headerShown: false }} />
-      </Stack>
-    </ThemeProvider>
-  );
+  return <RootLayoutNav />;
 }
