@@ -3,55 +3,44 @@
 import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useRouter } from "next/navigation";
-import { io } from "socket.io-client";
 import Cookies from "js-cookie";
+import io from "socket.io-client";
+import { Button } from "@/shared/components/Button";
 
 type QrLoginFormProps = {
   sessionToken: string;
   onClose: () => void;
 };
 
-const EXPIRATION_TIME_IN_SECONDS = 300; // 5분
+const EXPIRATION_TIME_IN_SECONDS = 300;
 
 export const QrLoginForm = ({ sessionToken, onClose }: QrLoginFormProps) => {
-  const [qrValue, setQrValue] = useState("");
   const [timeLeft, setTimeLeft] = useState(EXPIRATION_TIME_IN_SECONDS);
   const router = useRouter();
 
   useEffect(() => {
-    if (sessionToken) {
-      setQrValue(sessionToken);
-      setTimeLeft(EXPIRATION_TIME_IN_SECONDS);
+    const socket = io(`${process.env.NEXT_PUBLIC_WEBSOCKET_URL}/auth`, {
+      query: { sessionToken },
+      transports: ["websocket"],
+    });
 
-      const socket = io("ws://localhost:4000/auth", {
-        query: { sessionToken },
-      });
+    socket.on("connect", () => console.log("WebSocket connected"));
 
-      socket.on("connect", () => {
-        console.log("WebSocket connected");
-      });
+    socket.on("qr-login-success", (data: { accessToken: string }) => {
+      const { accessToken } = data;
+      Cookies.set("accessToken", accessToken, { expires: 1 });
+      onClose();
+      router.push("/market");
+    });
 
-      socket.on("qr-login-success", (data) => {
-        const { accessToken } = data;
-        console.log("Received accessToken:", accessToken);
-        Cookies.set("accessToken", accessToken, { expires: 1 });
-        onClose();
-        router.push("/exchange");
-      });
+    socket.on("disconnect", () => console.log("WebSocket disconnected"));
 
-      socket.on("disconnect", () => {
-        console.log("WebSocket disconnected");
-      });
-
-      return () => {
-        socket.disconnect();
-      };
-    }
+    return () => {
+      socket.disconnect();
+    };
   }, [sessionToken, router, onClose]);
 
   useEffect(() => {
-    if (!qrValue) return;
-
     const intervalId = setInterval(() => {
       setTimeLeft((prevTime) => {
         if (prevTime <= 1) {
@@ -63,7 +52,7 @@ export const QrLoginForm = ({ sessionToken, onClose }: QrLoginFormProps) => {
     }, 1000);
 
     return () => clearInterval(intervalId);
-  }, [qrValue]);
+  }, []);
 
   const formatTime = (totalSeconds: number) => {
     const minutes = Math.floor(totalSeconds / 60);
@@ -75,26 +64,33 @@ export const QrLoginForm = ({ sessionToken, onClose }: QrLoginFormProps) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-8 bg-white rounded-lg">
-      <div className="flex items-center justify-center">
-        {qrValue && <QRCodeSVG value={qrValue} size={160} />}
+    <div className="flex flex-col items-center justify-center p-8 bg-white rounded-lg w-full max-w-md">
+      <div className="flex items-center justify-center h-40 w-40">
+        <QRCodeSVG value={sessionToken} size={160} />
       </div>
-      <div className="flex flex-col justify-center items-center mt-8">
+      <div className="flex flex-col justify-center items-center mt-8 text-center">
         {timeLeft > 0 ? (
           <>
             <p className="text-lg font-medium text-red-500">
               유효 시간: {formatTime(timeLeft)}
             </p>
-            <p className="mt-2 text-gray-600 text-center">
+            <p className="mt-2 text-gray-600">
               모바일 앱으로 QR 코드를 스캔하세요.
             </p>
           </>
         ) : (
-          <p className="text-gray-600 text-center">
-            유효기간이 만료되었습니다.
-          </p>
+          <p className="text-gray-600">유효기간이 만료되었습니다.</p>
         )}
       </div>
+      <Button
+        type="button"
+        onClick={onClose}
+        className="w-full mt-8"
+        variant="secondary"
+        size="large"
+      >
+        닫기
+      </Button>
     </div>
   );
 };

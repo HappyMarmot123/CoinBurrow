@@ -12,7 +12,7 @@ export const Header = () => {
   useHeader(headerRef);
 
   return (
-    <header ref={headerRef} className="fixed top-0 left-0 right-0 z-50">
+    <header ref={headerRef} className="fixed top-0 left-0 right-0 z-30">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <h1 className="text-xl font-bold logo-gradient">CoinBurrow</h1>
         <nav>

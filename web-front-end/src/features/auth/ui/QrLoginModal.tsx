@@ -3,8 +3,8 @@
 import { ModalLayout } from "@/shared/ui/ModalLayout";
 import { QrLoginForm } from "@/features/auth/components/QrLoginForm";
 import { useEffect, useState } from "react";
-import { Button } from "@/shared/components/Button";
 import { useModal } from "@/shared/contexts/ModalContext";
+import { LoadingSpinner } from "@/shared/components/LoadingSpinner";
 
 export const QrLoginModal = () => {
   const { closeModal } = useModal();
@@ -17,13 +17,10 @@ export const QrLoginModal = () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch(
-          "http://localhost:3000/api/auth/qr-login",
-          {
-            method: "POST",
-            cache: "no-store",
-          }
-        );
+        const response = await fetch("/api/auth/qr-login", {
+          method: "GET",
+          cache: "no-store",
+        });
 
         if (!response.ok) {
           throw new Error("Failed to fetch QR session token");
@@ -45,29 +42,35 @@ export const QrLoginModal = () => {
     fetchQrSessionToken();
   }, []);
 
-  return (
-    <ModalLayout>
-      <div className="bg-white p-8 rounded-lg w-full max-w-md">
-        {loading && <p>Loading QR Code...</p>}
-        {error && <p>Error: {error}. Please try again.</p>}
-        {sessionToken && (
-          <QrLoginForm
-            sessionToken={sessionToken}
-            onClose={() => closeModal("qrForm")}
-          />
-        )}
-        <div>
-          <Button
-            type="button"
-            onClick={() => closeModal("qrForm")}
-            className="w-full"
-            variant="secondary"
-            size="large"
-          >
-            Close
-          </Button>
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="bg-white p-8 rounded-lg w-full max-w-md text-center">
+          <LoadingSpinner />
+          <p className="text-gray-600 mt-4">QR Code Loading...</p>
         </div>
-      </div>
-    </ModalLayout>
-  );
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="bg-white p-8 rounded-lg w-full max-w-md text-center">
+          <p className="text-red-500">Error: {error}</p>
+        </div>
+      );
+    }
+
+    if (sessionToken) {
+      return (
+        <QrLoginForm
+          sessionToken={sessionToken}
+          onClose={() => closeModal("qrForm")}
+        />
+      );
+    }
+
+    return null;
+  };
+
+  return <ModalLayout>{renderContent()}</ModalLayout>;
 };
