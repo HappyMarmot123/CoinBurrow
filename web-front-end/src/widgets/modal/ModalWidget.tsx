@@ -12,7 +12,7 @@ const LoadingFallback = () => (
   </ModalLayout>
 );
 
-export const Modal = () => {
+export const ModalWidget = () => {
   const { isModalOpen } = useModal();
 
   return (

@@ -7,7 +7,7 @@ import { TechStack } from "@/features/landing/TechStack";
 import React from "react";
 import Spline from "@splinetool/react-spline";
 
-export const Landing = () => {
+export const LandingWidget = () => {
   return (
     <div className="landing-default-style">
       <div

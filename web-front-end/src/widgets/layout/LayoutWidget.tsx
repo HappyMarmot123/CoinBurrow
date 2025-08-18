@@ -2,11 +2,11 @@ import { Footer, Header } from "@/features/layout/ui";
 import React from "react";
 import { Toaster } from "sonner";
 
-type LayoutProps = {
+type LayoutWidgetProps = {
   children: React.ReactNode;
 };
 
-export const Layout = ({ children }: LayoutProps) => {
+export const LayoutWidget = ({ children }: LayoutWidgetProps) => {
   return (
     <>
       <Toaster richColors closeButton />

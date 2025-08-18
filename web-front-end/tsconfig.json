@@ -27,7 +27,8 @@
     "images.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "src/features/market/components"
   ],
   "exclude": ["node_modules"]
 }

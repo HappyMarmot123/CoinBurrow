@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "@/shared/styles/globals.css";
-import { Layout } from "@/widgets/layout/Layout";
+import { LayoutWidget } from "@/widgets/layout/LayoutWidget";
 import { ModalProvider } from "@/shared/contexts/ModalContext";
-import { Modal } from "@/widgets/modal/Modal";
+import { ModalWidget } from "@/widgets/modal/ModalWidget";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,10 +31,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ModalProvider>
-          <Layout>
+          <LayoutWidget>
             {children}
-            <Modal />
-          </Layout>
+            <ModalWidget />
+          </LayoutWidget>
         </ModalProvider>
       </body>
     </html>
