@@ -1,20 +1,16 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import io from "socket.io-client";
-import { Button } from "@/shared/components/Button";
-
-type QrLoginFormProps = {
-  sessionToken: string;
-  onClose: () => void;
-};
 
 const EXPIRATION_TIME_IN_SECONDS = 300;
 
-export const QrLoginForm = ({ sessionToken, onClose }: QrLoginFormProps) => {
+interface UseQrFormParams {
+  sessionToken: string;
+  onClose: () => void;
+}
+
+export const useQrForm = ({ sessionToken, onClose }: UseQrFormParams) => {
   const [timeLeft, setTimeLeft] = useState(EXPIRATION_TIME_IN_SECONDS);
   const router = useRouter();
 
@@ -63,34 +59,5 @@ export const QrLoginForm = ({ sessionToken, onClose }: QrLoginFormProps) => {
     )}`;
   };
 
-  return (
-    <div className="flex flex-col items-center justify-center p-8 bg-white rounded-lg w-full max-w-md">
-      <div className="flex items-center justify-center h-40 w-40">
-        <QRCodeSVG value={sessionToken} size={160} />
-      </div>
-      <div className="flex flex-col justify-center items-center mt-8 text-center">
-        {timeLeft > 0 ? (
-          <>
-            <p className="text-lg font-medium text-red-500">
-              유효 시간: {formatTime(timeLeft)}
-            </p>
-            <p className="mt-2 text-gray-600">
-              모바일 앱으로 QR 코드를 스캔하세요.
-            </p>
-          </>
-        ) : (
-          <p className="text-gray-600">유효기간이 만료되었습니다.</p>
-        )}
-      </div>
-      <Button
-        type="button"
-        onClick={onClose}
-        className="w-full mt-8"
-        variant="secondary"
-        size="large"
-      >
-        닫기
-      </Button>
-    </div>
-  );
+  return { timeLeft, formatTime };
 };

@@ -1,11 +1,7 @@
 import { Button } from "@/shared/components/Button";
 import { Apple, Play, X } from "lucide-react";
 
-export const SignUpSuccessView = ({
-  closeModal,
-}: {
-  closeModal: () => void;
-}) => (
+export const SignUpSuccess = ({ closeModal }: { closeModal: () => void }) => (
   <div className="text-center">
     <h2 className="text-4xl font-extrabold mb-4 text-gray-900">
       Sign Up Complete
