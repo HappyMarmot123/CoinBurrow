@@ -6,6 +6,9 @@ import { ConfigModule } from '@nestjs/config';
 import { DrizzleModule } from './core/database/drizzle.module';
 import { configuration } from './config/configuration';
 import { MarketModule } from './modules/market/market.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { CacheModule } from '@nestjs/cache-manager';
+import { ExchangeModule } from './modules/exchange/exchange.module';
 
 @Module({
   imports: [
@@ -13,11 +16,14 @@ import { MarketModule } from './modules/market/market.module';
       isGlobal: true,
       load: [configuration],
     }),
+    ScheduleModule.forRoot(),
+    CacheModule.register({ isGlobal: true }),
     UserModule,
     AuthModule,
     SharedModule,
     DrizzleModule,
     MarketModule,
+    ExchangeModule,
   ],
 })
 export class AppModule {}

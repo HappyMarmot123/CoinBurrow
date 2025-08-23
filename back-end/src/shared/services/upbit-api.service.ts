@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance } from 'axios';
+const rateLimit = require('axios-rate-limit');
 import * as crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { sign } from 'jsonwebtoken';
@@ -23,9 +24,12 @@ export class UpbitApiService {
     this.secretKey = this.configService.get<string>('UPBIT_SECRET_KEY')!;
     const apiUrl = this.configService.get<string>('UPBIT_API_URL');
 
-    this.axiosInstance = axios.create({
-      baseURL: apiUrl,
-    });
+    this.axiosInstance = rateLimit(
+      axios.create({
+        baseURL: apiUrl,
+      }),
+      { maxRequests: 1, perMilliseconds: 1000 },
+    );
 
     this.axiosInstance.interceptors.request.use((config) => {
       if (this.accessKey && this.secretKey) {

@@ -41,10 +41,6 @@ export class UserService {
       return;
     }
 
-    // JwtService 메소드: JWT 생성과 검증을 비동기로 처리
-    // signAsync(payload, [options])
-    // payload: 토큰에 포함될 데이터
-    // options: 토큰 만료 시간 / 시크릿 키
     const payload = { sub: user.id, email: user.email };
     const token = this.jwtService.sign(payload, {
       secret: this.configService.get('JWT_SECRET_KEY'),

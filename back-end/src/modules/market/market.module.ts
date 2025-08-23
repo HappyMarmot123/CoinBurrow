@@ -7,5 +7,6 @@ import { MarketGateway } from './application/gateways/market.gateway';
   imports: [],
   controllers: [MarketController],
   providers: [MarketService, MarketGateway],
+  exports: [MarketService],
 })
 export class MarketModule {}
