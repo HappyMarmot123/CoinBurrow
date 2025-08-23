@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/shared/components/Button";
 import React from "react";
 

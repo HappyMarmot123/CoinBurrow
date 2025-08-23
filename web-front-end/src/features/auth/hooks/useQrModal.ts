@@ -14,7 +14,7 @@ const fetchQrSessionToken = async () => {
   return data.sessionToken;
 };
 
-export const useQrLogin = () => {
+export const useQrModal = () => {
   const { data: sessionToken } = useSuspenseQuery<string>({
     queryKey: ["qrSession"],
     queryFn: fetchQrSessionToken,

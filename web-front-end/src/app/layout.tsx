@@ -5,6 +5,7 @@ import { LayoutWidget } from "@/widgets/layout/LayoutWidget";
 import { ReactQueryProvider } from "@/shared/providers/ReactQueryProvider";
 import "../shared/styles/globals.css";
 import { Toaster } from "sonner";
+import { ModalWidget } from "@/widgets/modal/ModalWidget";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,6 +25,7 @@ export default function RootLayout({
         <ReactQueryProvider>
           <ModalProvider>
             <LayoutWidget>{children}</LayoutWidget>
+            <ModalWidget />
             <Toaster />
           </ModalProvider>
         </ReactQueryProvider>

@@ -3,13 +3,13 @@
 import { ModalLayout } from "@/shared/ui/ModalLayout";
 import { QrForm } from "@/features/auth/components/QrForm";
 import { useModal } from "@/shared/contexts/ModalContext";
-import { useQrLogin } from "../hooks/useQrLogin";
+import { useQrModal } from "../hooks/useQrModal";
 import { Suspense } from "react";
 import { LoadingSpinner } from "@/shared/components/LoadingSpinner";
 
 const QrLoginContent = () => {
   const { closeModal } = useModal();
-  const { sessionToken } = useQrLogin(); // ✅ useSuspenseQuery
+  const { sessionToken } = useQrModal(); // ✅ useSuspenseQuery
 
   return (
     <QrForm

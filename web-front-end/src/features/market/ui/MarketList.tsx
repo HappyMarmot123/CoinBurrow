@@ -1,17 +1,12 @@
 "use client";
 
 import { MarketState, useMarketStore } from "@/app/store/useMarketStore";
-import { TickerRow } from "@/features/market/components/TickerRow";
 import { useStore } from "zustand";
 
 export const MarketList = () => {
   const markets = useStore(
     useMarketStore,
     (state: MarketState) => state.markets
-  );
-  const tickers = useStore(
-    useMarketStore,
-    (state: MarketState) => state.tickers
   );
   const isLoading = useStore(
     useMarketStore,
@@ -47,11 +42,11 @@ export const MarketList = () => {
               </tr>
             ) : (
               markets.map((market) => (
-                <TickerRow
-                  key={market.market}
-                  market={market}
-                  ticker={tickers[market.market]}
-                />
+                <tr key={market.market}>
+                  <td>{market.korean_name}</td>
+                  <td>{market.english_name}</td>
+                  <td>{market.market}</td>
+                </tr>
               ))
             )}
           </tbody>

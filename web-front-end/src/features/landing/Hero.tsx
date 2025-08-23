@@ -3,10 +3,17 @@
 import { Button } from "@/shared/components/Button";
 import React from "react";
 import styles from "@/shared/styles/Hero.module.css";
+import Spline from "@splinetool/react-spline";
 
 export const Hero = () => {
   return (
     <section className="relative flex items-center justify-center py-20 min-h-screen overflow-hidden">
+      <div
+        aria-label="Coin 3D"
+        className="absolute top-0 left-0 w-full h-full z-[-1]"
+      >
+        <Spline scene="https://prod.spline.design/54XoC-XFGmLSkJ1e/scene.splinecode" />
+      </div>
       <div className={styles.container}>
         <div className={styles.sky}>
           <div className={styles.stars}></div>
