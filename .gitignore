@@ -2,10 +2,15 @@
 /back-end/node_modules/
 /mobile-native/node_modules/
 /web-front-end/node_modules/
+/back-end/package-lock.json
+/mobile-native/package-lock.json
+/web-front-end/package-lock.json
 
 # env
 /back-end/.env
 /mobile-native/.env
+/mobile-native/.env.development
+/mobile-native/.env.production
 /web-front-end/.env
 
 # 빌드 파일

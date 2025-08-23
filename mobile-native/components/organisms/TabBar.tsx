@@ -1,5 +1,4 @@
-import Bar from "@/components/atoms/Bar";
-import { View } from "@/components/atoms/View";
+import { ViewAtom } from "@/components/atoms/ViewAtom";
 import { TabButton } from "@/components/molecules/TabButton";
 import { BottomTabBarProps as TabBarProps } from "@react-navigation/bottom-tabs";
 import React from "react";
@@ -49,12 +48,12 @@ export function TabBar({ state, descriptors, navigation }: TabBarProps) {
   }
 
   return (
-    <View
+    <ViewAtom
       className="absolute bottom-0 w-full flex-row"
       style={{ paddingBottom: bottom }}
     >
-      <Bar />
+      <ViewAtom />
       {tabButtons()}
-    </View>
+    </ViewAtom>
   );
 }

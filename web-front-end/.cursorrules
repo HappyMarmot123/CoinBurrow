@@ -1,3 +1,21 @@
+# Project Concept
+
+This project is a real-time cryptocurrency mock investment platform based on WebSockets.
+
+## Core Features
+
+- **Mock Investment Simulation**: A simulation game where users can trade real-time fluctuating cryptocurrency assets using **virtual points** instead of real cash.
+- **Real-time Data**: Provides real-time cryptocurrency market data using WebSocket technology.
+- **Data Source**: Integrates real cryptocurrency data using the Upbit Open REST API. All other features are developed in-house.
+
+## Tech Stack
+
+- **Frontend**: Next.js (v15)
+- **Backend**: Nest.js (v11)
+- **Mobile**: Expo SDK (v53.0.0)
+
+---
+
 # Frontend Design Guideline
 
 This document summarizes key frontend design principles and rules, showcasing
@@ -523,43 +541,27 @@ src/
 │   ├── layout.tsx
 │   └── page.tsx
 ├── widgets/
-│   ├── SearchPage/
-│   │   └── index.tsx
-│   ├── CartPage/
-│   │   └── index.tsx
+│   ├── search/
+│   │   └── SearchWidget.tsx
 │   └── ...
 ├── features/
-│   ├── Search/
+│   ├── search/
 │   │   ├── components/
-│   │   ├── ui/
 │   │   ├── hooks/
-│   │   └── ...
-│   ├── Cart/
-│   │   ├── components/
+│   │   ├── types/
 │   │   ├── ui/
-│   │   ├── hooks/
 │   └── └── ...
 ├── entities/
-│   ├── User/
-│   │   └── ...
-│   ├── Product/
+│   ├── user/
 │   │   └── ...
 │   └── ...
-├── features/
-│   ├── Search/
-│   │   ├── components/
-│   │   ├── ui/
-│   │   ├── hooks/
-│   │   └── ...
-│   ├── shared/
-│   │   ├── providers/
-│   │   ├── config/
-│   │   ├── hooks/
-│   │   ├── lib/
-│   │   ├── router/
-│   │   ├── types/
-│   │   ├── styles/
-│   └── └── components/
+├── shared/
+│   ├── providers/
+│   ├── config/
+│   ├── lib/
+│   ├── router/
+│   ├── styles/
+│   └── components/
 └──
 ```
 

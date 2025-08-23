@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/shared/ui/Button";
+import { Button } from "@/shared/components/Button";
 import React from "react";
 import styles from "@/shared/styles/Hero.module.css";
 
@@ -38,6 +38,7 @@ export const Hero = () => {
           <Button
             variant="primaryGreen"
             className="text-lg"
+            size="large"
             onClick={() => alert("Get Started clicked")}
           >
             Get Started

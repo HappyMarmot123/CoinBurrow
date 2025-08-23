@@ -1,17 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "@/shared/styles/globals.css";
-import { Layout } from "@/widgets/layout/Layout";
+import { Inter } from "next/font/google";
+import { ModalProvider } from "@/shared/contexts/ModalContext";
+import { LayoutWidget } from "@/widgets/layout/LayoutWidget";
+import { ReactQueryProvider } from "@/shared/providers/ReactQueryProvider";
+import "../shared/styles/globals.css";
+import { Toaster } from "sonner";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -25,10 +20,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <Layout>{children}</Layout>
+      <body className={inter.className}>
+        <ReactQueryProvider>
+          <ModalProvider>
+            <LayoutWidget>{children}</LayoutWidget>
+            <Toaster />
+          </ModalProvider>
+        </ReactQueryProvider>
       </body>
     </html>
   );

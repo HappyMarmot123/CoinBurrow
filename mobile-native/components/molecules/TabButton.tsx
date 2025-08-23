@@ -3,7 +3,7 @@ import * as Haptics from "expo-haptics";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 
-import { Icon, IconName } from "@/components/atoms/Icon";
+import { IconAtom, IconName } from "@/components/atoms/IconAtom";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 
@@ -39,7 +39,7 @@ export function TabButton({
           isFocused && "bg-blue-100 dark:bg-blue-900"
         )}
       >
-        <Icon
+        <IconAtom
           name={iconName}
           size={24}
           color={isFocused ? activeColor : inactiveColor}

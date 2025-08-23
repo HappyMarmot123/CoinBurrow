@@ -6,7 +6,7 @@ import { Transporter, SentMessageInfo } from 'nodemailer';
 export class EmailService {
   private GMAIL_ID = process.env.GMAIL_ID;
   private GMAIL_PASSWORD = process.env.GMAIL_PASSWORD;
-  private EMAIL_RESET_REDIRECT_URL = process.env.EMAIL_RESET_BUTTON_REDIRECT;
+
   private transporter: Transporter;
 
   constructor() {
@@ -16,7 +16,7 @@ export class EmailService {
     });
   }
 
-  async sendResetPWEmail(to: string): Promise<void> {
+  async sendResetPWEmail(to: string, resetLink: string): Promise<void> {
     const mailOptions = {
       from: '"CoinBurrow" <mdnsw28@gmail.com>',
       to,
@@ -30,7 +30,7 @@ export class EmailService {
         <p style="margin: 0 0 20px; font-size: 16px;">안녕하세요,</p>
         <p style="margin: 0 0 20px; font-size: 16px;">비밀번호 재설정을 요청하셨습니다. 아래 버튼을 클릭하여 계정의 비밀번호를 재설정해주세요.</p>
         <div style="text-align: center; padding: 20px 0;">
-            <a href="${this.EMAIL_RESET_REDIRECT_URL}" style="background-color: #3182ce; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">비밀번호 재설정</a>
+            <a href="${resetLink}" style="background-color: #3182ce; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">비밀번호 재설정</a>
         </div>
         <p style="margin: 0 0 20px; font-size: 16px;">만약 본인이 요청한 것이 아니라면 이 이메일을 무시해 주세요.</p>
         <p style="margin: 0 0 10px; font-size: 16px;">감사합니다.<br/>CoinBurrow 팀 드림</p>

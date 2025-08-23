@@ -68,12 +68,6 @@
   - Leverage deep linking and universal links for better user engagement and navigation flow.
   - Use dynamic routes with expo-router for better navigation handling.
 
-  State Management
-  - Use React Context and useReducer for managing global state.
-  - Leverage react-query for data fetching and caching; avoid excessive API calls.
-  - For complex state management, consider using Zustand or Redux Toolkit.
-  - Handle URL search parameters using libraries like expo-linking.
-
   Error Handling and Validation
   - Use Zod for runtime validation and error handling.
   - Implement proper error logging using Sentry or a similar service.
@@ -90,6 +84,16 @@
   - Use Expo's testing tools for running tests in different environments.
   - Consider snapshot testing for components to ensure UI consistency.
   - All test files must be located within the `__tests__` directory. Unit/component tests go in `__tests__/` and E2E tests go in `__tests__/e2e/`.
+  - Prefer using `screen` queries (e.g., `screen.getByText`, `screen.queryByTestId`).
+  - Use `act()` for wrapping asynchronous interactions.
+  - Avoid accessing internal component instances directly.
+  - Include accessibility checks using queries like `getByRole`, `getByLabelText`, or `getByA11yHint`.
+  - Use `jest.mock()` for mocking external dependencies.
+  - Button: should call `onPress` when tapped.
+  - TextInput: should update value when user types.
+  - Modal: should appear when triggered and disappear when closed.
+  - Test files should follow `<ComponentName>.test.tsx` format.
+  - Use descriptive test names that reflect user behavior.
 
   Security
   - Sanitize user inputs to prevent XSS attacks.

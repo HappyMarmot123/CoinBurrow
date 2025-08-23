@@ -1,0 +1,15 @@
+export const TARGET_COINS = [
+  'BTC',
+  'ETH',
+  'XRP',
+  'USDT',
+  'SOL',
+  'DOGE',
+  'ADA',
+  'TRX',
+  'LINK',
+  'XLM',
+  'SUI',
+  'AVAX',
+  'APT',
+];

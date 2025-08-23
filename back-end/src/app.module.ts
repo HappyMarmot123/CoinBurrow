@@ -4,17 +4,20 @@ import { SharedModule } from './shared/shared.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { DrizzleModule } from './core/database/drizzle.module';
+import { configuration } from './config/configuration';
+import { MarketModule } from './modules/market/market.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      load: [configuration],
     }),
     UserModule,
     AuthModule,
     SharedModule,
     DrizzleModule,
+    MarketModule,
   ],
 })
 export class AppModule {}

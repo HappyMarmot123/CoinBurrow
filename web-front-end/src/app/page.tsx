@@ -1,7 +1,7 @@
 "use client";
 
-import { Landing } from "@/widgets/landing/Landing";
+import { LandingWidget } from "@/widgets/landing/LandingWidget";
 
 export default function Home() {
-  return <Landing />;
+  return <LandingWidget />;
 }
