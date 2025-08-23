@@ -2,18 +2,18 @@ import { create } from "zustand";
 import Cookies from "js-cookie";
 
 interface AuthState {
-  isLoggedIn: boolean;
+  isLoggedIn: boolean | null;
   isLoading: boolean;
   checkLoginStatus: () => void;
   logout: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  isLoggedIn: false,
+  isLoggedIn: null,
   isLoading: true,
   checkLoginStatus: () => {
     set({
-      isLoggedIn: !!Cookies.get("accessToken"),
+      isLoggedIn: Cookies.get("accessToken") ? true : false,
       isLoading: false,
     });
   },

@@ -19,18 +19,6 @@
   }
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
-  background-color: #1a1a1a; /* Dark background */
-  color: #f5f5eb; /* Light text color */
-}
-
 a {
   color: inherit;
   text-decoration: none;
@@ -42,15 +30,30 @@ a {
   }
 }
 
-/* Add custom landing page styles */
-.landing-default-style {
+#landing-widget {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
   color: #f2f0dd;
+  background-color: #2f3b52;
 }
 
-.landing-default-style > section {
+#landing-widget > section {
   padding: 10rem 2rem;
   margin: 0 auto;
   text-align: center;
+}
+
+.widget-template {
+  background: linear-gradient(to bottom right, #111827, #1f2937);
+}
+
+.widget-template:first-of-type {
+  padding-top: 6rem;
 }
 
 h1,
