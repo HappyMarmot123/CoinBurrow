@@ -1,4 +1,4 @@
-import { Footer, Header } from "@/features/layout/ui";
+import { Header } from "@/features/layout/ui/Header";
 import React from "react";
 import { Toaster } from "sonner";
 import { headers } from "next/headers";
@@ -17,9 +17,7 @@ export const LayoutWidget = async ({ children }: LayoutWidgetProps) => {
       <AuthStoreInitializer isLoggedIn={isLoggedIn} />
       <Toaster richColors closeButton />
       <Header />
-      <div id="noise" />
       <main>{children}</main>
-      <Footer />
     </>
   );
 };

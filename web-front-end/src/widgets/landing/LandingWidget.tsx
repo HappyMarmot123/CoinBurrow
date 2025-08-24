@@ -8,13 +8,16 @@ import React from "react";
 
 export const LandingWidget = () => {
   return (
-    <div className="landing-default-style">
-      <Hero />
-      <KeyFeatures />
-      <AiCoach />
-      <TechStack />
-      <FinalCTA />
-      <Features />
-    </div>
+    <>
+      <div id="noise" />
+      <div id="landing-widget">
+        <Hero />
+        <KeyFeatures />
+        <AiCoach />
+        <TechStack />
+        <FinalCTA />
+        <Features />
+      </div>
+    </>
   );
 };

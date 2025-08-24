@@ -6,7 +6,7 @@ import React from "react";
 export const Features = () => {
   return (
     <section className="relative bg-[#5A6349] text-white !mt-20 !py-20 !px-8">
-      <div className="absolute bottom-full left-0 w-full overflow-hidden leading-none">
+      <article className="absolute bottom-full left-0 w-full overflow-hidden leading-none">
         <svg
           data-name="Layer 1"
           xmlns="http://www.w3.org/2000/svg"
@@ -20,8 +20,8 @@ export const Features = () => {
             className="shape-fill"
           ></path>
         </svg>
-      </div>
-      <div>
+      </article>
+      <article>
         <div className="text-center mb-12">
           <h2 className="text-4xl font-extrabold sm:text-5xl md:text-6xl mb-4">
             Key Features
@@ -41,7 +41,7 @@ export const Features = () => {
             Get Started
           </Button>
         </div>
-      </div>
+      </article>
     </section>
   );
 };

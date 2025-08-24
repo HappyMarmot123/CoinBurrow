@@ -53,7 +53,7 @@ export const KeyFeatures = () => {
       <h2 className="text-4xl font-bold text-center">
         CoinBurrow, 투자를 게임처럼 즐기는 새로운 방법
       </h2>
-      <div className="grid md:grid-cols-3 gap-8 mt-12">
+      <article className="grid md:grid-cols-3 gap-8 mt-12">
         {features.map((feature, index) => (
           <div
             key={index}
@@ -63,7 +63,7 @@ export const KeyFeatures = () => {
             <p className="text-gray-400">{feature.description}</p>
           </div>
         ))}
-      </div>
+      </article>
     </section>
   );
 };

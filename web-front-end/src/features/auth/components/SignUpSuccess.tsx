@@ -2,7 +2,7 @@ import { Button } from "@/shared/components/Button";
 import { Apple, Play, X } from "lucide-react";
 
 export const SignUpSuccess = ({ closeModal }: { closeModal: () => void }) => (
-  <div className="text-center">
+  <article className="text-center">
     <h2 className="text-4xl font-extrabold mb-4 text-gray-900">
       Sign Up Complete
     </h2>
@@ -39,5 +39,5 @@ export const SignUpSuccess = ({ closeModal }: { closeModal: () => void }) => (
       <X className="w-5 h-5" />
       Close
     </Button>
-  </div>
+  </article>
 );

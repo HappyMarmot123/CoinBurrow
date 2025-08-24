@@ -8,22 +8,22 @@ import Spline from "@splinetool/react-spline";
 export const Hero = () => {
   return (
     <section className="relative flex items-center justify-center py-20 min-h-screen overflow-hidden">
-      <div
+      <article
         aria-label="Coin 3D"
         className="absolute top-0 left-0 w-full h-full z-[-1]"
       >
         <Spline scene="https://prod.spline.design/54XoC-XFGmLSkJ1e/scene.splinecode" />
-      </div>
-      <div className={styles.container}>
+      </article>
+      <article className={styles.container}>
         <div className={styles.sky}>
           <div className={styles.stars}></div>
           <div className={styles.stars1}></div>
           <div className={styles.stars2}></div>
           <div className={styles.shooting_stars}></div>
         </div>
-      </div>
+      </article>
 
-      <div className="text-center z-10">
+      <article className="text-center z-10">
         <h1 className="text-5xl font-extrabold sm:text-6xl md:text-7xl mb-4">
           Invest Like It’s Real
         </h1>
@@ -51,7 +51,7 @@ export const Hero = () => {
             Get Started
           </Button>
         </div>
-      </div>
+      </article>
     </section>
   );
 };

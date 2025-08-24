@@ -14,7 +14,7 @@ type SignUpFormProps = {
 };
 
 export const SignUpForm = ({ ...props }: SignUpFormProps) => (
-  <>
+  <article>
     <h2 className="text-4xl font-extrabold mb-2 text-center text-gray-900">
       Sign Up
     </h2>
@@ -82,5 +82,5 @@ export const SignUpForm = ({ ...props }: SignUpFormProps) => (
         </Button>
       </div>
     </form>
-  </>
+  </article>
 );

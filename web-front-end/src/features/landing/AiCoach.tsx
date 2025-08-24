@@ -50,7 +50,7 @@ export const AiCoach = () => {
       <h2 className="text-4xl font-bold text-center">
         당신만을 위한 AI 투자 코치, CoinBurrow
       </h2>
-      <div className="flex flex-col gap-8 mt-12 max-w-4xl mx-auto">
+      <article className="flex flex-col gap-8 mt-12 max-w-4xl mx-auto">
         {sections.map((section, index) => (
           <div
             key={index}
@@ -62,7 +62,7 @@ export const AiCoach = () => {
             <p className="text-gray-400">{section.description}</p>
           </div>
         ))}
-      </div>
+      </article>
     </section>
   );
 };

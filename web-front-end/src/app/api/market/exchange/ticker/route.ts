@@ -7,13 +7,14 @@ export async function GET() {
       throw new Error("Backend URL is not defined in environment variables.");
     }
 
-    const response = await fetch(`${backendUrl}/market/all`);
+    const response = await fetch(`${backendUrl}/market/exchange/ticker`);
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const initialMarkets = await response.json();
-    return NextResponse.json(initialMarkets);
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
     let errorMessage = "An unexpected error occurred.";
     if (error instanceof Error) {

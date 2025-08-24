@@ -48,7 +48,7 @@ export const TechStack = () => {
         최고의 사용자 경험을 제공합니다. 빠르고 안정적인 환경에서 끊김 없이 투자
         시뮬레이션에 몰입해보세요.
       </p>
-      <div className="flex flex-wrap justify-center items-center gap-8 mt-12">
+      <article className="flex flex-wrap justify-center items-center gap-8 mt-12">
         {techIcons.map((iconUrl, index) => (
           <img
             key={index}
@@ -57,7 +57,7 @@ export const TechStack = () => {
             className="tech-icon h-16 grayscale opacity-70 transition-all duration-300 hover:grayscale-0 hover:opacity-100 hover:scale-110"
           />
         ))}
-      </div>
+      </article>
     </section>
   );
 };
