@@ -19,7 +19,7 @@ export class MarketService implements OnModuleInit {
     await this.fetchAndCacheMarkets();
   }
 
-  @Cron('0 0 * * *') // 매일 자정에 실행
+  @Cron('0 12,18 * * *') // 매일 12시와 18시에 실행
   async handleCron() {
     this.logger.log('Fetching and caching markets data');
     await this.fetchAndCacheMarkets();
@@ -28,7 +28,7 @@ export class MarketService implements OnModuleInit {
   async getMarkets(): Promise<Market[]> {
     const cachedMarkets = await this.cacheManager.get<Market[]>('markets');
     if (cachedMarkets) {
-      this.logger.log('Returning cached markets data');
+      // this.logger.log('Returning cached markets data');
       return cachedMarkets;
     }
     return this.fetchAndCacheMarkets();

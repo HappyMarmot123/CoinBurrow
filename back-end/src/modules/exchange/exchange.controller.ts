@@ -4,7 +4,7 @@ import { CandleService } from './domain/services/candle.service';
 import { OrderbookService } from './domain/services/orderbook.service';
 import { MarketQueryParams } from './application/exchange.dto';
 
-@Controller('exchange')
+@Controller('market/exchange')
 export class ExchangeController {
   constructor(
     private readonly tickerService: TickerService,
@@ -25,9 +25,6 @@ export class ExchangeController {
 
   @Get('orderbook')
   async getOrderbook(@Query('market') market: MarketQueryParams['market']) {
-    const orderbooks = await this.orderbookService.fetchOrderbook([
-      { market: market },
-    ]);
-    return orderbooks;
+    return await this.orderbookService.fetchOrderbook(market);
   }
 }

@@ -10,124 +10,117 @@ import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 import { TickerService } from '../../domain/services/ticker.service';
 import { OrderbookService } from '../../domain/services/orderbook.service';
+import { CandleService } from '../../domain/services/candle.service';
 import { MarketQueryParams } from '../exchange.dto';
+import { SubscriptionHandler } from './subscription.handler';
 
-@WebSocketGateway({ namespace: '/exchange', cors: true })
+@WebSocketGateway({
+  namespace: '/exchange',
+  cors: { origin: ['http://localhost:3000'], credentials: true },
+})
 export class ExchangeGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer() server: Server;
   private readonly logger = new Logger(ExchangeGateway.name);
-  private tickerInterval: NodeJS.Timeout | null;
-  private orderbookIntervals: Map<string, NodeJS.Timeout> = new Map();
+  private tickerHandler: SubscriptionHandler;
+  private orderbookHandler: SubscriptionHandler;
+  private candleHandler: SubscriptionHandler;
 
   constructor(
     private readonly tickerService: TickerService,
     private readonly orderbookService: OrderbookService,
+    private readonly candleService: CandleService,
   ) {}
 
   afterInit(server: Server) {
     this.logger.log('WebSocket Gateway Initialized');
+    this.tickerHandler = new SubscriptionHandler(this.server, this.logger, {
+      roomPrefix: 'ticker',
+      emitEventName: 'tickerUpdate',
+      intervalDuration: 1000,
+      fetchFunction: this.tickerService.fetchTickers.bind(this.tickerService),
+      isMarketSpecific: false,
+    });
+    this.orderbookHandler = new SubscriptionHandler(this.server, this.logger, {
+      roomPrefix: 'orderbook',
+      emitEventName: 'orderbookUpdate',
+      intervalDuration: 1000,
+      fetchFunction: this.orderbookService.fetchOrderbook.bind(
+        this.orderbookService,
+      ),
+      isMarketSpecific: true,
+    });
+    this.candleHandler = new SubscriptionHandler(this.server, this.logger, {
+      roomPrefix: 'candle',
+      emitEventName: 'candleUpdate',
+      intervalDuration: 1000,
+      fetchFunction: this.candleService.fetchCandles.bind(this.candleService),
+      isMarketSpecific: true,
+    });
   }
 
   handleConnection(client: Socket, ...args: any[]) {
     this.logger.log(`Client connected: ${client.id}`);
-    if (this.server.engine.clientsCount === 1) {
-      this.startTickerInterval();
-    }
   }
 
   handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected: ${client.id}`);
-    // Stop the ticker interval if no clients are connected
-    if (this.server.engine.clientsCount === 0) {
-      this.stopTickerInterval();
-    }
-    // Stop any orderbook intervals for rooms that are now empty
-    this.orderbookIntervals.forEach((interval, market) => {
-      const room = this.server.sockets.adapter.rooms.get(market);
-      if (!room || room.size === 0) {
-        clearInterval(interval);
-        this.orderbookIntervals.delete(market);
-        this.logger.log(`Stopped orderbook interval for market: ${market}`);
-      }
-    });
+    this.tickerHandler.checkAndStopIfUnused();
+    // 클라이언트가 떠난 후 모든 구독을 중지
+    // 각 구독은 해당 클라이언트가 떠난 후 룸이 비었는지 확인 후 중지
+    // 따라서 removeClientFromAllRooms 대신 handler의 unsubscribe를 호출해야 함.
+    // 하지만 지금은 전체 인터벌을 중지하는 로직만 남겨둠.
+
+    // 모든 인터벌의 활성 상태를 주기적으로 점검하고 필요 시 중지
+    this.checkAndStopUnusedIntervals();
+  }
+
+  @SubscribeMessage('subscribeTicker')
+  async handleSubscribeTicker(client: Socket): Promise<void> {
+    await this.tickerHandler.subscribe(client);
+  }
+
+  @SubscribeMessage('unsubscribeTicker')
+  handleUnsubscribeTicker(client: Socket): void {
+    this.tickerHandler.unsubscribe(client);
   }
 
   @SubscribeMessage('subscribeOrderbook')
-  handleSubscribeOrderbook(client: Socket, market: string): void {
-    if (!market) return;
-    this.logger.log(
-      `Client ${client.id} subscribed to orderbook for ${market}`,
-    );
-    client.join(market);
-
-    // Start a new interval if one doesn't exist for this market
-    if (!this.orderbookIntervals.has(market)) {
-      this.logger.log(`Starting orderbook interval for market: ${market}`);
-      const interval = setInterval(async () => {
-        try {
-          const orderbook = await this.orderbookService.fetchOrderbook([
-            { market: market as MarketQueryParams['market'] },
-          ]);
-          this.server.to(market).emit('orderbookUpdate', orderbook);
-        } catch (error) {
-          this.logger.error(
-            `Failed to fetch orderbook for ${market}`,
-            error.stack,
-          );
-          this.server.to(market).emit('error', {
-            message: `Failed to fetch orderbook for ${market}`,
-            error: error.message,
-          });
-        }
-      }, 1000);
-      this.orderbookIntervals.set(market, interval);
-    }
+  handleSubscribeOrderbook(
+    client: Socket,
+    market: MarketQueryParams['market'],
+  ): void {
+    this.orderbookHandler.subscribe(client, market);
   }
 
   @SubscribeMessage('unsubscribeOrderbook')
-  handleUnsubscribeOrderbook(client: Socket, market: string): void {
-    if (!market) return;
-    this.logger.log(
-      `Client ${client.id} unsubscribed from orderbook for ${market}`,
-    );
-    client.leave(market);
-
-    // If the room is empty, stop the interval
-    const room = this.server.sockets.adapter.rooms.get(market);
-    if (!room || room.size === 0) {
-      const interval = this.orderbookIntervals.get(market);
-      if (interval) {
-        clearInterval(interval);
-        this.orderbookIntervals.delete(market);
-        this.logger.log(`Stopped orderbook interval for market: ${market}`);
-      }
-    }
+  handleUnsubscribeOrderbook(
+    client: Socket,
+    market: MarketQueryParams['market'],
+  ): void {
+    this.orderbookHandler.unsubscribe(client, market);
   }
 
-  private startTickerInterval(): void {
-    if (this.tickerInterval) return;
-    this.logger.log('Starting ticker interval...');
-    this.tickerInterval = setInterval(async () => {
-      try {
-        const tickers = await this.tickerService.fetchTickers();
-        this.server.emit('tickerUpdate', tickers);
-      } catch (error) {
-        this.logger.error('Failed to fetch tickers for websocket', error.stack);
-        this.server.emit('error', {
-          message: 'Failed to fetch tickers',
-          error: error.message,
-        });
-      }
-    }, 1000);
+  @SubscribeMessage('subscribeCandle')
+  handleSubscribeCandle(
+    client: Socket,
+    market: MarketQueryParams['market'],
+  ): void {
+    this.candleHandler.subscribe(client, market);
   }
 
-  private stopTickerInterval(): void {
-    if (this.tickerInterval) {
-      clearInterval(this.tickerInterval);
-      this.tickerInterval = null;
-      this.logger.log('Stopped ticker interval as no clients are connected.');
-    }
+  @SubscribeMessage('unsubscribeCandle')
+  handleUnsubscribeCandle(
+    client: Socket,
+    market: MarketQueryParams['market'],
+  ): void {
+    this.candleHandler.unsubscribe(client, market);
+  }
+
+  private checkAndStopUnusedIntervals(): void {
+    this.tickerHandler.checkAndStopIfUnused();
+    this.orderbookHandler.checkAndStopIfUnused();
+    this.candleHandler.checkAndStopIfUnused();
   }
 }

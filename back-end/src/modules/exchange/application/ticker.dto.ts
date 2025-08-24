@@ -2,6 +2,8 @@ export class TickerDto {
   market: string; // 종목 코드
   trade_date: string; // 최근 거래 일자(UTC)
   trade_time: string; // 최근 거래 시각(UTC)
+  trade_date_kst: string; // 최근 거래 일자(KST)
+  trade_time_kst: string; // 최근 거래 시각(KST)
   trade_timestamp: number; // 최근 거래 타임스탬프
   opening_price: number; // 시가
   high_price: number; // 고가

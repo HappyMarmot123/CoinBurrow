@@ -19,21 +19,22 @@ export class OrderbookService {
 
   constructor(private readonly upbitApiService: UpbitApiService) {}
 
-  async fetchOrderbook(markets: MarketQueryParams[]): Promise<OrderbookDto[]> {
-    if (!markets || markets.length === 0) {
+  async fetchOrderbook(
+    market: MarketQueryParams['market'],
+  ): Promise<OrderbookDto[]> {
+    if (!market) {
       this.logger.warn('No markets provided to fetch orderbook.');
       return [];
     }
     try {
-      const marketCodes = markets.map((m) => m.market).join(',');
       const response = await this.upbitApiService.instance.get<OrderbookDto[]>(
-        `/orderbook?markets=${marketCodes}&count=${this.DEFAULT_COUNT}`,
+        `/orderbook?markets=${market}&count=${this.DEFAULT_COUNT}`,
       );
       return response.data;
     } catch (error) {
       const { status, message } = parseUpbitError(
         error,
-        `Orderbook for ${markets.map((m) => m.market).join(', ')}`,
+        `Orderbook for ${market}`,
       );
       switch (status) {
         case 400:

@@ -11,6 +11,7 @@ import { UpbitApiService } from '@/shared/services/upbit-api.service';
 import { MarketService } from '@/modules/market/domain/services/market.service';
 import { TickerDto } from '../../application/ticker.dto';
 import { parseUpbitError } from '@/shared/utils/parse-upbit-error';
+import { MarketQueryParams } from '@/modules/exchange/application/exchange.dto';
 
 @Injectable()
 export class TickerService {
@@ -21,7 +22,9 @@ export class TickerService {
     private readonly marketService: MarketService,
   ) {}
 
-  async fetchTickers(): Promise<TickerDto[]> {
+  async fetchTickers(
+    market?: MarketQueryParams['market'],
+  ): Promise<TickerDto[]> {
     try {
       let markets = await this.marketService.getMarkets();
       if (!markets || markets.length === 0) {
@@ -34,7 +37,15 @@ export class TickerService {
         return [];
       }
 
-      const marketCodes = markets.map((m) => m.market).join(',');
+      let targetMarkets = markets;
+      if (market) {
+        targetMarkets = markets.filter((m) => m.market === market);
+        if (targetMarkets.length === 0) {
+          throw new BadRequestException(`Market ${market} not found.`);
+        }
+      }
+
+      const marketCodes = targetMarkets.map((m) => m.market).join(',');
       const response = await this.upbitApiService.instance.get<TickerDto[]>(
         `/ticker?markets=${marketCodes}`,
       );
