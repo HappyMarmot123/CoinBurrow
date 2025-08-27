@@ -1,11 +1,8 @@
 import {
   WebSocketGateway,
-  SubscribeMessage,
-  MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
   WebSocketServer,
-  ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
@@ -17,6 +14,8 @@ export class AuthGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private readonly logger = new Logger(AuthGateway.name);
   private clients: Map<string, Socket> = new Map();
+
+  constructor() {}
 
   handleConnection(client: Socket) {
     const sessionToken = client.handshake.query.sessionToken as string;
@@ -46,7 +45,7 @@ export class AuthGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  sendTokenToClient(
+  async sendTokenToClient(
     sessionToken: string,
     tokens: { accessToken: string; refreshToken: string },
   ) {

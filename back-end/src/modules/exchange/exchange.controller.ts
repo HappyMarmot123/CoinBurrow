@@ -3,6 +3,7 @@ import { TickerService } from './domain/services/ticker.service';
 import { CandleService } from './domain/services/candle.service';
 import { OrderbookService } from './domain/services/orderbook.service';
 import { MarketQueryParams } from './application/exchange.dto';
+import { TradeTicksService } from './domain/services/trade-ticks.service';
 
 @Controller('market/exchange')
 export class ExchangeController {
@@ -10,6 +11,7 @@ export class ExchangeController {
     private readonly tickerService: TickerService,
     private readonly candleService: CandleService,
     private readonly orderbookService: OrderbookService,
+    private readonly tradeTicksService: TradeTicksService,
   ) {}
 
   @Get('ticker')
@@ -26,5 +28,10 @@ export class ExchangeController {
   @Get('orderbook')
   async getOrderbook(@Query('market') market: MarketQueryParams['market']) {
     return await this.orderbookService.fetchOrderbook(market);
+  }
+
+  @Get('trade-ticks')
+  async getTradeTicks(@Query('market') market: MarketQueryParams['market']) {
+    return await this.tradeTicksService.fetchTradeTicks(market);
   }
 }

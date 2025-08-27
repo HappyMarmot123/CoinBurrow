@@ -13,6 +13,7 @@ import { OrderbookService } from '../../domain/services/orderbook.service';
 import { CandleService } from '../../domain/services/candle.service';
 import { MarketQueryParams } from '../exchange.dto';
 import { SubscriptionHandler } from './subscription.handler';
+import { TradeTicksService } from '../../domain/services/trade-ticks.service';
 
 @WebSocketGateway({
   namespace: '/exchange',
@@ -26,11 +27,13 @@ export class ExchangeGateway
   private tickerHandler: SubscriptionHandler;
   private orderbookHandler: SubscriptionHandler;
   private candleHandler: SubscriptionHandler;
+  private tradeTicksHandler: SubscriptionHandler;
 
   constructor(
     private readonly tickerService: TickerService,
     private readonly orderbookService: OrderbookService,
     private readonly candleService: CandleService,
+    private readonly tradeTicksService: TradeTicksService,
   ) {}
 
   afterInit(server: Server) {
@@ -58,22 +61,27 @@ export class ExchangeGateway
       fetchFunction: this.candleService.fetchCandles.bind(this.candleService),
       isMarketSpecific: true,
     });
+    this.tradeTicksHandler = new SubscriptionHandler(this.server, this.logger, {
+      roomPrefix: 'tradeTicks',
+      emitEventName: 'tradeTicksUpdate',
+      intervalDuration: 1000,
+      fetchFunction: this.tradeTicksService.fetchTradeTicks.bind(
+        this.tradeTicksService,
+      ),
+      isMarketSpecific: true,
+    });
   }
 
   handleConnection(client: Socket, ...args: any[]) {
-    this.logger.log(`Client connected: ${client.id}`);
+    this.logger.log(`Client connected [exchange]: ${client.id}`);
   }
 
   handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected: ${client.id}`);
     this.tickerHandler.checkAndStopIfUnused();
-    // 클라이언트가 떠난 후 모든 구독을 중지
-    // 각 구독은 해당 클라이언트가 떠난 후 룸이 비었는지 확인 후 중지
-    // 따라서 removeClientFromAllRooms 대신 handler의 unsubscribe를 호출해야 함.
-    // 하지만 지금은 전체 인터벌을 중지하는 로직만 남겨둠.
-
-    // 모든 인터벌의 활성 상태를 주기적으로 점검하고 필요 시 중지
-    this.checkAndStopUnusedIntervals();
+    this.orderbookHandler.checkAndStopIfUnused();
+    this.candleHandler.checkAndStopIfUnused();
+    this.tradeTicksHandler.checkAndStopIfUnused();
   }
 
   @SubscribeMessage('subscribeTicker')
@@ -118,9 +126,26 @@ export class ExchangeGateway
     this.candleHandler.unsubscribe(client, market);
   }
 
+  @SubscribeMessage('subscribeTradeTicks')
+  handleSubscribeTradeTicks(
+    client: Socket,
+    market: MarketQueryParams['market'],
+  ): void {
+    this.tradeTicksHandler.subscribe(client, market);
+  }
+
+  @SubscribeMessage('unsubscribeTradeTicks')
+  handleUnsubscribeTradeTicks(
+    client: Socket,
+    market: MarketQueryParams['market'],
+  ): void {
+    this.tradeTicksHandler.unsubscribe(client, market);
+  }
+
   private checkAndStopUnusedIntervals(): void {
     this.tickerHandler.checkAndStopIfUnused();
     this.orderbookHandler.checkAndStopIfUnused();
     this.candleHandler.checkAndStopIfUnused();
+    this.tradeTicksHandler.checkAndStopIfUnused();
   }
 }

@@ -3,7 +3,7 @@ import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { Market } from '../../application/market.dto';
 import { UpbitApiService } from '@/shared/services/upbit-api.service';
-import { TARGET_COINS } from '@/shared/constants/market.constants';
+import { CoinSymbol, TARGET_COINS } from '@/shared/constants/market.constants';
 import { Cache } from 'cache-manager';
 
 @Injectable()
@@ -35,7 +35,7 @@ export class MarketService implements OnModuleInit {
   }
 
   private async fetchAndCacheMarkets(): Promise<Market[]> {
-    const targetMarkets = TARGET_COINS.map((coin) => `KRW-${coin}`);
+    const targetMarkets: Set<CoinSymbol> = TARGET_COINS;
     try {
       const allMarkets = await this.upbitApiService.instance.get<Market[]>(
         `/market/all?is_details=true`,
@@ -44,7 +44,7 @@ export class MarketService implements OnModuleInit {
         throw new Error('Failed to fetch all markets from Upbit');
       }
       const selectedMarkets = allMarkets.data.filter((market) =>
-        targetMarkets.includes(market.market),
+        targetMarkets.has(market.market as CoinSymbol),
       );
       await this.cacheManager.set('markets', selectedMarkets);
       return selectedMarkets;

@@ -1,8 +1,7 @@
 import { IsIn } from 'class-validator';
 import { TARGET_COINS } from '@/shared/constants/market.constants';
 
-const SUPPORTED_MARKETS = TARGET_COINS.map((coin) => `KRW-${coin}`);
-
+const SUPPORTED_MARKETS = Array.from(TARGET_COINS);
 export class MarketQueryParams {
   @IsIn(SUPPORTED_MARKETS, {
     message: (args) =>
