@@ -2,7 +2,7 @@
 
 import React, { createContext, useState, useContext, ReactNode } from "react";
 
-export type ModalName = "signup" | "qrForm";
+export type ModalName = "signup" | "qrForm" | "marketList";
 
 type ModalState = {
   [key in ModalName]?: boolean;

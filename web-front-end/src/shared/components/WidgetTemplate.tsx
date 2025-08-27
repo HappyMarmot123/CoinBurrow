@@ -4,6 +4,8 @@ export default function WidgetTemplate({
   children: React.ReactNode;
 }) {
   return (
-    <div className="widget-template min-h-[100dvh] p-8 mx-auto">{children}</div>
+    <div className="widget-template w-[1400px] min-h-[100dvh] mx-auto">
+      {children}
+    </div>
   );
 }

@@ -3,6 +3,8 @@ import React from "react";
 import { Toaster } from "sonner";
 import { headers } from "next/headers";
 import AuthStoreInitializer from "@/app/store/AuthStoreInitializer";
+import { ModalProvider } from "@/shared/contexts/ModalContext";
+import { Modal } from "@/features/auth/ui";
 
 type LayoutWidgetProps = {
   children: React.ReactNode;
@@ -16,8 +18,11 @@ export const LayoutWidget = async ({ children }: LayoutWidgetProps) => {
     <>
       <AuthStoreInitializer isLoggedIn={isLoggedIn} />
       <Toaster richColors closeButton />
-      <Header />
-      <main>{children}</main>
+      <ModalProvider>
+        <Header />
+        <Modal />
+        <main>{children}</main>
+      </ModalProvider>
     </>
   );
 };

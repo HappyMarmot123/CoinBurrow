@@ -19,6 +19,10 @@
   }
 }
 
+body {
+  background: linear-gradient(to bottom right, #111827, #1f2937);
+}
+
 a {
   color: inherit;
   text-decoration: none;
