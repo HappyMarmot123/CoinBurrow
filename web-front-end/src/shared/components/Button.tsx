@@ -2,7 +2,7 @@ import React from "react";
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primaryGreen" | "primaryGold" | "secondary";
-  size?: "small" | "large";
+  size?: "small" | "medium" | "large";
 };
 
 export const Button = ({
@@ -12,18 +12,19 @@ export const Button = ({
   ...props
 }: ButtonProps) => {
   const baseStyle =
-    "rounded-md font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors";
+    "rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors";
   const variantStyles = {
     primaryGreen:
-      "bg-[#8cb37a] text-white hover:bg-[#7da06d] focus:ring-[#8cb37a]",
+      "bg-[#5f8d4e] text-white hover:bg-[#4c7a3b] focus:ring-[#5f8d4e]",
     primaryGold:
       "bg-[#ddb650] text-white hover:bg-[#c7a448] focus:ring-[#ddb650]",
     secondary:
       "bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-gray-500",
   };
   const sizeStyles = {
-    small: "px-4 py-2",
-    large: "px-8 py-[0.8rem]",
+    small: "px-3 py-1",
+    medium: "px-4 py-2 text-lg",
+    large: "px-8 py-[0.8rem] text-xl font-semibold",
   };
 
   return (

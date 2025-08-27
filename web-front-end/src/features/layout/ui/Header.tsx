@@ -5,6 +5,8 @@ import React, { memo, useRef } from "react";
 import { Logo } from "@/features/layout/components/Logo";
 import { MenuList } from "@/features/layout/components/MenuList";
 import { RightInterface } from "@/features/layout/components/RightInterface";
+import { AuthButtons } from "@/features/layout/components/AuthButtons";
+import { AuthGuard } from "@/shared/components/AuthGuard";
 
 export const Header = memo(() => {
   const headerRef = useRef<HTMLElement>(null);
@@ -12,19 +14,26 @@ export const Header = memo(() => {
   useHeader(headerRef);
 
   return (
-    <header ref={headerRef} className="fixed top-0 left-0 right-0 z-30">
-      <section className="px-8 h-16 grid grid-cols-10 items-center">
-        <div className="col-span-2">
-          <Logo />
-        </div>
-        <div className="col-span-5">
-          <MenuList />
-        </div>
-        <div className="col-span-3 flex justify-end">
-          <RightInterface />
-        </div>
-      </section>
-    </header>
+    <>
+      <header ref={headerRef} className="fixed top-0 left-0 right-0 z-30">
+        <section className="px-8 h-16 grid grid-cols-10 items-center">
+          <div className="col-span-2">
+            <Logo />
+          </div>
+          <div className="col-span-5">
+            <AuthGuard>
+              <MenuList />
+            </AuthGuard>
+          </div>
+          <div className="col-span-3 flex justify-end gap-4">
+            <AuthGuard>
+              <RightInterface />
+            </AuthGuard>
+            <AuthButtons />
+          </div>
+        </section>
+      </header>
+    </>
   );
 });
 
