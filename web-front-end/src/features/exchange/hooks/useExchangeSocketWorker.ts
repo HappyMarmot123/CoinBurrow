@@ -1,6 +1,10 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useExchangeStore } from "@/app/store/useExchangeStore";
-import { WorkerCommand, WorkerResponse } from "@/shared/types/socket";
+import {
+  WorkerCommand,
+  WorkerResponse,
+  SocketNamespace,
+} from "@/shared/types/socket"; // SocketNamespace import 추가
 
 export function useExchangeSocketWorker() {
   const worker = useRef<Worker | null>(null);
@@ -9,6 +13,7 @@ export function useExchangeSocketWorker() {
     updateTickerData,
     updateCandleData,
     updateOrderbookData,
+    updateMarketData,
   } = useExchangeStore((state) => state.actions);
 
   useEffect(() => {
@@ -18,7 +23,7 @@ export function useExchangeSocketWorker() {
     worker.current = workerInstance;
 
     workerInstance.onmessage = (event: MessageEvent<WorkerResponse>) => {
-      const { type } = event.data;
+      const { type, payload } = event.data; // payload 구조 분해 할당
       switch (type) {
         case "CONNECTED":
           setConnected(true);
@@ -27,34 +32,22 @@ export function useExchangeSocketWorker() {
           setConnected(false);
           break;
         case "TICKER_UPDATE": {
-          const { payload } = event.data as Extract<
-            WorkerResponse,
-            { type: "TICKER_UPDATE" }
-          >;
-          updateTickerData(payload);
+          updateTickerData(payload.data);
           break;
         }
         case "ORDERBOOK_UPDATE": {
-          const { payload } = event.data as Extract<
-            WorkerResponse,
-            { type: "ORDERBOOK_UPDATE" }
-          >;
-          updateOrderbookData(payload);
+          updateOrderbookData(payload.data);
           break;
         }
         case "CANDLE_UPDATE": {
-          const { payload } = event.data as Extract<
-            WorkerResponse,
-            { type: "CANDLE_UPDATE" }
-          >;
-          updateCandleData(payload);
+          updateCandleData(payload.data);
+          break;
+        }
+        case "MARKET_DATA_UPDATE": {
+          updateMarketData(payload.data);
           break;
         }
         case "ERROR": {
-          const { payload } = event.data as Extract<
-            WorkerResponse,
-            { type: "ERROR" }
-          >;
           console.error("Socket Worker Error:", payload.message);
           break;
         }
@@ -62,54 +55,81 @@ export function useExchangeSocketWorker() {
     };
 
     return () => {
-      workerInstance.postMessage({ type: "DISCONNECT" } as WorkerCommand);
+      workerInstance.postMessage({
+        type: "DISCONNECT",
+        payload: { namespace: "/exchange" },
+      } as WorkerCommand);
       workerInstance.terminate();
     };
-  }, [setConnected, updateTickerData, updateCandleData, updateOrderbookData]);
+  }, [
+    setConnected,
+    updateTickerData,
+    updateCandleData,
+    updateOrderbookData,
+    updateMarketData,
+  ]); // updateMarketData 의존성 추가
 
-  const connect = useCallback(() => {
+  // connect 함수 수정: namespace만 인자로 받도록 변경
+  const connect = useCallback((namespace: SocketNamespace) => {
     worker.current?.postMessage({
       type: "CONNECT",
+      payload: { namespace, url: process.env.NEXT_PUBLIC_WEBSOCKET_URL },
     } as WorkerCommand);
   }, []);
 
   const subscribeOrderbook = useCallback((market: string) => {
     worker.current?.postMessage({
       type: "SUBSCRIBE_ORDERBOOK",
-      payload: { market },
+      payload: { namespace: "/exchange", market },
     } as WorkerCommand);
   }, []);
 
   const unsubscribeOrderbook = useCallback((market: string) => {
     worker.current?.postMessage({
       type: "UNSUBSCRIBE_ORDERBOOK",
-      payload: { market },
+      payload: { namespace: "/exchange", market },
     } as WorkerCommand);
   }, []);
 
   const subscribeCandle = useCallback((market: string) => {
     worker.current?.postMessage({
       type: "SUBSCRIBE_CANDLE",
-      payload: { market },
+      payload: { namespace: "/exchange", market },
     } as WorkerCommand);
   }, []);
 
   const unsubscribeCandle = useCallback((market: string) => {
     worker.current?.postMessage({
       type: "UNSUBSCRIBE_CANDLE",
-      payload: { market },
+      payload: { namespace: "/exchange", market },
     } as WorkerCommand);
   }, []);
 
   const subscribeTicker = useCallback(() => {
     worker.current?.postMessage({
       type: "SUBSCRIBE_TICKER",
+      payload: { namespace: "/exchange" },
     } as WorkerCommand);
   }, []);
 
   const unsubscribeTicker = useCallback(() => {
     worker.current?.postMessage({
       type: "UNSUBSCRIBE_TICKER",
+      payload: { namespace: "/exchange" },
+    } as WorkerCommand);
+  }, []);
+
+  const subscribeMarketData = useCallback(() => {
+    worker.current?.postMessage({
+      type: "SUBSCRIBE_MARKET_DATA",
+      payload: { namespace: "/market" },
+    } as WorkerCommand);
+  }, []);
+
+  const unsubscribeMarketData = useCallback(() => {
+    worker.current?.postMessage({
+      type: "UNSUBSCRIBE_MARKET_DATA",
+      payload: { namespace: "/market" },
     } as WorkerCommand);
   }, []);
 
@@ -121,5 +141,7 @@ export function useExchangeSocketWorker() {
     unsubscribeCandle,
     subscribeTicker,
     unsubscribeTicker,
+    subscribeMarketData,
+    unsubscribeMarketData,
   };
 }

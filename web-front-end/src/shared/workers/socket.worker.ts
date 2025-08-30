@@ -1,81 +1,125 @@
 import io from "socket.io-client";
-import { fromEvent, merge } from "rxjs";
+import { fromEvent, merge, Subscription } from "rxjs"; // Subscription import 추가
 import { tap } from "rxjs/operators";
 
 type Socket = ReturnType<typeof io>;
 
-import { WorkerCommand, WorkerResponse } from "@/shared/types/socket";
+import {
+  WorkerCommand,
+  WorkerResponse,
+  SocketNamespace,
+} from "@/shared/types/socket";
 import {
   TickerDto,
   CandleDto,
   OrderbookDto,
 } from "@/entities/market/types/types";
 
-let socket: Socket | null = null;
 const RECONNECT_DELAY = 5000;
 
-self.onmessage = (event: MessageEvent<WorkerCommand>) => {
-  const { type } = event.data;
+class SocketManager {
+  private socket: Socket | null = null;
+  private subscriptions = new Subscription();
 
-  switch (type) {
-    case "CONNECT": {
-      if (socket) {
-        socket.disconnect();
-      }
-      // Connect to the exchange namespace
-      socket = io(`${process.env.NEXT_PUBLIC_WEBSOCKET_URL}/exchange`, {
-        reconnectionAttempts: 5,
-        reconnectionDelay: RECONNECT_DELAY,
-        transports: ["websocket"],
-      });
+  constructor(private namespace: SocketNamespace, private url: string) {}
 
-      // Wrap socket.io events in RxJS Observables
-      const connect$ = fromEvent(socket, "connect").pipe(
-        tap(() => postMessage({ type: "CONNECTED" } as WorkerResponse))
-      );
-      const disconnect$ = fromEvent(socket, "disconnect").pipe(
-        tap(() => postMessage({ type: "DISCONNECTED" } as WorkerResponse))
-      );
-      const error$ = fromEvent<Error>(socket, "connect_error").pipe(
-        tap((error) =>
-          postMessage({
-            type: "ERROR",
-            payload: { message: error.message },
-          } as WorkerResponse)
-        )
-      );
-      const tickerUpdate$ = fromEvent<TickerDto[]>(socket, "tickerUpdate").pipe(
-        tap((data) => {
-          console.log("Worker received Ticker Update:", data);
-          postMessage({
-            type: "TICKER_UPDATE",
-            payload: data,
-          } as WorkerResponse);
-        })
-      );
-      const orderbookUpdate$ = fromEvent<OrderbookDto[]>(
-        socket,
-        "orderbookUpdate"
-      ).pipe(
-        tap((data) => {
-          console.log("Worker received Orderbook Update:", data);
-          postMessage({
-            type: "ORDERBOOK_UPDATE",
-            payload: data,
-          } as WorkerResponse);
-        })
-      );
-      const candleUpdate$ = fromEvent<CandleDto[]>(socket, "candleUpdate").pipe(
-        tap((data) => {
-          console.log("Worker received Candle Update:", data);
-          postMessage({
-            type: "CANDLE_UPDATE",
-            payload: data,
-          } as WorkerResponse);
-        })
-      );
+  connect() {
+    if (this.socket) {
+      this.disconnect();
+    }
+    this.socket = io(`${this.url}${this.namespace}`, {
+      reconnectionAttempts: 5,
+      reconnectionDelay: RECONNECT_DELAY,
+      transports: ["websocket"],
+    });
 
-      // Merge all observables and subscribe
+    this.setupEventListeners();
+  }
+
+  disconnect() {
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+      this.subscriptions.unsubscribe(); // 기존 구독 해제
+      this.subscriptions = new Subscription(); // 새 Subscription 객체 생성
+    }
+  }
+
+  private setupEventListeners() {
+    if (!this.socket) return;
+
+    const connect$ = fromEvent(this.socket, "connect").pipe(
+      tap(() =>
+        self.postMessage({
+          type: "CONNECTED",
+          payload: { namespace: this.namespace },
+        } as WorkerResponse)
+      )
+    );
+    const disconnect$ = fromEvent(this.socket, "disconnect").pipe(
+      tap(() =>
+        self.postMessage({
+          type: "DISCONNECTED",
+          payload: { namespace: this.namespace },
+        } as WorkerResponse)
+      )
+    );
+    const error$ = fromEvent<Error>(this.socket, "connect_error").pipe(
+      tap((error) =>
+        self.postMessage({
+          type: "ERROR",
+          payload: { namespace: this.namespace, message: error.message },
+        } as WorkerResponse)
+      )
+    );
+
+    // Ticker Update
+    const tickerUpdate$ = fromEvent<TickerDto[]>(
+      this.socket,
+      "tickerUpdate"
+    ).pipe(
+      tap((data) => {
+        // console.log(`Worker received Ticker Update (${this.namespace}):`, data);
+        self.postMessage({
+          type: "TICKER_UPDATE",
+          payload: { namespace: this.namespace, data },
+        } as WorkerResponse);
+      })
+    );
+
+    // Orderbook Update
+    const orderbookUpdate$ = fromEvent<OrderbookDto[]>(
+      this.socket,
+      "orderbookUpdate"
+    ).pipe(
+      tap((data) => {
+        // console.log(
+        //   `Worker received Orderbook Update (${this.namespace}):`,
+        //   data
+        // );
+        self.postMessage({
+          type: "ORDERBOOK_UPDATE",
+          payload: { namespace: this.namespace, data },
+        } as WorkerResponse);
+      })
+    );
+
+    // Candle Update
+    const candleUpdate$ = fromEvent<CandleDto[]>(
+      this.socket,
+      "candleUpdate"
+    ).pipe(
+      tap((data) => {
+        // console.log(`Worker received Candle Update (${this.namespace}):`, data);
+        self.postMessage({
+          type: "CANDLE_UPDATE",
+          payload: { namespace: this.namespace, data },
+        } as WorkerResponse);
+      })
+    );
+
+    // Merge all observables and subscribe
+    this.subscriptions.add(
       merge(
         connect$,
         disconnect$,
@@ -83,59 +127,76 @@ self.onmessage = (event: MessageEvent<WorkerCommand>) => {
         tickerUpdate$,
         orderbookUpdate$,
         candleUpdate$
-      ).subscribe();
+      ).subscribe()
+    );
+  }
 
+  emit(event: string, ...args: unknown[]) {
+    // any 대신 unknown[] 사용
+    this.socket?.emit(event, ...args);
+  }
+}
+
+const socketManagers = new Map<SocketNamespace, SocketManager>();
+
+self.onmessage = (event: MessageEvent<WorkerCommand>) => {
+  const { type, payload } = event.data;
+
+  switch (type) {
+    case "CONNECT": {
+      const { namespace, url } = payload;
+      let manager = socketManagers.get(namespace);
+      if (!manager) {
+        manager = new SocketManager(namespace, url);
+        socketManagers.set(namespace, manager);
+      }
+      manager.connect();
       break;
     }
 
-    case "DISCONNECT":
-      socket?.disconnect();
-      socket = null;
+    case "DISCONNECT": {
+      const { namespace } = payload;
+      const manager = socketManagers.get(namespace);
+      if (manager) {
+        manager.disconnect();
+        socketManagers.delete(namespace);
+      }
       break;
+    }
 
     case "SUBSCRIBE_ORDERBOOK": {
-      const { payload } = event.data as Extract<
-        WorkerCommand,
-        { type: "SUBSCRIBE_ORDERBOOK" }
-      >;
-      socket?.emit("subscribeOrderbook", payload.market);
+      const { namespace, market } = payload;
+      socketManagers.get(namespace)?.emit("subscribeOrderbook", market);
       break;
     }
 
     case "UNSUBSCRIBE_ORDERBOOK": {
-      const { payload } = event.data as Extract<
-        WorkerCommand,
-        { type: "UNSUBSCRIBE_ORDERBOOK" }
-      >;
-      socket?.emit("unsubscribeOrderbook", payload.market);
+      const { namespace, market } = payload;
+      socketManagers.get(namespace)?.emit("unsubscribeOrderbook", market);
       break;
     }
 
     case "SUBSCRIBE_CANDLE": {
-      const { payload } = event.data as Extract<
-        WorkerCommand,
-        { type: "SUBSCRIBE_CANDLE" }
-      >;
-      socket?.emit("subscribeCandle", payload.market);
+      const { namespace, market } = payload;
+      socketManagers.get(namespace)?.emit("subscribeCandle", market);
       break;
     }
 
     case "UNSUBSCRIBE_CANDLE": {
-      const { payload } = event.data as Extract<
-        WorkerCommand,
-        { type: "UNSUBSCRIBE_CANDLE" }
-      >;
-      socket?.emit("unsubscribeCandle", payload.market);
+      const { namespace, market } = payload;
+      socketManagers.get(namespace)?.emit("unsubscribeCandle", market);
       break;
     }
 
     case "SUBSCRIBE_TICKER": {
-      socket?.emit("subscribeTicker");
+      const { namespace } = payload;
+      socketManagers.get(namespace)?.emit("subscribeTicker");
       break;
     }
 
     case "UNSUBSCRIBE_TICKER": {
-      socket?.emit("unsubscribeTicker");
+      const { namespace } = payload;
+      socketManagers.get(namespace)?.emit("unsubscribeTicker");
       break;
     }
   }

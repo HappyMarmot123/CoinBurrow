@@ -10,7 +10,7 @@ export const Hero = () => {
     <section className="relative flex items-center justify-center py-20 min-h-screen overflow-hidden">
       <article
         aria-label="Coin 3D"
-        className="absolute top-0 left-0 w-full h-full z-[-1]"
+        className="absolute top-0 left-0 w-full h-full z-[2]"
       >
         <Spline scene="https://prod.spline.design/54XoC-XFGmLSkJ1e/scene.splinecode" />
       </article>

@@ -25,7 +25,7 @@ export interface CandleDto {
   timestamp: number; // 해당 캔들의 타임스탬프
   candle_acc_trade_price: number; // 누적 거래 금액
   candle_acc_trade_volume: number; // 누적 거래량
-  unit: number; // 분 단위
+  unit?: number; // 분 단위
 }
 
 export interface OrderbookUnit {
