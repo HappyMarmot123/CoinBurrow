@@ -4,7 +4,7 @@ import {
   WorkerCommand,
   WorkerResponse,
   SocketNamespace,
-} from "@/shared/types/socket"; // SocketNamespace import 추가
+} from "@/shared/types/socket";
 
 export function useExchangeSocketWorker() {
   const worker = useRef<Worker | null>(null);
@@ -13,6 +13,7 @@ export function useExchangeSocketWorker() {
     updateTickerData,
     updateCandleData,
     updateOrderbookData,
+    updateTradeData, // updateTradeData 추가
     updateMarketData,
   } = useExchangeStore((state) => state.actions);
 
@@ -23,7 +24,7 @@ export function useExchangeSocketWorker() {
     worker.current = workerInstance;
 
     workerInstance.onmessage = (event: MessageEvent<WorkerResponse>) => {
-      const { type, payload } = event.data; // payload 구조 분해 할당
+      const { type, payload } = event.data;
       switch (type) {
         case "CONNECTED":
           setConnected(true);
@@ -40,7 +41,13 @@ export function useExchangeSocketWorker() {
           break;
         }
         case "CANDLE_UPDATE": {
+          console.log("CANDLE_UPDATE", payload.data);
           updateCandleData(payload.data);
+          break;
+        }
+        case "TRADE_UPDATE": {
+          // TRADE_TICKS_UPDATE 추가
+          updateTradeData(payload.data);
           break;
         }
         case "MARKET_DATA_UPDATE": {
@@ -66,10 +73,10 @@ export function useExchangeSocketWorker() {
     updateTickerData,
     updateCandleData,
     updateOrderbookData,
+    updateTradeData, // updateTradeData 의존성 추가
     updateMarketData,
-  ]); // updateMarketData 의존성 추가
+  ]);
 
-  // connect 함수 수정: namespace만 인자로 받도록 변경
   const connect = useCallback((namespace: SocketNamespace) => {
     worker.current?.postMessage({
       type: "CONNECT",
@@ -77,31 +84,31 @@ export function useExchangeSocketWorker() {
     } as WorkerCommand);
   }, []);
 
-  const subscribeOrderbook = useCallback((market: string) => {
+  const subscribeOrderbook = useCallback((markets: string[]) => {
     worker.current?.postMessage({
       type: "SUBSCRIBE_ORDERBOOK",
-      payload: { namespace: "/exchange", market },
+      payload: { namespace: "/exchange", markets },
     } as WorkerCommand);
   }, []);
 
-  const unsubscribeOrderbook = useCallback((market: string) => {
+  const unsubscribeOrderbook = useCallback((markets: string[]) => {
     worker.current?.postMessage({
       type: "UNSUBSCRIBE_ORDERBOOK",
-      payload: { namespace: "/exchange", market },
+      payload: { namespace: "/exchange", markets },
     } as WorkerCommand);
   }, []);
 
-  const subscribeCandle = useCallback((market: string) => {
+  const subscribeCandle = useCallback((markets: string[]) => {
     worker.current?.postMessage({
       type: "SUBSCRIBE_CANDLE",
-      payload: { namespace: "/exchange", market },
+      payload: { namespace: "/exchange", markets },
     } as WorkerCommand);
   }, []);
 
-  const unsubscribeCandle = useCallback((market: string) => {
+  const unsubscribeCandle = useCallback((markets: string[]) => {
     worker.current?.postMessage({
       type: "UNSUBSCRIBE_CANDLE",
-      payload: { namespace: "/exchange", market },
+      payload: { namespace: "/exchange", markets },
     } as WorkerCommand);
   }, []);
 
@@ -116,6 +123,22 @@ export function useExchangeSocketWorker() {
     worker.current?.postMessage({
       type: "UNSUBSCRIBE_TICKER",
       payload: { namespace: "/exchange" },
+    } as WorkerCommand);
+  }, []);
+
+  const subscribeTrade = useCallback((markets: string[]) => {
+    // subscribeTrade 추가
+    worker.current?.postMessage({
+      type: "SUBSCRIBE_TRADE",
+      payload: { namespace: "/exchange", markets },
+    } as WorkerCommand);
+  }, []);
+
+  const unsubscribeTrade = useCallback((markets: string[]) => {
+    // unsubscribeTrade 추가
+    worker.current?.postMessage({
+      type: "UNSUBSCRIBE_TRADE",
+      payload: { namespace: "/exchange", markets },
     } as WorkerCommand);
   }, []);
 
@@ -141,6 +164,8 @@ export function useExchangeSocketWorker() {
     unsubscribeCandle,
     subscribeTicker,
     unsubscribeTicker,
+    subscribeTrade, // subscribeTrade 추가
+    unsubscribeTrade, // unsubscribeTrade 추가
     subscribeMarketData,
     unsubscribeMarketData,
   };

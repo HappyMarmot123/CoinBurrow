@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { UpbitApiService } from '@/shared/services/upbit-api.service';
-import { TradeTick } from '../../application/ticks.dto';
+import { TradeDto } from '../../application/trade.dto';
 
 @Injectable()
 export class TradeTicksService {
@@ -11,9 +11,9 @@ export class TradeTicksService {
   async fetchTradeTicks(
     market: string,
     count: number = 10,
-  ): Promise<TradeTick[]> {
+  ): Promise<TradeDto[]> {
     try {
-      const response = await this.upbitApiService.instance.get<TradeTick[]>(
+      const response = await this.upbitApiService.instance.get<TradeDto[]>(
         `/trades/ticks?market=${market}&count=${count}`,
       );
       if (response.status !== 200) {

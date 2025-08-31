@@ -15,13 +15,9 @@ import { sign } from 'jsonwebtoken';
 
 @Injectable()
 export class UpbitApiService {
-  private readonly accessKey: string;
-  private readonly secretKey: string;
   private readonly axiosInstance: AxiosInstance;
 
   constructor(private readonly configService: ConfigService) {
-    this.accessKey = this.configService.get<string>('UPBIT_ACCESS_KEY')!;
-    this.secretKey = this.configService.get<string>('UPBIT_SECRET_KEY')!;
     const apiUrl = this.configService.get<string>('UPBIT_API_URL');
 
     this.axiosInstance = rateLimit(
@@ -30,27 +26,6 @@ export class UpbitApiService {
       }),
       { maxRequests: 1, perMilliseconds: 1000 },
     );
-
-    this.axiosInstance.interceptors.request.use((config) => {
-      if (this.accessKey && this.secretKey) {
-        const payload = {
-          access_key: this.accessKey,
-          nonce: uuidv4(),
-        };
-
-        if (config.data) {
-          const query = new URLSearchParams(config.data).toString();
-          const hash = crypto.createHash('sha512');
-          const hashInHex = hash.update(query, 'utf-8').digest('hex');
-          payload['query_hash'] = hashInHex;
-          payload['query_hash_alg'] = 'SHA512';
-        }
-
-        const token = sign(payload, this.secretKey);
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-      return config;
-    });
   }
 
   get instance(): AxiosInstance {

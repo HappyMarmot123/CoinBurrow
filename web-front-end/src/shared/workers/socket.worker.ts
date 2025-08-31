@@ -13,6 +13,7 @@ import {
   TickerDto,
   CandleDto,
   OrderbookDto,
+  TradeDto,
 } from "@/entities/market/types/types";
 
 const RECONNECT_DELAY = 5000;
@@ -72,12 +73,20 @@ class SocketManager {
         } as WorkerResponse)
       )
     );
+    const generalError$ = fromEvent<Error>(this.socket, "error").pipe(
+      tap((error) =>
+        self.postMessage({
+          type: "ERROR",
+          payload: {
+            namespace: this.namespace,
+            message: `General Socket Error: ${error.message}`,
+          },
+        } as WorkerResponse)
+      )
+    );
 
     // Ticker Update
-    const tickerUpdate$ = fromEvent<TickerDto[]>(
-      this.socket,
-      "tickerUpdate"
-    ).pipe(
+    const tickerUpdate$ = fromEvent<TickerDto[]>(this.socket, "ticker").pipe(
       tap((data) => {
         // console.log(`Worker received Ticker Update (${this.namespace}):`, data);
         self.postMessage({
@@ -90,7 +99,7 @@ class SocketManager {
     // Orderbook Update
     const orderbookUpdate$ = fromEvent<OrderbookDto[]>(
       this.socket,
-      "orderbookUpdate"
+      "orderbook"
     ).pipe(
       tap((data) => {
         // console.log(
@@ -105,14 +114,21 @@ class SocketManager {
     );
 
     // Candle Update
-    const candleUpdate$ = fromEvent<CandleDto[]>(
-      this.socket,
-      "candleUpdate"
-    ).pipe(
+    const candleUpdate$ = fromEvent<CandleDto[]>(this.socket, "candle").pipe(
       tap((data) => {
-        // console.log(`Worker received Candle Update (${this.namespace}):`, data);
+        console.log(`Worker received Candle Update (${this.namespace}):`, data);
         self.postMessage({
           type: "CANDLE_UPDATE",
+          payload: { namespace: this.namespace, data },
+        } as WorkerResponse);
+      })
+    );
+
+    // Trade Ticks Update (UpbitWebSocketTrade에 해당)
+    const tradeTicksUpdate$ = fromEvent<TradeDto[]>(this.socket, "trade").pipe(
+      tap((data) => {
+        self.postMessage({
+          type: "TRADE_UPDATE",
           payload: { namespace: this.namespace, data },
         } as WorkerResponse);
       })
@@ -124,9 +140,11 @@ class SocketManager {
         connect$,
         disconnect$,
         error$,
+        generalError$,
         tickerUpdate$,
         orderbookUpdate$,
-        candleUpdate$
+        candleUpdate$,
+        tradeTicksUpdate$
       ).subscribe()
     );
   }
@@ -165,38 +183,51 @@ self.onmessage = (event: MessageEvent<WorkerCommand>) => {
     }
 
     case "SUBSCRIBE_ORDERBOOK": {
-      const { namespace, market } = payload;
-      socketManagers.get(namespace)?.emit("subscribeOrderbook", market);
+      const { namespace, markets } = payload;
+      socketManagers.get(namespace)?.emit("subscribe_orderbook", markets);
       break;
     }
 
     case "UNSUBSCRIBE_ORDERBOOK": {
-      const { namespace, market } = payload;
-      socketManagers.get(namespace)?.emit("unsubscribeOrderbook", market);
+      const { namespace, markets } = payload;
+      socketManagers.get(namespace)?.emit("unsubscribe_orderbook", markets);
       break;
     }
 
     case "SUBSCRIBE_CANDLE": {
-      const { namespace, market } = payload;
-      socketManagers.get(namespace)?.emit("subscribeCandle", market);
+      const { namespace, markets } = payload;
+      console.log("SUBSCRIBE_CANDLE", namespace, markets);
+      socketManagers.get(namespace)?.emit("subscribe_candle", markets);
       break;
     }
 
     case "UNSUBSCRIBE_CANDLE": {
-      const { namespace, market } = payload;
-      socketManagers.get(namespace)?.emit("unsubscribeCandle", market);
+      const { namespace, markets } = payload;
+      socketManagers.get(namespace)?.emit("unsubscribe_candle", markets);
       break;
     }
 
     case "SUBSCRIBE_TICKER": {
       const { namespace } = payload;
-      socketManagers.get(namespace)?.emit("subscribeTicker");
+      socketManagers.get(namespace)?.emit("subscribe_ticker");
       break;
     }
 
     case "UNSUBSCRIBE_TICKER": {
       const { namespace } = payload;
-      socketManagers.get(namespace)?.emit("unsubscribeTicker");
+      socketManagers.get(namespace)?.emit("unsubscribe_ticker");
+      break;
+    }
+
+    case "SUBSCRIBE_TRADE": {
+      const { namespace, markets } = payload;
+      socketManagers.get(namespace)?.emit("subscribe_trade", markets);
+      break;
+    }
+
+    case "UNSUBSCRIBE_TRADE": {
+      const { namespace, markets } = payload;
+      socketManagers.get(namespace)?.emit("unsubscribe_trade", markets);
       break;
     }
   }

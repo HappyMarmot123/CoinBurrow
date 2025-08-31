@@ -15,41 +15,41 @@ export interface Market {
 }
 
 export interface CandleDto {
-  market: string; // 마켓명
-  candle_date_time_utc: string; // 캔들 기준 시각(UTC)
-  candle_date_time_kst: string; // 캔들 기준 시각(KST)
+  type: string; // "candle.1m", "candle.3m" 등
+  code: string; // 마켓 코드 (예: KRW-BTC)
+  candle_date_time_utc: string; // 캔들 기준 시각(UTC 기준)
+  candle_date_time_kst: string; // 캔들 기준 시각(KST 기준)
   opening_price: number; // 시가
   high_price: number; // 고가
   low_price: number; // 저가
   trade_price: number; // 종가
-  timestamp: number; // 해당 캔들의 타임스탬프
-  candle_acc_trade_price: number; // 누적 거래 금액
   candle_acc_trade_volume: number; // 누적 거래량
+  candle_acc_trade_price: number; // 누적 거래 금액
+  timestamp: number; // 타임스탬프 (ms)
+  stream_type: "SNAPSHOT" | "REALTIME"; // 스트림 타입
   unit?: number; // 분 단위
 }
 
 export interface OrderbookUnit {
-  ask_price: number; // 매도호가
-  bid_price: number; // 매수호가
-  ask_size: number; // 매도잔량
-  bid_size: number; // 매수잔량
+  ask_price: number;
+  bid_price: number;
+  ask_size: number;
+  bid_size: number;
 }
 
 export interface OrderbookDto {
-  market: string; // 종목 코드
-  timestamp: number; // 타임스탬프
-  total_ask_size: number; // 호가 매도 총 잔량
-  total_bid_size: number; // 호가 매수 총 잔량
-  orderbook_units: OrderbookUnit[]; // 호가
+  type: "orderbook";
+  code: string;
+  timestamp: number;
+  total_ask_size: number;
+  total_bid_size: number;
+  orderbook_units: OrderbookUnit[];
+  stream_type: "SNAPSHOT" | "REALTIME";
 }
 
 export interface TickerDto {
-  market: string; // 종목 코드
-  trade_date: string; // 최근 거래 일자(UTC)
-  trade_time: string; // 최근 거래 시각(UTC)
-  trade_date_kst: string; // 최근 거래 일자(KST)
-  trade_time_kst: string; // 최근 거래 시각(KST)
-  trade_timestamp: number; // 최근 거래 타임스탬프
+  type: "ticker";
+  code: string; // 종목 코드
   opening_price: number; // 시가
   high_price: number; // 고가
   low_price: number; // 저가
@@ -61,13 +61,35 @@ export interface TickerDto {
   signed_change_price: number; // 부호 있는 전일 대비 값
   signed_change_rate: number; // 부호 있는 전일 대비 등락률
   trade_volume: number; // 가장 최근 거래량
-  acc_trade_price: number; // 24시간 누적 거래대금
   acc_trade_price_24h: number; // 24시간 누적 거래대금
-  acc_trade_volume: number; // 24시간 누적 거래량
   acc_trade_volume_24h: number; // 24시간 누적 거래량
   highest_52_week_price: number; // 52주 신고가
   highest_52_week_date: string; // 52주 신고가 달성일
   lowest_52_week_price: number; // 52주 신저가
   lowest_52_week_date: string; // 52주 신저가 달성일
+  trade_timestamp: number; // 최근 거래 타임스탬프
   timestamp: number; // 타임스탬프
+  ask_bid: "ASK" | "BID"; // 매수/매도 구분 (Trade에서 가져옴)
+  sequential_id: number; // 체결의 유일 식별자 (Trade에서 가져옴)
+  stream_type: "SNAPSHOT" | "REALTIME"; // 스트림 타입
+}
+
+// Upbit 웹소켓 Trade 데이터
+export interface TradeDto {
+  type: "trade";
+  code: string;
+  trade_price: number; // 체결 가격
+  trade_volume: number; // 체결량
+  ask_bid: "ASK" | "BID"; // 매수/매도 구분
+  sequential_id: number; // 체결의 유일 식별자
+  trade_timestamp: number; // 체결 시각 타임스탬프
+  timestamp: number; // 타임스탬프
+  stream_type: "SNAPSHOT" | "REALTIME"; // 스트림 타입
+}
+
+export interface SelectedCoin
+  extends Pick<Market, "market" | "korean_name" | "english_name"> {
+  market: string;
+  korean_name: string;
+  english_name: string;
 }

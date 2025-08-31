@@ -25,16 +25,16 @@ export const useExchangeConnection = () => {
 
   useEffect(() => {
     if (isConnected && selectedCoin) {
-      subscribeOrderbook(selectedCoin.market);
-      subscribeCandle(selectedCoin.market);
       subscribeTicker();
+      subscribeOrderbook([selectedCoin.market]);
+      subscribeCandle([selectedCoin.market]);
     }
 
     return () => {
       if (isConnected && selectedCoin) {
-        subscribeOrderbook(selectedCoin.market);
-        subscribeCandle(selectedCoin.market);
-        subscribeTicker();
+        unsubscribeTicker();
+        unsubscribeOrderbook([selectedCoin.market]);
+        unsubscribeCandle([selectedCoin.market]);
       }
     };
   }, [
