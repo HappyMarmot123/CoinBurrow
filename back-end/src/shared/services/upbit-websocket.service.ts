@@ -12,7 +12,7 @@ export class UpbitWebsocketService {
   private messageSubject = new Subject<any>();
   public messages$: Observable<any> = this.messageSubject.asObservable();
   private readonly websocketUrl: string;
-  private activeSubscriptions: Map<string, string[]> = new Map(); // 각 type별 구독 코드 목록
+  private activeSubscriptions: Map<string, string[]> = new Map();
 
   constructor(private readonly configService: ConfigService) {
     this.websocketUrl = this.configService.get<string>(
@@ -101,7 +101,7 @@ export class UpbitWebsocketService {
   }
 
   public subscribeCandle(codes: string[]): void {
-    this.activeSubscriptions.set('candle.1m', codes); // Candle 타입은 'candle.1m'으로 고정
+    this.activeSubscriptions.set('candle.1s', codes);
     this._sendConsolidatedSubscription();
   }
 
@@ -111,7 +111,7 @@ export class UpbitWebsocketService {
   }
 
   public unsubscribe(
-    type: 'ticker' | 'orderbook' | 'candle.1m' | 'trade',
+    type: 'ticker' | 'orderbook' | 'candle.1s' | 'trade',
     codes?: string[],
   ): void {
     if (!this.activeSubscriptions.has(type)) {
@@ -120,7 +120,6 @@ export class UpbitWebsocketService {
     }
 
     if (codes && codes.length > 0) {
-      // 특정 코드만 해지
       const currentCodes = this.activeSubscriptions.get(type) || [];
       const newCodes = currentCodes.filter((code) => !codes.includes(code));
       this.activeSubscriptions.set(type, newCodes);
