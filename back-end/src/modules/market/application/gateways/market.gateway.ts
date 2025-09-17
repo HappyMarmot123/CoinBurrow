@@ -6,10 +6,9 @@ import {
   SubscribeMessage,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger } from '@nestjs/common';
-import * as WebSocket from 'ws';
-import { v4 as uuidv4 } from 'uuid';
-import { TARGET_COINS } from '@/shared/constants/market.constants';
+import { Logger, Inject, forwardRef } from '@nestjs/common';
+import { Market } from '../market.dto';
+import { MarketNotificationService } from '../../domain/services/market-notification.service';
 
 @WebSocketGateway({ namespace: '/market' })
 export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -17,52 +16,21 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   server: Server;
 
   private readonly logger = new Logger(MarketGateway.name);
-  private upbitWs: WebSocket;
 
-  constructor() {
-    this.connectToUpbit();
-  }
+  constructor(
+    @Inject(forwardRef(() => MarketNotificationService))
+    private readonly marketNotificationService: MarketNotificationService,
+  ) {}
 
   handleConnection(client: Socket) {
-    this.logger.log(`Client connected: ${client.id}`);
+    this.logger.log(`Client connected [market]: ${client.id}`);
   }
 
   handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected: ${client.id}`);
   }
 
-  private connectToUpbit() {
-    this.upbitWs = new WebSocket('wss://api.upbit.com/websocket/v1');
+  sendMarketDataToClient(): void {}
 
-    this.upbitWs.on('open', () => {
-      this.logger.log('Connected to Upbit WebSocket');
-      const targetMarkets = TARGET_COINS.map((coin) => `KRW-${coin}`);
-
-      const subscribeMessage = [
-        { ticket: uuidv4() },
-        { type: 'ticker', codes: targetMarkets },
-      ];
-      this.upbitWs.send(JSON.stringify(subscribeMessage));
-    });
-
-    this.upbitWs.on('message', (data: WebSocket.Data) => {
-      const message = JSON.parse(data.toString());
-      this.server.emit('ticker', message);
-    });
-
-    this.upbitWs.on('close', () => {
-      this.logger.log('Disconnected from Upbit WebSocket. Reconnecting...');
-      setTimeout(() => this.connectToUpbit(), 1000);
-    });
-
-    this.upbitWs.on('error', (error) => {
-      this.logger.error('Upbit WebSocket error:', error);
-      this.upbitWs.close();
-    });
-  }
-
-  @SubscribeMessage('ping')
-  handlePing(client: Socket): void {
-    client.emit('pong');
-  }
+  sendNotificationUpdateToAllClients(): void {}
 }

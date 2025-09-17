@@ -13,7 +13,7 @@ export const QrForm = ({ sessionToken, onClose }: QrFormProps) => {
   const { timeLeft, formatTime } = useQrForm({ sessionToken, onClose });
 
   return (
-    <div className="flex flex-col items-center justify-center p-8 bg-white rounded-lg w-full max-w-md">
+    <article className="flex flex-col items-center justify-center p-8 bg-white rounded-lg w-full max-w-md">
       <div className="flex items-center justify-center h-40 w-40">
         <QRCodeSVG value={sessionToken} size={160} />
       </div>
@@ -40,6 +40,6 @@ export const QrForm = ({ sessionToken, onClose }: QrFormProps) => {
       >
         닫기
       </Button>
-    </div>
+    </article>
   );
 };

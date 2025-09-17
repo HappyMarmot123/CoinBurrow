@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import io from "socket.io-client";
+import { useAuthStore } from "@/app/store/useAuthStore";
 
 const EXPIRATION_TIME_IN_SECONDS = 300;
 
@@ -13,6 +14,7 @@ interface UseQrFormParams {
 export const useQrForm = ({ sessionToken, onClose }: UseQrFormParams) => {
   const [timeLeft, setTimeLeft] = useState(EXPIRATION_TIME_IN_SECONDS);
   const router = useRouter();
+  const { checkLoginStatus } = useAuthStore();
 
   useEffect(() => {
     const socket = io(`${process.env.NEXT_PUBLIC_WEBSOCKET_URL}/auth`, {
@@ -25,6 +27,7 @@ export const useQrForm = ({ sessionToken, onClose }: UseQrFormParams) => {
     socket.on("qr-login-success", (data: { accessToken: string }) => {
       const { accessToken } = data;
       Cookies.set("accessToken", accessToken, { expires: 1 });
+      checkLoginStatus();
       onClose();
       router.push("/market");
     });
@@ -34,7 +37,7 @@ export const useQrForm = ({ sessionToken, onClose }: UseQrFormParams) => {
     return () => {
       socket.disconnect();
     };
-  }, [sessionToken, router, onClose]);
+  }, [sessionToken, router, onClose, checkLoginStatus]);
 
   useEffect(() => {
     const intervalId = setInterval(() => {

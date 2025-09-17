@@ -6,7 +6,7 @@
 
 웹 워커는 웹 애플리케이션의 메인 실행 스레드와는 별도로 백그라운드에서 스크립트를 실행할 수 있게 해주는 자바스크립트 기능입니다. 이 기능을 사용하면 사용자 인터페이스(UI)를 멈추게 하는 블로킹(blocking) 없이 복잡하고 시간이 오래 걸리는 연산을 처리할 수 있습니다. 웹 워커는 새로운 전역 실행 컨텍스트에서 작동하며, 메인 스레드와는 완전히 분리되어 있습니다. 따라서 웹 워커는 **DOM(문서 객체 모델)**에 접근할 수 없습니다.
 
-RxJS는 리액티브 프로그래밍을 위한 자바스크립트 라이브러리입니다. 비동기적이거나 이벤트 기반의 데이터 스트림을 다루는 데 사용됩니다. 핵심 개념인 **Observable(관찰 가능한 객체)**을 통해 시간의 흐름에 따라 변화하는 데이터를 관리하고, 이를 구독하여 다양한 연산을 수행할 수 있게 해줍니다.
+RxJS는 이벤트를 선언적으로 Array를 다루듯이 만들 수 있는 라이브러리입니다. 비동기적이거나 이벤트 기반의 데이터 스트림을 다루는 데 사용됩니다. 핵심 개념인 **Observable(관찰 가능한 객체)**을 통해 시간의 흐름에 따라 변화하는 데이터를 관리하고, 이를 구독하여 다양한 연산을 수행할 수 있게 해줍니다.
 
 ## 2. 목표
 
@@ -82,13 +82,13 @@ RxJS는 리액티브 프로그래밍을 위한 자바스크립트 라이브러�
 
 ### Phase 1: Web Worker 설정
 
-1.  **Worker 파일 생성 (`public/socket.worker.ts`)**
+1.  **Worker 파일 생성 (`socket.worker.ts`)**
 
     - 이 파일은 웹소켓 연결, RxJS 스트림 설정, 메시지 핸들링 로직을 포함합니다.
     - `self.onmessage`를 통해 메인 스레드로부터 명령(예: `{ type: 'CONNECT', url: '...' }`)을 수신합니다.
     - `self.postMessage`를 통해 처리된 데이터를 메인 스레드로 전송합니다.
 
-2.  **타입 정의 (`src/shared/types/socket.ts`)**
+2.  **타입 정의**
 
     - 메인 스레드와 Worker 간의 통신을 위한 명확한 타입 인터페이스를 정의합니다.
 
@@ -109,13 +109,13 @@ RxJS는 리액티브 프로그래밍을 위한 자바스크립트 라이브러�
 
 ### Phase 2: Worker 내 RxJS 스트림 구현
 
-`public/socket.worker.ts` 파일 내에서 RxJS를 사용하여 웹소켓을 관리합니다.
+`socket.worker.ts` 파일 내에서 RxJS를 사용하여 웹소켓을 관리합니다.
 
 ```typescript
 // public/socket.worker.ts
 import { webSocket, WebSocketSubject } from "rxjs/webSocket";
 import { retryWhen, delay, tap } from "rxjs/operators";
-import { WorkerCommand, WorkerResponse } from "../src/shared/types/socket";
+import { WorkerCommand, WorkerResponse } from "../types";
 
 let socket$: WebSocketSubject<any> | null = null;
 
@@ -184,7 +184,7 @@ self.onmessage = (event: MessageEvent<WorkerCommand>) => {
     - 웹소켓 데이터와 연결 상태를 저장할 스토어를 생성합니다.
 
     ```typescript
-    // src/entities/market/model/useMarketStore.ts
+    // useMarketStore.ts
     import { create } from "zustand";
 
     interface MarketState {
@@ -217,7 +217,7 @@ self.onmessage = (event: MessageEvent<WorkerCommand>) => {
     - Worker로부터 받은 데이터로 Zustand 스토어를 업데이트합니다.
 
     ```typescript
-    // src/features/market/hooks/useSocketWorker.ts
+    // useSocketWorker.ts
     import { useEffect, useRef } from "react";
     import { useMarketStore } from "@/entities/market/model/useMarketStore";
     import { WorkerCommand, WorkerResponse } from "@/shared/types/socket";
@@ -281,7 +281,7 @@ self.onmessage = (event: MessageEvent<WorkerCommand>) => {
 `useSocketWorker` 훅과 `useMarketStore`를 사용하여 컴포넌트에서 실시간 데이터를 렌더링합니다.
 
 ```tsx
-// src/app/market/page.tsx
+// page.tsx
 
 const WEBSOCKET_URL = "wss://api.example.com/ws"; // 실제 웹소켓 URL 사용
 

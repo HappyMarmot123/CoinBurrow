@@ -1,7 +1,7 @@
-import { MarketWidget } from "@/widgets/market/MarketWidget";
+import { redirect } from "next/navigation";
 
 const MarketPage = () => {
-  return <MarketWidget />;
+  redirect("/market/exchange");
 };
 
 export default MarketPage;

@@ -6,7 +6,7 @@ import { Market } from './application/market.dto';
 export class MarketController {
   constructor(private readonly marketService: MarketService) {}
 
-  @Get('all')
+  @Get('coin-list')
   async getMarkets(): Promise<Market[]> {
     return this.marketService.getMarkets();
   }

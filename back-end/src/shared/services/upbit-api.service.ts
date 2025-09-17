@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance } from 'axios';
+const rateLimit = require('axios-rate-limit');
 import * as crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { sign } from 'jsonwebtoken';
@@ -14,39 +15,17 @@ import { sign } from 'jsonwebtoken';
 
 @Injectable()
 export class UpbitApiService {
-  private readonly accessKey: string;
-  private readonly secretKey: string;
   private readonly axiosInstance: AxiosInstance;
 
   constructor(private readonly configService: ConfigService) {
-    this.accessKey = this.configService.get<string>('UPBIT_ACCESS_KEY')!;
-    this.secretKey = this.configService.get<string>('UPBIT_SECRET_KEY')!;
     const apiUrl = this.configService.get<string>('UPBIT_API_URL');
 
-    this.axiosInstance = axios.create({
-      baseURL: apiUrl,
-    });
-
-    this.axiosInstance.interceptors.request.use((config) => {
-      if (this.accessKey && this.secretKey) {
-        const payload = {
-          access_key: this.accessKey,
-          nonce: uuidv4(),
-        };
-
-        if (config.data) {
-          const query = new URLSearchParams(config.data).toString();
-          const hash = crypto.createHash('sha512');
-          const hashInHex = hash.update(query, 'utf-8').digest('hex');
-          payload['query_hash'] = hashInHex;
-          payload['query_hash_alg'] = 'SHA512';
-        }
-
-        const token = sign(payload, this.secretKey);
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-      return config;
-    });
+    this.axiosInstance = rateLimit(
+      axios.create({
+        baseURL: apiUrl,
+      }),
+      { maxRequests: 1, perMilliseconds: 1000 },
+    );
   }
 
   get instance(): AxiosInstance {

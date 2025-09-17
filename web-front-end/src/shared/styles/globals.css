@@ -3,13 +3,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --highcharts-background-color: #1e2939;
+  --highcharts-color-1: #9689e6;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -20,15 +15,7 @@
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
-  background-color: #1a1a1a; /* Dark background */
-  color: #f5f5eb; /* Light text color */
+  background: linear-gradient(to bottom right, #111827, #1f2937);
 }
 
 a {
@@ -42,15 +29,30 @@ a {
   }
 }
 
-/* Add custom landing page styles */
-.landing-default-style {
+#landing-widget {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
   color: #f2f0dd;
+  background-color: #2f3b52;
 }
 
-.landing-default-style > section {
+#landing-widget > section {
   padding: 10rem 2rem;
   margin: 0 auto;
   text-align: center;
+}
+
+.widget-template {
+  background: linear-gradient(to bottom right, #111827, #1f2937);
+}
+
+.widget-template:first-of-type {
+  padding-top: 6rem;
 }
 
 h1,
@@ -77,11 +79,8 @@ button {
   border: none;
   cursor: pointer;
   font-weight: 600;
-  transition: transform 0.2s ease-in-out, background-color 0.2s ease;
-}
-
-button:hover {
-  transform: scale(1.05);
+  will-change: background-color, color;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 #noise {
@@ -102,4 +101,77 @@ button:hover {
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+.highcharts-figure {
+  margin: 0;
+}
+
+#container {
+  height: 730px;
+  margin: 0 auto;
+}
+
+.highcharts-candlestick-series .highcharts-point {
+  stroke-width: 1px;
+}
+
+.highcharts-point-down {
+  fill: #ff4242;
+  stroke: #ff4242;
+}
+
+.highcharts-candlestick-series .highcharts-point-down {
+  fill: #ff4242;
+  stroke: #ff4242;
+}
+
+.highcharts-candlestick-series .highcharts-point-up {
+  fill: #51af7b;
+  stroke: #51af7b;
+}
+
+.highcharts-point-up {
+  fill: #51af7b;
+  stroke: #51af7b;
+}
+
+.highcharts-tooltip {
+  border-radius: 8px !important;
+  padding: 4px !important;
+}
+
+.highcharts-tooltip text {
+  font-size: 12px !important;
+  color: #e0e0e0 !important;
+}
+
+.highcharts-crosshair-label text {
+  font-size: 12px;
+  color: #e0e0e0;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.highcharts-crosshair-label.highcharts-crosshair-custom-label {
+  border-radius: 3px;
+  padding: 2px 5px;
+}
+
+.highcharts-grid-line {
+  stroke: #131c28;
+}
+
+.highcharts-crosshair {
+  stroke-width: 1px;
+  stroke-dasharray: 1;
+}
+
+.highcharts-crosshair-custom {
+  stroke: white;
+  stroke-width: 1px;
+  stroke-dasharray: 4;
+}
+
+.highcharts-toggle-toolbar .highcharts-arrow-left {
+  display: none !important;
 }

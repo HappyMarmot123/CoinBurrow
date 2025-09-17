@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { ModalProvider } from "@/shared/contexts/ModalContext";
 import { LayoutWidget } from "@/widgets/layout/LayoutWidget";
 import { ReactQueryProvider } from "@/shared/providers/ReactQueryProvider";
 import "../shared/styles/globals.css";
@@ -22,10 +21,8 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <ReactQueryProvider>
-          <ModalProvider>
-            <LayoutWidget>{children}</LayoutWidget>
-            <Toaster />
-          </ModalProvider>
+          <LayoutWidget>{children}</LayoutWidget>
+          <Toaster />
         </ReactQueryProvider>
       </body>
     </html>

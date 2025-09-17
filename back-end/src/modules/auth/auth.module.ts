@@ -7,6 +7,7 @@ import { JwtAccessStrategy } from './domain/strategies/jwt-access.strategy';
 import { UserModule } from '../user/user.module';
 import { AuthController } from './auth.controller';
 import { AuthGateway } from './application/gateways/auth.gateway';
+import { MarketModule } from '../market/market.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { AuthGateway } from './application/gateways/auth.gateway';
       inject: [ConfigService],
     }),
     forwardRef(() => UserModule),
+    forwardRef(() => MarketModule),
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtAccessStrategy, AuthGateway],

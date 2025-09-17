@@ -7,4 +7,5 @@ export const configuration = () => ({
   UPBIT_ACCESS_KEY: process.env.UPBIT_ACCESS_KEY,
   UPBIT_SECRET_KEY: process.env.UPBIT_SECRET_KEY,
   UPBIT_API_URL: 'https://api.upbit.com/v1',
+  UPBIT_WEBSOCKET_URL: 'wss://api.upbit.com/websocket/v1', // 웹소켓 URL을 시세 데이터용 엔드포인트로 변경
 });
