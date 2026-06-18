@@ -3,7 +3,7 @@ import { buildUpbitSubscription, type Channel, type WorkerCommand } from "./prot
 import { createOutputStream } from "./pipeline.js";
 
 const UPBIT_WS = "wss://api.upbit.com/websocket/v1";
-const subs: Record<Channel, Set<string>> = {
+const subs: Record<string, Set<string>> = {
   ticker: new Set(),
   orderbook: new Set(),
   candle: new Set(),
@@ -48,8 +48,14 @@ function sendSubscription() {
 self.onmessage = (event: MessageEvent<WorkerCommand>) => {
   const { type, channel, markets } = event.data;
   if (type === "subscribe") {
+    if (!subs[channel]) {
+      subs[channel] = new Set();
+    }
     markets.forEach((market) => subs[channel].add(market));
   } else {
+    if (!subs[channel]) {
+      return;
+    }
     markets.forEach((market) => subs[channel].delete(market));
   }
   sendSubscription();

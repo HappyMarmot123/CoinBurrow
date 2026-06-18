@@ -5,6 +5,13 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     port: 3000,
-    proxy: { "/market": "http://localhost:4000" },
+    proxy: {
+      "/market": "http://localhost:4000",
+      "/api": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ""),
+      },
+    },
   },
 });

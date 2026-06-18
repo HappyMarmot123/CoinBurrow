@@ -9,7 +9,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   UpbitError,
   fetchCandles,
+  fetchExchangeRates,
+  fetchAvailableQuotes,
+  fetchMarketOverview,
   fetchMarkets,
+  fetchMarketSummaries,
+  fetchMarketStatus,
   fetchOrderbook,
   fetchTickers,
   fetchTradeTicks,
@@ -56,6 +61,190 @@ describe('Upbit REST client', () => {
         market: 'KRW-BTC',
         koreanName: '비트코인',
         englishName: 'Bitcoin',
+      },
+    ])
+  })
+
+  it('fetches available quote currencies with counts', async () => {
+    mockAgent
+      .get('https://api.upbit.com')
+      .intercept({
+        method: 'GET',
+        path: '/v1/market/all?isDetails=true',
+      })
+      .reply(200, [
+        {
+          market: 'KRW-BTC',
+          korean_name: '비트코인',
+          english_name: 'Bitcoin',
+          trade_currency: 'KRW',
+        },
+        {
+          market: 'USDT-ETH',
+          korean_name: '이더리움',
+          english_name: 'Ethereum',
+          trade_currency: 'USDT',
+        },
+        {
+          market: 'BTC-ETH',
+          korean_name: '이더리움',
+          english_name: 'Ethereum',
+          trade_currency: 'BTC',
+        },
+      ])
+
+    await expect(fetchAvailableQuotes()).resolves.toEqual([
+      { quote: 'KRW', marketCount: 1 },
+      { quote: 'BTC', marketCount: 1 },
+      { quote: 'USDT', marketCount: 1 },
+    ])
+  })
+
+  it('builds market overview from ticker/orderbook/status', async () => {
+    mockAgent
+      .get('https://api.upbit.com')
+      .intercept({
+        method: 'GET',
+        path: '/v1/ticker?markets=KRW-BTC',
+      })
+      .reply(200, [
+        {
+          market: 'KRW-BTC',
+          trade_price: 100_000,
+          signed_change_rate: 0.01,
+          acc_trade_price_24h: 5_000_000_000,
+        },
+      ])
+
+    mockAgent
+      .get('https://api.upbit.com')
+      .intercept({
+        method: 'GET',
+        path: '/v1/orderbook?markets=KRW-BTC',
+      })
+      .reply(200, [
+        {
+          market: 'KRW-BTC',
+          timestamp: 1_700_000_000_001,
+          orderbook_units: [
+            {
+              ask_price: 101,
+              bid_price: 100,
+              ask_size: 1.5,
+              bid_size: 2.5,
+            },
+          ],
+        },
+      ])
+
+    mockAgent
+      .get('https://api.upbit.com')
+      .intercept({
+        method: 'GET',
+        path: '/v1/market/all?isDetails=true',
+      })
+      .reply(200, [
+        {
+          market: 'KRW-BTC',
+          market_warning: 'NONE',
+        },
+      ])
+
+    await expect(fetchMarketOverview(['KRW-BTC'])).resolves.toEqual([
+      {
+        market: 'KRW-BTC',
+        ticker: {
+          market: 'KRW-BTC',
+          tradePrice: 100_000,
+          signedChangeRate: 0.01,
+          accTradePrice24h: 5_000_000_000,
+        },
+        orderbook: {
+          market: 'KRW-BTC',
+          timestamp: 1_700_000_000_001,
+          units: [
+            {
+              askPrice: 101,
+              bidPrice: 100,
+              askSize: 1.5,
+              bidSize: 2.5,
+            },
+          ],
+        },
+        status: {
+          market: 'KRW-BTC',
+          market_warning: 'NONE',
+        },
+      },
+    ])
+  })
+
+  it('fetches detailed market summaries and keeps detail fields', async () => {
+    mockAgent
+      .get('https://api.upbit.com')
+      .intercept({
+        method: 'GET',
+        path: '/v1/market/all?isDetails=true',
+      })
+      .reply(200, [
+        {
+          market: 'KRW-BTC',
+          korean_name: '비트코인',
+          english_name: 'Bitcoin',
+          market_warning: 'NONE',
+          trade_currency: 'KRW',
+        },
+        {
+          market: 'BTC-ETH',
+          korean_name: '이더리움',
+          english_name: 'Ethereum',
+        },
+      ])
+
+    await expect(fetchMarketSummaries()).resolves.toEqual([
+      {
+        market: 'KRW-BTC',
+        koreanName: '비트코인',
+        englishName: 'Bitcoin',
+        market_warning: 'NONE',
+        trade_currency: 'KRW',
+        quote: 'KRW',
+      },
+      {
+        market: 'BTC-ETH',
+        koreanName: '이더리움',
+        englishName: 'Ethereum',
+        quote: 'BTC',
+      },
+    ])
+  })
+
+  it('filters detailed market summaries by quote', async () => {
+    mockAgent
+      .get('https://api.upbit.com')
+      .intercept({
+        method: 'GET',
+        path: '/v1/market/all?isDetails=true',
+      })
+      .reply(200, [
+        {
+          market: 'KRW-BTC',
+          korean_name: '비트코인',
+          english_name: 'Bitcoin',
+        },
+        {
+          market: 'USDT-ETH',
+          korean_name: '이더리움',
+          english_name: 'Ethereum',
+        },
+      ])
+
+    await expect(fetchMarketSummaries({ quote: 'KRW', isDetails: true })).resolves.toEqual([
+      {
+        market: 'KRW-BTC',
+        koreanName: '비트코인',
+        englishName: 'Bitcoin',
+        quote: 'KRW',
       },
     ])
   })
@@ -169,6 +358,38 @@ describe('Upbit REST client', () => {
     await expect(fetchCandles('KRW-BTC&count=1', 2)).resolves.toEqual([])
   })
 
+  it('fetches candles with a configurable timeframe', async () => {
+    mockAgent
+      .get('https://api.upbit.com')
+      .intercept({
+        method: 'GET',
+        path: '/v1/candles/minutes/15?market=KRW-BTC&count=150',
+      })
+      .reply(200, [
+        {
+          market: 'KRW-BTC',
+          timestamp: 1_700_000_000_000,
+          opening_price: 99,
+          high_price: 105,
+          low_price: 95,
+          trade_price: 101,
+          candle_acc_trade_volume: 12.5,
+        },
+      ])
+
+    await expect(fetchCandles('KRW-BTC', '15m', 150)).resolves.toEqual([
+      {
+        market: 'KRW-BTC',
+        timestamp: 1_700_000_000_000,
+        open: 99,
+        high: 105,
+        low: 95,
+        close: 101,
+        volume: 12.5,
+      },
+    ])
+  })
+
   it('fetches an orderbook and normalizes its units', async () => {
     mockAgent
       .get('https://api.upbit.com')
@@ -191,7 +412,7 @@ describe('Upbit REST client', () => {
         },
       ])
 
-    await expect(fetchOrderbook('KRW-BTC')).resolves.toEqual([
+    await expect(fetchOrderbook(['KRW-BTC'])).resolves.toEqual([
       {
         market: 'KRW-BTC',
         timestamp: 1_700_000_000_000,
@@ -216,7 +437,107 @@ describe('Upbit REST client', () => {
       })
       .reply(200, [])
 
-    await expect(fetchOrderbook('KRW-BTC&count=1')).resolves.toEqual([])
+    await expect(fetchOrderbook(['KRW-BTC&count=1'])).resolves.toEqual([])
+  })
+
+  it('fetches orderbook with a custom depth level', async () => {
+    mockAgent
+      .get('https://api.upbit.com')
+      .intercept({
+        method: 'GET',
+        path: '/v1/orderbook?markets=KRW-BTC&level=5',
+      })
+      .reply(200, [
+        {
+          market: 'KRW-BTC',
+          timestamp: 1_700_000_000_000,
+          orderbook_units: [
+            {
+              ask_price: 101,
+              bid_price: 100,
+              ask_size: 1.5,
+              bid_size: 2.5,
+            },
+          ],
+        },
+      ])
+
+    await expect(fetchOrderbook(['KRW-BTC'], 5)).resolves.toEqual([
+      {
+        market: 'KRW-BTC',
+        timestamp: 1_700_000_000_000,
+        units: [
+          {
+            askPrice: 101,
+            bidPrice: 100,
+            askSize: 1.5,
+            bidSize: 2.5,
+          },
+        ],
+      },
+    ])
+  })
+
+  it('fetches multiple orderbooks in one request', async () => {
+    mockAgent
+      .get('https://api.upbit.com')
+      .intercept({
+        method: 'GET',
+        path: '/v1/orderbook?markets=KRW-BTC,KRW-ETH',
+      })
+      .reply(200, [
+        {
+          market: 'KRW-BTC',
+          timestamp: 1_700_000_000_000,
+          orderbook_units: [
+            {
+              ask_price: 101,
+              bid_price: 100,
+              ask_size: 1.5,
+              bid_size: 2.5,
+            },
+          ],
+        },
+        {
+          market: 'KRW-ETH',
+          timestamp: 1_700_000_000_000,
+          orderbook_units: [
+            {
+              ask_price: 4_5000,
+              bid_price: 4_4990,
+              ask_size: 22.5,
+              bid_size: 11.4,
+            },
+          ],
+        },
+      ])
+
+    await expect(fetchOrderbook(['KRW-BTC', 'KRW-ETH'])).resolves.toEqual([
+      {
+        market: 'KRW-BTC',
+        timestamp: 1_700_000_000_000,
+        units: [
+          {
+            askPrice: 101,
+            bidPrice: 100,
+            askSize: 1.5,
+            bidSize: 2.5,
+          },
+        ],
+      },
+      {
+        market: 'KRW-ETH',
+        timestamp: 1_700_000_000_000,
+        units: [
+          {
+            askPrice: 45000,
+            bidPrice: 44990,
+            askSize: 22.5,
+            bidSize: 11.4,
+          },
+        ],
+      },
+    ])
   })
 
   it('fetches trade ticks and normalizes their side', async () => {
@@ -257,6 +578,44 @@ describe('Upbit REST client', () => {
       .reply(200, [])
 
     await expect(fetchTradeTicks('KRW-BTC&count=1', 2)).resolves.toEqual([])
+  })
+
+  it('fetches trade ticks with a to cursor', async () => {
+    mockAgent
+      .get('https://api.upbit.com')
+      .intercept({
+        method: 'GET',
+        path: '/v1/trades/ticks?market=KRW-BTC&count=20&to=2024-01-01T00%3A00%3A00Z',
+      })
+      .reply(200, [])
+
+    await expect(fetchTradeTicks('KRW-BTC', 20, '2024-01-01T00:00:00Z')).resolves.toEqual([])
+  })
+
+  it('fetches market status from upbit', async () => {
+    mockAgent
+      .get('https://api.upbit.com')
+      .intercept({
+        method: 'GET',
+        path: '/v1/market/all?isDetails=true',
+      })
+      .reply(200, [{ market: 'KRW-BTC', market_warning: 'NONE' }])
+
+    await expect(fetchMarketStatus(['KRW-BTC'])).resolves.toEqual([
+      { market: 'KRW-BTC', market_warning: 'NONE' },
+    ])
+  })
+
+  it('fetches exchange rates', async () => {
+    mockAgent
+      .get('https://api.upbit.com')
+      .intercept({
+        method: 'GET',
+        path: '/v1/exchange-rates',
+      })
+      .reply(200, [{ currency: 'USD', base_price: '1400.5' }])
+
+    await expect(fetchExchangeRates()).resolves.toEqual([{ currency: 'USD', base_price: '1400.5' }])
   })
 
   it('rejects a trade payload with an invalid side', async () => {

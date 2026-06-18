@@ -4,18 +4,86 @@ import { z } from 'zod'
 import { config } from '../config.js'
 import {
   UpbitError,
+  fetchExchangeRates,
   fetchCandles,
   fetchMarkets,
+  fetchAvailableQuotes,
+  fetchMarketOverview,
+  fetchMarketSummaries,
   fetchOrderbook,
+  fetchMarketStatus,
   fetchTickers,
   fetchTradeTicks,
 } from '../upbit/upbitRest.js'
 
-const marketQuerySchema = z.object({
+const candleQuerySchema = z.object({
   market: z.string().trim().min(1),
+  timeframe: z.string().trim().optional(),
+  count: z.coerce.number().int().min(1).max(200).default(200),
+  to: z.string().trim().optional(),
+})
+
+const orderbookQuerySchema = z.object({
+  market: z.string().trim().optional(),
+  markets: z.string().trim().optional(),
+  level: z.coerce.number().int().min(1).max(30).optional(),
+}).refine((value) => !!value.market || !!value.markets, {
+  message: 'market is required',
+})
+
+const tradeQuerySchema = z.object({
+  market: z.string().trim().min(1),
+  count: z.coerce.number().int().min(1).max(200).default(50),
+  to: z.string().trim().optional(),
+})
+
+const marketsQuerySchema = z.object({
+  markets: z.string().trim().min(1),
+})
+
+const marketListQuerySchema = z.object({
+  quote: z.string().trim().optional(),
+  isDetails: z.coerce.boolean().optional(),
+})
+
+const optionalMarketQuerySchema = z.object({
+  markets: z.string().trim().optional(),
 })
 
 const upstreamErrorResponse = { error: 'upstream unavailable' } as const
+const missingMarketErrorMessage = 'market is required'
+const invalidMarketQueryMessage = 'invalid market query'
+const marketsRequiredMessage = 'markets is required'
+
+function normalizeQuote(quote: string | undefined): string | undefined {
+  return quote?.trim().toUpperCase()
+}
+
+function normalizeMarkets(value: string | undefined): string[] {
+  return (value ?? '')
+    .split(',')
+    .map((market) => market.trim())
+    .filter((market) => market.length > 0)
+}
+
+function replyValidationError(reply: FastifyReply, message: string) {
+  return reply.code(400).send({ error: message })
+}
+
+async function withParsedQuery<TSchema extends z.ZodTypeAny>(
+  reply: FastifyReply,
+  query: unknown,
+  schema: TSchema,
+  invalidMessage: string,
+  handler: (value: z.output<TSchema>) => Promise<unknown>,
+): Promise<unknown> {
+  const parsed = schema.safeParse(query)
+  if (!parsed.success) {
+    return replyValidationError(reply, invalidMessage)
+  }
+
+  return handler(parsed.data)
+}
 
 async function handleUpbitRequest<T>(
   reply: FastifyReply,
@@ -32,44 +100,121 @@ async function handleUpbitRequest<T>(
   }
 }
 
-function registerMarketQueryRoute<T>(
-  app: FastifyInstance,
-  path: string,
-  request: (market: string) => Promise<T>,
-): void {
-  app.get(path, async (fastifyRequest, reply) => {
-    const query = marketQuerySchema.safeParse(fastifyRequest.query)
-
-    if (!query.success) {
-      return reply.code(400).send({ error: 'market is required' })
-    }
-
-    return handleUpbitRequest(reply, () => request(query.data.market))
-  })
-}
-
 export function registerMarketRoutes(app: FastifyInstance): void {
-  app.get('/market/coin-list', async (_request, reply) =>
-    handleUpbitRequest(reply, fetchMarkets),
+  app.get('/market/coin-list', async ({ query }, reply) =>
+    withParsedQuery(
+      reply,
+      query,
+      marketListQuerySchema,
+      invalidMarketQueryMessage,
+      ({ quote, isDetails }) =>
+        handleUpbitRequest(reply, () =>
+          fetchMarkets({
+            quote: normalizeQuote(quote),
+            isDetails: isDetails ?? false,
+          }),
+        ),
+    ),
+  )
+
+  app.get('/market/exchange/quotes', async (_request, reply) =>
+    handleUpbitRequest(reply, fetchAvailableQuotes),
+  )
+
+  app.get('/market/exchange/market-overview', ({ query }, reply) =>
+    withParsedQuery(
+      reply,
+      query,
+      marketsQuerySchema,
+      marketsRequiredMessage,
+      ({ markets }) =>
+        handleUpbitRequest(reply, () => fetchMarketOverview(normalizeMarkets(markets))),
+    ),
+  )
+
+  app.get('/market/exchange/markets', ({ query }, reply) =>
+    withParsedQuery(
+      reply,
+      query,
+      marketListQuerySchema,
+      invalidMarketQueryMessage,
+      ({ quote, isDetails }) =>
+        handleUpbitRequest(reply, () =>
+          fetchMarketSummaries({
+            quote: normalizeQuote(quote),
+            isDetails: isDetails ?? true,
+          }),
+        ),
+    ),
+  )
+
+  app.get('/market/exchange/tickers', ({ query }, reply) =>
+    withParsedQuery(
+      reply,
+      query,
+      marketsQuerySchema,
+      marketsRequiredMessage,
+      ({ markets }) => handleUpbitRequest(reply, () => fetchTickers(normalizeMarkets(markets))),
+    ),
   )
 
   app.get('/market/exchange/ticker', async (_request, reply) =>
     handleUpbitRequest(reply, () => fetchTickers([...config.targetCoins])),
   )
 
-  registerMarketQueryRoute(
-    app,
-    '/market/exchange/candle',
-    fetchCandles,
+  app.get('/market/exchange/candle', (request, reply) =>
+    withParsedQuery(
+      reply,
+      request.query,
+      candleQuerySchema,
+      missingMarketErrorMessage,
+      ({ market, timeframe, count, to }) =>
+        handleUpbitRequest(
+          reply,
+          () => fetchCandles(market, timeframe, count, to),
+        ),
+    ),
   )
-  registerMarketQueryRoute(
-    app,
-    '/market/exchange/orderbook',
-    fetchOrderbook,
+
+  app.get('/market/exchange/orderbook', (request, reply) =>
+    withParsedQuery(
+      reply,
+      request.query,
+      orderbookQuerySchema,
+      missingMarketErrorMessage,
+      ({ markets, market, level }) =>
+        handleUpbitRequest(
+          reply,
+          () => fetchOrderbook(normalizeMarkets(markets ?? market), level),
+        ),
+    ),
   )
-  registerMarketQueryRoute(
-    app,
-    '/market/exchange/trade-ticks',
-    fetchTradeTicks,
+
+  app.get('/market/exchange/trade-ticks', (request, reply) =>
+    withParsedQuery(
+      reply,
+      request.query,
+      tradeQuerySchema,
+      missingMarketErrorMessage,
+      ({ market, count, to }) =>
+        handleUpbitRequest(
+          reply,
+          () => fetchTradeTicks(market, count, to),
+        ),
+    ),
+  )
+
+  app.get('/market/exchange/market-status', ({ query }, reply) =>
+    withParsedQuery(
+      reply,
+      query,
+      optionalMarketQuerySchema,
+      invalidMarketQueryMessage,
+      ({ markets }) => handleUpbitRequest(reply, () => fetchMarketStatus(normalizeMarkets(markets))),
+    ),
+  )
+
+  app.get('/market/exchange/exchange-rates', async (_request, reply) =>
+    handleUpbitRequest(reply, fetchExchangeRates),
   )
 }

@@ -5,6 +5,8 @@ import { config } from '../config.js'
 import type {
   CandleDto,
   MarketDto,
+  MarketOverviewDto,
+  QuoteSummaryDto,
   OrderbookDto,
   TickerDto,
   TradeDto,
@@ -71,6 +73,82 @@ const tradeSchema = z.array(
   }),
 )
 
+const statusSchema = z.array(z.record(z.string(), z.unknown()))
+
+const marketDetailsSchema = statusSchema
+
+const exchangeRateSchema = z.array(z.record(z.string(), z.unknown()))
+const marketSummarySchema = z.array(z.record(z.string(), z.unknown()))
+
+const candleIntervalMap = {
+  '1s': 'seconds/1',
+  '1m': 'minutes/1',
+  '3m': 'minutes/3',
+  '5m': 'minutes/5',
+  '10m': 'minutes/10',
+  '15m': 'minutes/15',
+  '30m': 'minutes/30',
+  '60m': 'minutes/60',
+  '240m': 'minutes/240',
+  '1h': 'minutes/60',
+  '4h': 'minutes/240',
+  '1d': 'days',
+  '1w': 'weeks',
+  '1mo': 'months',
+  '1y': 'years/1',
+} as const
+
+type CandleTimeframe = keyof typeof candleIntervalMap
+type QueryValue = string | undefined
+
+function resolveCandlePath(timeframe?: string): string {
+  if (!timeframe) {
+    return candleIntervalMap['1m']
+  }
+
+  const normalized = timeframe.trim() === '1M' ? '1mo' : timeframe.trim().toLowerCase()
+  if (normalized in candleIntervalMap) {
+    const key = normalized as keyof typeof candleIntervalMap
+    return candleIntervalMap[key]
+  }
+
+  throw new UpbitError(`Unsupported candle timeframe: ${timeframe}`)
+}
+
+function normalizeQuote(quote: string | undefined): string | undefined {
+  return quote?.trim().toUpperCase()
+}
+
+function normalizeMarkets(value: string[]): string[] {
+  return [...new Set(
+    value
+      .map((market) => market.trim())
+      .filter((market) => market.length > 0),
+  )]
+}
+
+function buildQueryString(overrides: Record<string, QueryValue>): string {
+  const params = new URLSearchParams()
+
+  for (const [key, value] of Object.entries(overrides)) {
+    if (typeof value === 'string' && value.trim().length > 0) {
+      params.set(key, value)
+    }
+  }
+
+  return params.toString()
+}
+
+function buildPath(path: string, overrides: Record<string, QueryValue>): string {
+  const query = buildQueryString(overrides)
+  return query ? `${path}?${query}` : path
+}
+
+interface MarketFetchOptions {
+  quote?: string
+  isDetails?: boolean
+}
+
 async function getJson<T>(
   path: string,
   schema: z.ZodType<T>,
@@ -102,16 +180,50 @@ async function getJson<T>(
   }
 }
 
-export async function fetchMarkets(): Promise<MarketDto[]> {
-  const markets = await getJson('/market/all?isDetails=false', marketSchema)
+export async function fetchMarkets(
+  options: MarketFetchOptions = { isDetails: false, quote: 'KRW' },
+): Promise<MarketDto[]> {
+  const path = buildPath('/market/all', {
+    isDetails: options.isDetails ? 'true' : 'false',
+  })
+  const markets = await getJson(path, marketSchema)
+  const quote = normalizeQuote(options.quote)
 
   return markets
-    .filter(({ market }) => market.startsWith('KRW-'))
+    .filter(({ market }) => !quote || market.startsWith(`${quote}-`))
     .map(({ market, korean_name, english_name }) => ({
       market,
       koreanName: korean_name,
       englishName: english_name,
     }))
+}
+
+export async function fetchMarketSummaries(
+  options: MarketFetchOptions = { isDetails: true },
+): Promise<Record<string, unknown>[]> {
+  const path = buildPath('/market/all', {
+    isDetails: options.isDetails ? 'true' : undefined,
+  })
+  const markets = await getJson(path, marketSummarySchema)
+  const quote = normalizeQuote(options.quote)
+
+  return markets
+    .filter((item) => typeof item.market === 'string' && (!quote || item.market.startsWith(`${quote}-`)))
+    .filter((item) => {
+      const koreanName = item.korean_name
+      const englishName = item.english_name
+      return typeof koreanName === 'string' && typeof englishName === 'string'
+    })
+    .map((item) => {
+      const { korean_name, english_name, ...rest } = item
+      return {
+        ...rest,
+        market: item.market,
+        koreanName: korean_name,
+        englishName: english_name,
+        quote: String(item.market).split('-', 2)[0] ?? '',
+      }
+    })
 }
 
 export async function fetchTickers(markets: string[]): Promise<TickerDto[]> {
@@ -135,9 +247,21 @@ export async function fetchTickers(markets: string[]): Promise<TickerDto[]> {
 
 export async function fetchCandles(
   market: string,
+  timeframeOrCount?: string | number,
   count = 200,
+  to?: string,
 ): Promise<CandleDto[]> {
-  const path = `/candles/minutes/1?market=${encodeURIComponent(market)}&count=${count}`
+  const timeframe = typeof timeframeOrCount === 'number'
+    ? '1m'
+    : timeframeOrCount ?? '1m'
+  const resolvedCount = typeof timeframeOrCount === 'number' ? timeframeOrCount : count
+
+  const candlePath = resolveCandlePath(timeframe)
+  const path = buildPath(`/candles/${candlePath}`, {
+    market,
+    count: String(resolvedCount),
+    to,
+  })
   const candles = await getJson(path, candleSchema)
 
   return candles.map(
@@ -162,10 +286,17 @@ export async function fetchCandles(
 }
 
 export async function fetchOrderbook(
-  market: string,
+  markets: string[],
+  level?: number,
 ): Promise<OrderbookDto[]> {
+  const normalizedMarkets = normalizeMarkets(markets)
+  const path = buildPath('/orderbook', {
+    markets: normalizedMarkets.join(','),
+    level: typeof level === 'number' ? String(level) : undefined,
+  })
+
   const orderbooks = await getJson(
-    `/orderbook?markets=${encodeURIComponent(market)}`,
+    path,
     orderbookSchema,
   )
 
@@ -186,8 +317,13 @@ export async function fetchOrderbook(
 export async function fetchTradeTicks(
   market: string,
   count = 50,
+  to?: string,
 ): Promise<TradeDto[]> {
-  const path = `/trades/ticks?market=${encodeURIComponent(market)}&count=${count}`
+  const path = buildPath('/trades/ticks', {
+    market,
+    count: String(count),
+    to,
+  })
   const trades = await getJson(path, tradeSchema)
 
   return trades.map(
@@ -199,4 +335,117 @@ export async function fetchTradeTicks(
       timestamp,
     }),
   )
+}
+
+export async function fetchMarketStatus(markets?: string[]): Promise<Record<string, unknown>[]> {
+  const allMarkets = await getJson('/market/all?isDetails=true', marketDetailsSchema)
+  const normalized = normalizeMarkets(markets ?? [])
+
+  if (normalized.length === 0) {
+    return allMarkets
+  }
+
+  const byMarket = new Map<string, Record<string, unknown>>()
+
+  for (const marketItem of allMarkets) {
+    const market = marketItem.market
+    if (typeof market === 'string') {
+      byMarket.set(market.toUpperCase(), marketItem)
+    }
+  }
+
+  const result: Record<string, unknown>[] = []
+
+  for (const market of normalized) {
+    const status = byMarket.get(market)
+    if (status) {
+      result.push(status)
+    }
+  }
+
+  return result
+}
+
+export async function fetchExchangeRates(): Promise<Record<string, unknown>[]> {
+  const paths = ['/exchange-rates', '/exchange-rate']
+
+  for (const path of paths) {
+    try {
+      return await getJson(path, exchangeRateSchema)
+    } catch {
+      // Try fallback endpoint.
+    }
+  }
+
+  return []
+}
+
+export async function fetchAvailableQuotes(): Promise<QuoteSummaryDto[]> {
+  const markets = await fetchMarketSummaries({ isDetails: true })
+  const quoteCounts = new Map<string, number>()
+
+  markets.forEach((item) => {
+    const market = typeof item.market === 'string' ? item.market : String(item.market)
+    const [quote] = market.split('-', 2)
+    if (quote) {
+      quoteCounts.set(quote, (quoteCounts.get(quote) ?? 0) + 1)
+    }
+  })
+
+  return [...quoteCounts.entries()]
+    .sort(([quoteA, countA], [quoteB, countB]) => {
+      if (countB !== countA) {
+        return countB - countA
+      }
+
+      if (quoteA === 'KRW' && quoteB !== 'KRW') {
+        return -1
+      }
+
+      if (quoteB === 'KRW' && quoteA !== 'KRW') {
+        return 1
+      }
+
+      return quoteA.localeCompare(quoteB)
+    })
+    .map(([quote, marketCount]) => ({ quote, marketCount }))
+}
+
+export async function fetchMarketOverview(markets: string[]): Promise<MarketOverviewDto[]> {
+  const normalized = normalizeMarkets(markets)
+
+  if (normalized.length === 0) {
+    return []
+  }
+
+  const [tickers, orderbooks, statuses] = await Promise.all([
+    fetchTickers(normalized),
+    fetchOrderbook(normalized),
+    fetchMarketStatus(normalized),
+  ])
+
+  const tickerByMarket = new Map(tickers.map((ticker) => [ticker.market, ticker]))
+  const orderbookByMarket = new Map(orderbooks.map((orderbook) => [orderbook.market, orderbook]))
+  const statusByMarket = new Map(
+    statuses
+      .map((status) => {
+        const market =
+          typeof status.market === 'string'
+            ? status.market
+            : typeof status.code === 'string'
+              ? status.code
+              : undefined
+        return market
+          ? [market, status]
+          : null
+      })
+      .filter((entry): entry is [string, Record<string, unknown>] => entry !== null),
+  )
+
+  return normalized.map((market) => ({
+    market,
+    ticker: tickerByMarket.get(market) ?? null,
+    orderbook: orderbookByMarket.get(market) ?? null,
+    status: statusByMarket.get(market) ?? null,
+  }))
 }

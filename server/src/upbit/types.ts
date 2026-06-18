@@ -4,6 +4,18 @@ export interface MarketDto {
   englishName: string
 }
 
+export interface MarketOverviewDto {
+  market: string
+  ticker: TickerDto | null
+  orderbook: OrderbookDto | null
+  status: Record<string, unknown> | null
+}
+
+export interface QuoteSummaryDto {
+  quote: string
+  marketCount: number
+}
+
 export interface TickerDto {
   market: string
   tradePrice: number

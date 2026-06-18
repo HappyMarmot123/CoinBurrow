@@ -1,4 +1,4 @@
-export type Channel = "ticker" | "orderbook" | "candle" | "trade";
+export type Channel = "ticker" | "orderbook" | "candle" | `candle.${string}` | "trade";
 
 export interface WorkerCommand {
   type: "subscribe" | "unsubscribe";
@@ -10,20 +10,36 @@ export type WorkerResponse =
   | { type: Channel; data: unknown[] }
   | { type: "status"; connected: boolean };
 
-const UPBIT_TYPE: Record<Channel, string> = {
-  ticker: "ticker",
-  orderbook: "orderbook",
-  candle: "candle.1s",
-  trade: "trade",
-};
+function normalizeCandleChannel(channel: Channel): string {
+  if (channel === "candle") return "candle.1m";
+  if (channel.startsWith("candle.")) return channel;
+  return channel;
+}
 
-export function buildUpbitSubscription(subs: Record<Channel, Set<string>>): unknown[] {
+function isUpbitSubscriptionChannel(channel: string): boolean {
+  return (
+    channel === "ticker"
+    || channel === "orderbook"
+    || channel === "trade"
+    || channel.startsWith("candle.")
+  );
+}
+
+export function buildUpbitSubscription(subs: Record<string, Set<string>>): unknown[] {
   const message: unknown[] = [{ ticket: crypto.randomUUID() }];
 
   (Object.keys(subs) as Channel[]).forEach((channel) => {
     const codes = [...subs[channel]];
     if (codes.length > 0) {
-      message.push({ type: UPBIT_TYPE[channel], codes });
+      const type = channel === "ticker"
+        || channel === "orderbook"
+        || channel === "trade"
+        ? channel
+        : normalizeCandleChannel(channel);
+
+      if (isUpbitSubscriptionChannel(type)) {
+        message.push({ type, codes });
+      }
     }
   });
 

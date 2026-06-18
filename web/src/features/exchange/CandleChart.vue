@@ -2,13 +2,28 @@
 import { computed } from "vue";
 import { Chart } from "highcharts-vue";
 import type { Options } from "highcharts";
-import * as Highcharts from "highcharts";
-import stock from "highcharts/modules/stock";
+import Highcharts from "highcharts";
+import HighchartsMore from "highcharts/highcharts-more";
+import Stock from "highcharts/modules/stock";
 import { useCandleStore } from "../../stores/candle.js";
+import type { CandleTimeframe } from "../../api/rest.js";
 
-stock(Highcharts);
+if (typeof HighchartsMore === "function") {
+  HighchartsMore(Highcharts);
+}
+if (typeof Stock === "function") {
+  Stock(Highcharts);
+}
 
 const candleStore = useCandleStore();
+const props = withDefaults(
+  defineProps<{
+    timeframe?: CandleTimeframe;
+  }>(),
+  {
+    timeframe: "1m",
+  },
+);
 const hasCandles = computed(() => candleStore.candles.length > 0);
 const lastPrice = computed(() => {
   const last = candleStore.candles[candleStore.candles.length - 1];
@@ -66,13 +81,18 @@ const chartOptions = computed<Options>(() => ({
 <template>
   <section class="chart">
     <div class="chart-head">
-      <p class="chart-title">1분봉</p>
+      <p class="chart-title">{{ props.timeframe }} 캔들</p>
       <p class="chart-sub">
-        {{ hasCandles ? `최근 ${candleCount.toLocaleString()}개 캔들` : "데이터 연결 대기" }}
+        {{ props.timeframe }} · {{ hasCandles ? `${candleCount.toLocaleString()}개 캔들` : "데이터 연결 대기" }}
       </p>
     </div>
     <p class="chart-price" v-if="lastPrice !== null">현재가 {{ lastPrice.toLocaleString() }}</p>
-    <Chart v-if="hasCandles" :options="chartOptions" :highcharts="Highcharts" />
+    <Chart
+      v-if="hasCandles"
+      :options="chartOptions"
+      :highcharts="Highcharts"
+      constructor-type="stockChart"
+    />
     <p v-else class="chart-empty">캔들 데이터를 불러오는 중입니다.</p>
   </section>
 </template>

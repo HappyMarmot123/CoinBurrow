@@ -20,7 +20,7 @@ export function useMarketSocket() {
       ticker.applyTicker(message.data as TickerView[]);
     } else if (message.type === "orderbook") {
       (message.data as OrderbookView[]).forEach((item) => orderbook.applyOrderbook(item));
-    } else if (message.type === "candle") {
+    } else if (message.type === "candle" || message.type.startsWith("candle.")) {
       (message.data as CandleView[]).forEach((item) => candle.applyCandle(item));
     } else if (message.type === "trade") {
       (message.data as TradeView[]).forEach((item) => trade.applyTrade(item));
