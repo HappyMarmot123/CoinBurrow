@@ -62,7 +62,7 @@ describe("LandingPage", () => {
       global: { stubs: { "router-link": { template: "<a><slot /></a>" }, SplineScene: true } },
     });
     const source = readFileSync(join(process.cwd(), "src/features/landing/LandingPage.vue"), "utf8");
-    const legacyStyles = readFileSync(join(process.cwd(), "src/features/landing/legacyHeroStars.css"), "utf8");
+    const legacyStyles = readFileSync(join(process.cwd(), "src/features/landing/legacyHeroStars.scss"), "utf8");
     const noiseImage = join(process.cwd(), "public/noise.webp");
 
     expect(wrapper.find("#noise").exists()).toBe(true);

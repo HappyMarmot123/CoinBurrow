@@ -2,6 +2,8 @@ import { request } from 'undici'
 import { z } from 'zod'
 
 import { config } from '../config.js'
+import { cached, clearCache } from './cache.js'
+import { normalizeMarkets, normalizeQuote } from './normalize.js'
 import type {
   CandleDto,
   MarketDto,
@@ -101,6 +103,15 @@ const candleIntervalMap = {
 type CandleTimeframe = keyof typeof candleIntervalMap
 type QueryValue = string | undefined
 
+const MARKET_DETAILS_CACHE_KEY = 'market:all:details'
+const MARKET_DETAILS_TTL_MS = 60_000
+const EXCHANGE_RATE_CACHE_KEY = 'exchange-rates'
+const EXCHANGE_RATE_TTL_MS = 30_000
+
+export function clearUpbitCacheForTest(): void {
+  clearCache()
+}
+
 function resolveCandlePath(timeframe?: string): string {
   if (!timeframe) {
     return candleIntervalMap['1m']
@@ -113,18 +124,6 @@ function resolveCandlePath(timeframe?: string): string {
   }
 
   throw new UpbitError(`Unsupported candle timeframe: ${timeframe}`)
-}
-
-function normalizeQuote(quote: string | undefined): string | undefined {
-  return quote?.trim().toUpperCase()
-}
-
-function normalizeMarkets(value: string[]): string[] {
-  return [...new Set(
-    value
-      .map((market) => market.trim())
-      .filter((market) => market.length > 0),
-  )]
 }
 
 function buildQueryString(overrides: Record<string, QueryValue>): string {
@@ -180,6 +179,14 @@ async function getJson<T>(
   }
 }
 
+function fetchMarketDetails(): Promise<Record<string, unknown>[]> {
+  return cached(
+    MARKET_DETAILS_CACHE_KEY,
+    MARKET_DETAILS_TTL_MS,
+    () => getJson('/market/all?isDetails=true', marketDetailsSchema),
+  )
+}
+
 export async function fetchMarkets(
   options: MarketFetchOptions = { isDetails: false, quote: 'KRW' },
 ): Promise<MarketDto[]> {
@@ -204,7 +211,9 @@ export async function fetchMarketSummaries(
   const path = buildPath('/market/all', {
     isDetails: options.isDetails ? 'true' : undefined,
   })
-  const markets = await getJson(path, marketSummarySchema)
+  const markets = options.isDetails
+    ? await fetchMarketDetails()
+    : await getJson(path, marketSummarySchema)
   const quote = normalizeQuote(options.quote)
 
   return markets
@@ -338,7 +347,7 @@ export async function fetchTradeTicks(
 }
 
 export async function fetchMarketStatus(markets?: string[]): Promise<Record<string, unknown>[]> {
-  const allMarkets = await getJson('/market/all?isDetails=true', marketDetailsSchema)
+  const allMarkets = await fetchMarketDetails()
   const normalized = normalizeMarkets(markets ?? [])
 
   if (normalized.length === 0) {
@@ -367,17 +376,19 @@ export async function fetchMarketStatus(markets?: string[]): Promise<Record<stri
 }
 
 export async function fetchExchangeRates(): Promise<Record<string, unknown>[]> {
-  const paths = ['/exchange-rates', '/exchange-rate']
+  return cached(EXCHANGE_RATE_CACHE_KEY, EXCHANGE_RATE_TTL_MS, async () => {
+    const paths = ['/exchange-rates', '/exchange-rate']
 
-  for (const path of paths) {
-    try {
-      return await getJson(path, exchangeRateSchema)
-    } catch {
-      // Try fallback endpoint.
+    for (const path of paths) {
+      try {
+        return await getJson(path, exchangeRateSchema)
+      } catch {
+        // Try fallback endpoint.
+      }
     }
-  }
 
-  return []
+    return []
+  })
 }
 
 export async function fetchAvailableQuotes(): Promise<QuoteSummaryDto[]> {

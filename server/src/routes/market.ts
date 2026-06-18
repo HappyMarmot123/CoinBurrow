@@ -15,6 +15,7 @@ import {
   fetchTickers,
   fetchTradeTicks,
 } from '../upbit/upbitRest.js'
+import { normalizeMarkets, normalizeQuote } from '../upbit/normalize.js'
 
 const candleQuerySchema = z.object({
   market: z.string().trim().min(1),
@@ -54,17 +55,6 @@ const upstreamErrorResponse = { error: 'upstream unavailable' } as const
 const missingMarketErrorMessage = 'market is required'
 const invalidMarketQueryMessage = 'invalid market query'
 const marketsRequiredMessage = 'markets is required'
-
-function normalizeQuote(quote: string | undefined): string | undefined {
-  return quote?.trim().toUpperCase()
-}
-
-function normalizeMarkets(value: string | undefined): string[] {
-  return (value ?? '')
-    .split(',')
-    .map((market) => market.trim())
-    .filter((market) => market.length > 0)
-}
 
 function replyValidationError(reply: FastifyReply, message: string) {
   return reply.code(400).send({ error: message })

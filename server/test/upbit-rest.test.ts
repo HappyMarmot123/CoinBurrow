@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import {
   UpbitError,
+  clearUpbitCacheForTest,
   fetchCandles,
   fetchExchangeRates,
   fetchAvailableQuotes,
@@ -25,6 +26,7 @@ describe('Upbit REST client', () => {
   let originalDispatcher: Dispatcher
 
   beforeEach(() => {
+    clearUpbitCacheForTest()
     originalDispatcher = getGlobalDispatcher()
     mockAgent = new MockAgent()
     mockAgent.disableNetConnect()
@@ -601,6 +603,23 @@ describe('Upbit REST client', () => {
       })
       .reply(200, [{ market: 'KRW-BTC', market_warning: 'NONE' }])
 
+    await expect(fetchMarketStatus(['KRW-BTC'])).resolves.toEqual([
+      { market: 'KRW-BTC', market_warning: 'NONE' },
+    ])
+  })
+
+  it('reuses cached market details for repeated market status requests', async () => {
+    mockAgent
+      .get('https://api.upbit.com')
+      .intercept({
+        method: 'GET',
+        path: '/v1/market/all?isDetails=true',
+      })
+      .reply(200, [{ market: 'KRW-BTC', market_warning: 'NONE' }])
+
+    await expect(fetchMarketStatus(['KRW-BTC'])).resolves.toEqual([
+      { market: 'KRW-BTC', market_warning: 'NONE' },
+    ])
     await expect(fetchMarketStatus(['KRW-BTC'])).resolves.toEqual([
       { market: 'KRW-BTC', market_warning: 'NONE' },
     ])

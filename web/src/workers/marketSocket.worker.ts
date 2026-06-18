@@ -1,8 +1,8 @@
 import { Subject } from "rxjs";
 import { buildUpbitSubscription, type Channel, type WorkerCommand } from "./protocol.js";
 import { createOutputStream } from "./pipeline.js";
+import { UPBIT_WS_URL } from "../constants/upbit.js";
 
-const UPBIT_WS = "wss://api.upbit.com/websocket/v1";
 const subs: Record<string, Set<string>> = {
   ticker: new Set(),
   orderbook: new Set(),
@@ -15,7 +15,7 @@ let ws: WebSocket | null = null;
 createOutputStream(raw$).subscribe((response) => self.postMessage(response));
 
 function connect() {
-  ws = new WebSocket(UPBIT_WS);
+  ws = new WebSocket(UPBIT_WS_URL);
   ws.binaryType = "arraybuffer";
   ws.onopen = () => {
     self.postMessage({ type: "status", connected: true });

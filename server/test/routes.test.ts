@@ -7,6 +7,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { buildApp } from '../src/app.js'
+import { clearUpbitCacheForTest } from '../src/upbit/upbitRest.js'
 
 const marketQueryRoutes = [
   '/market/exchange/candle',
@@ -91,6 +92,7 @@ describe('market routes', () => {
   let originalDispatcher: Dispatcher
 
   beforeEach(() => {
+    clearUpbitCacheForTest()
     originalDispatcher = getGlobalDispatcher()
     mockAgent = new MockAgent()
     mockAgent.disableNetConnect()
