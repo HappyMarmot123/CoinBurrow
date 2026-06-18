@@ -10,43 +10,43 @@ const scene =
   (import.meta.env.VITE_SPLINE_SCENE as string | undefined) ??
   "https://prod.spline.design/54XoC-XFGmLSkJ1e/scene.splinecode";
 
-const keyFeatures = [
+const marketSignals = [
   {
-    title: "🎲 위험은 제로, 재미는 무한대!",
-    description:
-      "더 이상 실제 돈을 잃을까 걱정하지 마세요. CoinBurrow에서는 넉넉한 가상 포인트를 제공합니다. 실제 코인 종목을 사고팔며 자신만의 투자 전략을 마음껏 실험하고, 투자 실력을 키워보세요.",
+    label: "Ticker",
+    title: "실시간 티커",
+    description: "주요 KRW 마켓의 현재가, 등락률, 24시간 거래대금을 빠르게 비교합니다.",
   },
   {
-    title: "⏱️ 기회는 단 30분! 전략적 베팅의 묘미",
-    description:
-      "매수 후 30분, 당신의 선택에 모든 것이 달렸습니다. 과감하게 추가 매수하여 수익을 극대화할 것인가, 안정적으로 매도하여 이익을 실현할 것인가? 매 순간 짜릿한 선택의 기로에서 최고의 전략을 펼쳐보세요.",
+    label: "Candle",
+    title: "캔들 차트",
+    description: "초기 1분봉 데이터를 불러오고 실시간 봉 업데이트로 가격 흐름을 추적합니다.",
   },
   {
-    title: "🔓 도전하고, 성취하고, 잠금 해제하라!",
-    description:
-      "처음에는 일부 메이저 코인만 거래할 수 있습니다. 게임을 플레이하며 포인트를 쌓고, 높은 승률을 기록하고, 특별 업적을 달성하면 숨겨진 알트코인들이 잠금 해제됩니다.",
-  },
-];
-
-const coachSections = [
-  {
-    title: "📊 데이터로 말하는 당신의 투자 스타일",
-    description:
-      "당신은 공격적인 단타 투자자인가요, 아니면 신중한 장기 투자자인가요? CoinBurrow는 당신의 모든 투자 기록을 정밀하게 분석하여, 자신도 몰랐던 투자 성향과 패턴을 알려주는 개인화 리포트를 제공합니다.",
+    label: "Orderbook",
+    title: "호가",
+    description: "매수와 매도 잔량을 한눈에 확인해 단기 수급 변화를 읽습니다.",
   },
   {
-    title: "🧠 AI가 짚어주는 맞춤형 투자 조언",
-    description:
-      "CoinBurrow의 AI 코치가 당신의 투자 데이터를 분석하여 강점은 강화하고 약점은 보완할 수 있도록 개인화된 피드백을 제공합니다. 게임을 즐기면서 자연스럽게 투자 지식과 통찰력을 얻어보세요.",
-  },
-  {
-    title: "📰 실시간으로 쏟아지는 가상 경제 뉴스",
-    description:
-      "CoinBurrow는 실제 코인 시장의 최신 정보를 수집하고 게임 내에 맞춤형 가상 뉴스를 생성하여 제공합니다. 실제와 같은 정보 흐름 속에서 시장을 읽는 눈을 키워보세요.",
+    label: "Trades",
+    title: "체결",
+    description: "최근 체결 방향과 거래량을 실시간으로 반영해 시장의 속도를 보여줍니다.",
   },
 ];
 
-const techStack = ["Vue 3", "Vite", "Fastify", "Pinia", "RxJS", "Highcharts", "GSAP", "Spline"];
+const streamFeatures = [
+  {
+    title: "Web Worker 직결",
+    description: "브라우저 Worker가 Upbit WebSocket에 직접 연결해 메인 스레드 부담을 줄입니다.",
+  },
+  {
+    title: "RxJS 스트림 정리",
+    description: "고빈도 ticker, orderbook, trade 메시지를 throttle하고 최신값 중심으로 합칩니다.",
+  },
+  {
+    title: "Pinia 상태 반영",
+    description: "정규화된 실시간 데이터를 화면 상태로 반영해 차트와 패널을 일관되게 갱신합니다.",
+  },
+];
 
 onMounted(() => {
   if (heroRef.value) {
@@ -78,10 +78,6 @@ onMounted(() => {
     <div id="noise" aria-hidden="true" />
 
     <section class="hero-section">
-      <article class="spline-layer" aria-label="Coin 3D">
-        <SplineScene :scene="scene" />
-      </article>
-
       <article class="container" aria-hidden="true">
         <div class="sky">
           <div class="stars" />
@@ -90,54 +86,55 @@ onMounted(() => {
           <div class="shooting_stars" />
         </div>
       </article>
-
+      <article class="hero-visual" aria-label="Coin 3D">
+        <SplineScene class="spline-layer" :scene="scene" />
+      </article>
       <article ref="heroRef" class="hero-copy">
-        <p class="eyebrow">CoinBurrow</p>
-        <h1>
-          <span>Invest Like It’s Real</span>
-          <span>But Risk-Free!</span>
-        </h1>
+        <h1 class="eyebrow">CoinBurrow</h1>
         <div class="hero-subcopy">
-          <h2>Awaken Your Inner Investor</h2>
+          <h2>Realtime Market Dashboard</h2>
           <p>
-            CoinBurrow is a simulated investment platform where you use virtual points to invest
-            in real market coins. Sharpen your strategies, discover your hidden talent, and climb
-            to the top of the rankings—all without any real-world risk!
+            Upbit 공개 시세, 캔들, 호가, 체결 흐름을 한 화면에서 모니터링합니다.
           </p>
         </div>
-        <router-link to="/exchange" class="button button-green">Get Started</router-link>
+        <div class="hero-actions">
+          <router-link to="/exchange" class="button button-green">대시보드 열기</router-link>
+        </div>
       </article>
     </section>
 
-    <section class="content-section reveal">
-      <h2>CoinBurrow, 투자를 게임처럼 즐기는 새로운 방법</h2>
+    <section id="signals" class="content-section reveal">
+      <p class="section-kicker">Live Market Signals</p>
+      <h2>필요한 시장 신호만 선명하게</h2>
+      <p class="section-lead">
+        가격, 캔들, 호가, 체결 데이터를 분산된 화면 없이 하나의 대시보드에서 읽습니다.
+      </p>
       <article class="feature-grid">
-        <div v-for="feature in keyFeatures" :key="feature.title" class="glass-card">
+        <div v-for="feature in marketSignals" :key="feature.title" class="glass-card signal-card">
+          <span>{{ feature.label }}</span>
           <h3>{{ feature.title }}</h3>
           <p>{{ feature.description }}</p>
         </div>
       </article>
     </section>
 
-    <section class="content-section reveal">
-      <h2>당신만을 위한 AI 투자 코치, CoinBurrow</h2>
-      <article class="coach-list">
-        <div v-for="section in coachSections" :key="section.title" class="glass-card coach-card">
+    <section class="content-section reveal stream-section">
+      <p class="section-kicker">Built For Fast Streams</p>
+      <h2>고빈도 시세를 가볍게 다루는 구조</h2>
+      <article class="stream-grid">
+        <div v-for="section in streamFeatures" :key="section.title" class="glass-card stream-card">
           <h3>{{ section.title }}</h3>
           <p>{{ section.description }}</p>
         </div>
       </article>
     </section>
 
-    <section class="content-section reveal">
-      <h2>현재 기술 스택으로 다시 구현된 빠른 투자 환경</h2>
-      <p class="section-lead">
-        Vue 3, Vite, Fastify, Pinia, RxJS 기반의 가벼운 구조로 실시간 시세와 대시보드를
-        안정적으로 제공합니다.
+    <section class="content-section final-cta reveal">
+      <p class="section-kicker">No Account, No Keys</p>
+      <h2>로그인 없이 바로 보는 공개 시장 데이터</h2>
+      <p>
+        API 키, 계정, DB 없이 Upbit 공개 REST와 WebSocket 데이터를 이용합니다.
       </p>
-      <article class="tech-grid" aria-label="Current tech stack">
-        <span v-for="tech in techStack" :key="tech" class="tech-pill">{{ tech }}</span>
-      </article>
     </section>
 
     <section class="features-band reveal">
@@ -148,13 +145,6 @@ onMounted(() => {
           />
         </svg>
       </article>
-      <div class="features-content">
-        <h2>아직도 망설이고 계신가요?</h2>
-        <p>
-          수만 명의 예비 투자자들이 CoinBurrow에서 자신의 가능성을 시험하고 있습니다. 지금 바로 합류하여 당신의 투자 여정을 시작하세요!
-        </p>
-        <router-link to="/exchange" class="button button-gold">Get Started</router-link>
-      </div>
     </section>
   </main>
 </template>
@@ -197,61 +187,52 @@ onMounted(() => {
 
 .hero-section {
   position: relative;
-  display: flex;
-  min-height: 100vh;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  min-height: 100svh;
+  place-items: center;
+  isolation: isolate;
   overflow: hidden;
-  padding: 80px 24px;
+  padding: clamp(56px, 8vh, 92px) 24px;
   background: #2f3b52;
 }
 
-.spline-layer {
-  position: absolute;
-  inset: 0;
-}
-
-.spline-layer {
-  z-index: 2;
-  opacity: 0.82;
-}
-
 .hero-copy {
-  position: relative;
+  position: absolute;
+  top: 50%;
+  left: 50%;
   z-index: 10;
-  width: min(980px, 100%);
+  display: grid;
+  row-gap: clamp(28px, 4vh, 44px);
+  width: min(1120px, calc(100% - 48px));
+  transform: translate(-50%, -50%);
+  justify-items: center;
   text-align: center;
   text-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
 }
 
 .eyebrow {
   display: inline-flex;
-  margin: 0 0 22px;
   background: linear-gradient(315deg, #a8d1a3, #ddb650);
   background-clip: text;
   color: transparent;
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: 0;
 }
 
 h1 {
-  display: grid;
-  gap: 8px;
-  margin: 0 0 28px;
+  margin: 0;
   color: #ffffff;
-  font-size: clamp(48px, 9vw, 92px);
+  font-size: clamp(76px, 13vw, 164px);
   font-weight: 900;
-  line-height: 0.95;
+  line-height: 0.86;
   letter-spacing: 0;
+  filter: drop-shadow(0 26px 70px rgba(0, 0, 0, 0.42));
 }
 
 .hero-subcopy {
   display: grid;
   justify-items: center;
-  gap: 16px;
-  margin-bottom: 32px;
-  padding: 24px 0 8px;
+  gap: clamp(16px, 2vh, 22px);
+  margin-bottom: 0;
+  padding: 0;
 }
 
 .hero-subcopy h2,
@@ -304,6 +285,17 @@ h1 {
   background: #4c7a3b;
 }
 
+.button-secondary {
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #f8fbff;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.button-secondary:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
 .button-gold {
   color: #ffffff;
   background: #ddb650;
@@ -311,6 +303,35 @@ h1 {
 
 .button-gold:hover {
   background: #c7a448;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.hero-visual {
+  position: absolute;
+  top: 10rem;
+  left: 50%;
+  z-index: 5;
+  width: min(980px, 92vw);
+  height: 21rem;
+  transform: translateX(-50%);
+  overflow: visible;
+  border-radius: 24px;
+  pointer-events: none;
+}
+
+.spline-layer,
+.hero-visual :deep(.spline-canvas) {
+  position: absolute;
+  bottom: auto;
+  left: 0;
+  width: 100%;
+  height: 230%;
 }
 
 .content-section {
@@ -322,9 +343,18 @@ h1 {
   text-align: center;
 }
 
+.section-kicker {
+  margin: 0 0 16px;
+  color: #a8d1a3;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .feature-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 24px;
   margin-top: 48px;
 }
@@ -353,14 +383,38 @@ h1 {
   line-height: 1.7;
 }
 
-.coach-list {
-  display: grid;
-  max-width: 920px;
-  gap: 24px;
-  margin: 48px auto 0;
+.signal-card {
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    background-color 0.2s ease;
 }
 
-.coach-card h3 {
+.signal-card:hover,
+.stream-card:hover {
+  border-color: rgba(168, 209, 163, 0.45);
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-4px);
+}
+
+.signal-card span {
+  display: inline-flex;
+  margin-bottom: 18px;
+  color: #ddb650;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.stream-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin-top: 48px;
+}
+
+.stream-card h3 {
   color: #d9f99d;
 }
 
@@ -446,40 +500,163 @@ h1 {
 
 @media (max-width: 900px) {
   .hero-section {
-    min-height: 92vh;
-    padding: 72px 20px;
+    min-height: 100svh;
+    padding: clamp(48px, 8svh, 72px) 20px clamp(36px, 7svh, 56px);
+  }
+
+  .hero-copy {
+    top: 52%;
+    row-gap: clamp(22px, 3.4vh, 34px);
+    width: min(760px, calc(100% - 40px));
+  }
+
+  h1 {
+    font-size: clamp(68px, 15vw, 124px);
+    line-height: 0.88;
+  }
+
+  .hero-subcopy {
+    gap: clamp(14px, 2svh, 20px);
+  }
+
+  .hero-subcopy h2 {
+    font-size: clamp(30px, 6vw, 42px);
+  }
+
+  .hero-subcopy p {
+    max-width: min(680px, 100%);
+    font-size: 18px;
+    line-height: 1.65;
+  }
+
+  .hero-visual {
+    top: clamp(5.5rem, 13svh, 8rem);
+    width: min(760px, 116vw);
+    height: clamp(16rem, 32svh, 20rem);
+  }
+
+  .spline-layer,
+  .hero-visual :deep(.spline-canvas) {
+    height: 220%;
   }
 
   .feature-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stream-grid {
+    grid-template-columns: 1fr;
+    max-width: 720px;
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  .content-section {
+    width: min(960px, calc(100% - 32px));
+    padding: clamp(80px, 11vw, 112px) 0;
+  }
+
+  .glass-card {
+    padding: 28px;
+  }
+}
+
+@media (max-width: 760px) {
+  .feature-grid,
+  .stream-grid {
     grid-template-columns: 1fr;
   }
 
   .content-section {
-    padding: 96px 0;
+    width: min(680px, calc(100% - 28px));
+    padding: 76px 0;
+  }
+
+  .glass-card {
+    padding: 26px;
   }
 }
 
 @media (max-width: 640px) {
+  .hero-section {
+    padding: 44px 16px 32px;
+  }
+
+  .hero-copy {
+    top: 53%;
+    row-gap: clamp(18px, 3svh, 26px);
+    width: min(520px, calc(100% - 28px));
+  }
+
   h1 {
-    font-size: clamp(42px, 16vw, 68px);
+    font-size: clamp(48px, 15.5vw, 76px);
+    line-height: 0.9;
+  }
+
+  .hero-subcopy {
+    gap: 12px;
   }
 
   .hero-subcopy h2,
   .content-section h2,
   .final-cta h2,
   .features-content h2 {
-    font-size: 32px;
+    font-size: clamp(24px, 7.5vw, 32px);
+    line-height: 1.12;
   }
 
   .hero-subcopy p,
   .section-lead,
   .final-cta p,
   .features-content p {
-    font-size: 16px;
+    font-size: 15.5px;
+    line-height: 1.65;
+  }
+
+  .button {
+    width: min(100%, 240px);
+    min-height: 52px;
+    padding: 0 18px;
   }
 
   .glass-card {
-    padding: 24px;
+    padding: 22px;
+  }
+
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-visual {
+    top: clamp(4rem, 10svh, 5.5rem);
+    width: min(132vw, 560px);
+    height: clamp(12.5rem, 30svh, 16rem);
+    border-radius: 18px;
+  }
+
+  .spline-layer,
+  .hero-visual :deep(.spline-canvas) {
+    height: 240%;
+  }
+
+  .features-band {
+    padding: 72px 18px 76px;
+  }
+
+  .wave svg {
+    height: 100px;
+  }
+}
+
+@media (max-width: 900px) and (max-height: 700px) {
+  .hero-copy {
+    top: 56%;
+    row-gap: 18px;
+  }
+
+  .hero-visual {
+    top: 3.5rem;
+    height: 12rem;
   }
 }
 </style>
