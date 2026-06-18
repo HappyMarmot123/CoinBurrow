@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd web && npm install && npm run build",
+  "buildCommand": "npm run build --workspace web",
   "outputDirectory": "web/dist",
   "rewrites": [
     { "source": "/market/(.*)", "destination": "/api/market/$1" },
