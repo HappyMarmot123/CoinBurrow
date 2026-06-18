@@ -13,6 +13,7 @@ const market = ref("KRW-BTC");
 const { subscribe, unsubscribe } = useMarketSocket();
 const marketStore = useMarketStore();
 const candleStore = useCandleStore();
+const exchangeError = ref("");
 
 const selectedMarketLabel = computed(() => {
   const current = marketStore.list.find((item) => item.market === market.value);
@@ -21,14 +22,25 @@ const selectedMarketLabel = computed(() => {
 });
 
 async function loadMarket(nextMarket: string) {
-  candleStore.setInitial(await getCandles(nextMarket));
-  subscribe("orderbook", [nextMarket]);
-  subscribe("candle", [nextMarket]);
-  subscribe("trade", [nextMarket]);
+  try {
+    candleStore.setInitial(await getCandles(nextMarket));
+    exchangeError.value = "";
+  } catch (error) {
+    candleStore.setInitial([]);
+    exchangeError.value = `캔들 로딩 실패: ${error instanceof Error ? error.message : "알 수 없는 오류"}`;
+  } finally {
+    subscribe("orderbook", [nextMarket]);
+    subscribe("candle", [nextMarket]);
+    subscribe("trade", [nextMarket]);
+  }
 }
 
 onMounted(async () => {
-  marketStore.setList(await getCoinList());
+  try {
+    marketStore.setList(await getCoinList());
+  } catch (error) {
+    exchangeError.value = `코인 목록 로딩 실패: ${error instanceof Error ? error.message : "알 수 없는 오류"}`;
+  }
   subscribe(
     "ticker",
     marketStore.list.map((item) => item.market),
@@ -51,6 +63,7 @@ watch(market, (nextMarket, previousMarket) => {
       <h1>실시간 마켓 레이어</h1>
       <p class="hero-lead">코인 리스트, 1분봉, 호가, 체결 체인을 한 화면에서 연결해 전환하는 데 걸리는 시간을 최소화한 대시보드입니다.</p>
       <div class="hero-metrics">
+        <p v-if="exchangeError" class="hero-error">{{ exchangeError }}</p>
         <article class="metric-card">
           <span>선택 마켓</span>
           <strong>{{ selectedMarketLabel }}</strong>
@@ -157,6 +170,19 @@ h1 {
   color: #c2cedf;
   font-size: 19px;
   line-height: 1.7;
+}
+
+.hero-error {
+  grid-column: 1 / -1;
+  margin: 0;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 123, 123, 0.45);
+  background: rgba(220, 50, 50, 0.18);
+  color: #ffe7e7;
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 700;
+  padding: 12px 14px;
 }
 
 .hero-metrics {

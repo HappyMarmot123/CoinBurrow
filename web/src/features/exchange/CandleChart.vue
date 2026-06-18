@@ -2,7 +2,11 @@
 import { computed } from "vue";
 import { Chart } from "highcharts-vue";
 import type { Options } from "highcharts";
+import * as Highcharts from "highcharts";
+import stock from "highcharts/modules/stock";
 import { useCandleStore } from "../../stores/candle.js";
+
+stock(Highcharts);
 
 const candleStore = useCandleStore();
 const hasCandles = computed(() => candleStore.candles.length > 0);
@@ -68,7 +72,7 @@ const chartOptions = computed<Options>(() => ({
       </p>
     </div>
     <p class="chart-price" v-if="lastPrice !== null">현재가 {{ lastPrice.toLocaleString() }}</p>
-    <Chart v-if="hasCandles" :options="chartOptions" />
+    <Chart v-if="hasCandles" :options="chartOptions" :highcharts="Highcharts" />
     <p v-else class="chart-empty">캔들 데이터를 불러오는 중입니다.</p>
   </section>
 </template>
