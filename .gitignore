@@ -27,4 +27,5 @@
 # 로그 파일
 
 # 로컬 Git worktree
+/.tmp/
 /.worktrees/

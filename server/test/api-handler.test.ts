@@ -1,5 +1,7 @@
 import { EventEmitter } from 'node:events'
+import { existsSync, readFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { join } from 'node:path'
 
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -50,7 +52,29 @@ vi.mock('../src/app.js', () => ({
 }))
 
 const apiModulePath = '../../api/[...path].js'
+const marketApiModulePath = '../../api/market.js'
 let normalizeApiUrl: (url: string | undefined) => string | undefined
+let normalizeRequestUrl: (url: string | undefined) => string | undefined
+
+type VercelRewrite = {
+  source?: string
+  destination?: string
+}
+
+type VercelConfig = {
+  rewrites?: VercelRewrite[]
+}
+
+type PackageJson = {
+  type?: string
+}
+
+type RootTsConfig = {
+  compilerOptions?: {
+    module?: string
+    moduleResolution?: string
+  }
+}
 
 class FakeResponse extends EventEmitter {
   destroyed = false
@@ -78,9 +102,26 @@ function response(): ServerResponse {
   return new FakeResponse() as unknown as ServerResponse
 }
 
+function readRootJsonConfig<T>(fileName: string): T {
+  const configPath = [
+    join(process.cwd(), fileName),
+    join(process.cwd(), '..', fileName),
+  ].find((candidate) => existsSync(candidate))
+
+  if (!configPath) {
+    throw new Error(`Unable to find ${fileName}`)
+  }
+
+  return JSON.parse(readFileSync(configPath, 'utf8')) as T
+}
+
+function readVercelConfig(): VercelConfig {
+  return readRootJsonConfig<VercelConfig>('vercel.json')
+}
+
 describe('normalizeApiUrl', () => {
   beforeAll(async () => {
-    ;({ normalizeApiUrl } = await import(apiModulePath))
+    ;({ normalizeApiUrl, normalizeRequestUrl } = await import(apiModulePath))
   })
 
   it.each([
@@ -99,6 +140,53 @@ describe('normalizeApiUrl', () => {
 
   it('does not strip an api-prefixed path segment', () => {
     expect(normalizeApiUrl('/apiary/status')).toBe('/apiary/status')
+  })
+
+  it('expands the Vercel market rewrite query and keeps request query params', () => {
+    expect(
+      normalizeRequestUrl(
+        '/api/market?__coinburrow_path=market/exchange/candle&market=KRW-BTC&timeframe=1m',
+      ),
+    ).toBe('/market/exchange/candle?market=KRW-BTC&timeframe=1m')
+  })
+})
+
+describe('Vercel rewrites', () => {
+  it('uses ESM-compatible API function compilation', () => {
+    const packageJson = readRootJsonConfig<PackageJson>('package.json')
+    const tsConfig = readRootJsonConfig<RootTsConfig>('tsconfig.json')
+
+    expect(packageJson.type).toBe('module')
+    expect(tsConfig.compilerOptions?.module).toBe('ESNext')
+    expect(tsConfig.compilerOptions?.moduleResolution).toBe('Bundler')
+  })
+
+  it('exposes a stable market API function entry', async () => {
+    const [apiModule, marketApiModule] = await Promise.all([
+      import(apiModulePath),
+      import(marketApiModulePath),
+    ])
+
+    expect(marketApiModule.default).toBe(apiModule.default)
+    expect(marketApiModule.normalizeApiUrl).toBe(apiModule.normalizeApiUrl)
+    expect(marketApiModule.normalizeRequestUrl).toBe(
+      apiModule.normalizeRequestUrl,
+    )
+  })
+
+  it('routes market proxy requests through the stable market API entry', () => {
+    const config = readVercelConfig()
+    const rewrites = config.rewrites ?? []
+
+    expect(JSON.stringify(config)).not.toContain('server/dist')
+    expect(
+      rewrites.find((rewrite) => rewrite.source === '/market/:path*')
+        ?.destination,
+    ).toBe('/api/market?__coinburrow_path=market/:path*')
+    expect(
+      rewrites.find((rewrite) => rewrite.source === '/api/market/:path*')
+        ?.destination,
+    ).toBe('/api/market?__coinburrow_path=market/:path*')
   })
 })
 
@@ -142,6 +230,30 @@ describe('Vercel API handler', () => {
     res.emit('finish')
     await pending
     expect(settled).toBe(true)
+  })
+
+  it('expands the production market rewrite before dispatch', async () => {
+    const req = request(
+      '/api/market?__coinburrow_path=market/exchange/candle&market=KRW-BTC&timeframe=1m',
+    )
+    const res = response()
+    let dispatched: () => void = () => undefined
+    const requestDispatched = new Promise<void>((resolve) => {
+      dispatched = resolve
+    })
+
+    app.server.on('request', () => {
+      expect(req.url).toBe(
+        '/market/exchange/candle?market=KRW-BTC&timeframe=1m',
+      )
+      dispatched()
+    })
+
+    const pending = handler(req, res)
+
+    await requestDispatched
+    res.emit('finish')
+    await expect(pending).resolves.toBeUndefined()
   })
 
   it('does not hang when the response is already finished', async () => {
@@ -240,8 +352,10 @@ describe('Vercel API handler', () => {
     const first = handler(request('/health'), response())
     const second = handler(request('/health'), response())
 
-    expect(buildApp).toHaveBeenCalledTimes(1)
-    expect(app.ready).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() => {
+      expect(buildApp).toHaveBeenCalledTimes(1)
+      expect(app.ready).toHaveBeenCalledTimes(1)
+    })
     resolveReady(undefined)
 
     await expect(Promise.all([first, second])).resolves.toEqual([
