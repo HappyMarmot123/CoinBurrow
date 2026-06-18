@@ -15,7 +15,7 @@ const priorityWeight: Record<UpbitRequestPriority, number> = {
   low: 1,
 }
 
-const UPBIT_REQUEST_INTERVAL_MS = 1_000
+const UPBIT_REQUEST_INTERVAL_MS = 500
 
 let nextId = 0
 let active = false

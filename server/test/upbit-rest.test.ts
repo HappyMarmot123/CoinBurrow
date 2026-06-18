@@ -17,6 +17,7 @@ import {
   fetchMarketSummaries,
   fetchMarketStatus,
   fetchOrderbook,
+  parseRemainingReqHeader,
   fetchTickers,
   fetchTradeTicks,
 } from '../src/upbit/upbitRest.js'
@@ -35,6 +36,7 @@ describe('Upbit REST client', () => {
 
   afterEach(async () => {
     vi.useRealTimers()
+    vi.restoreAllMocks()
     setGlobalDispatcher(originalDispatcher)
     await mockAgent.close()
   })
@@ -44,6 +46,7 @@ describe('Upbit REST client', () => {
     statusCode: number,
     body: object | string | Buffer | undefined,
     times = 1,
+    headers?: Record<string, string>,
   ): void {
     for (let index = 0; index < times; index += 1) {
       mockAgent
@@ -52,7 +55,7 @@ describe('Upbit REST client', () => {
           method: 'GET',
           path,
         })
-        .reply(statusCode, body)
+        .reply(statusCode, body, { headers })
     }
   }
 
@@ -60,6 +63,71 @@ describe('Upbit REST client', () => {
     await vi.advanceTimersByTimeAsync(3_000)
     await vi.advanceTimersByTimeAsync(2_000)
   }
+
+  it('parses Upbit Remaining-Req headers', () => {
+    expect(parseRemainingReqHeader('group=ticker; min=1800; sec=1')).toEqual({
+      raw: 'group=ticker; min=1800; sec=1',
+      group: 'ticker',
+      sec: 1,
+    })
+  })
+
+  it('logs Remaining-Req when the per-second quota is nearly exhausted', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const remainingReq = 'group=ticker; min=1800; sec=1'
+
+    mockAgent
+      .get('https://api.upbit.com')
+      .intercept({
+        method: 'GET',
+        path: '/v1/ticker?markets=KRW-BTC',
+      })
+      .reply(
+        200,
+        [
+          {
+            market: 'KRW-BTC',
+            trade_price: 100_000,
+            signed_change_rate: 0.01,
+            acc_trade_price_24h: 5_000_000,
+          },
+        ],
+        { headers: { 'remaining-req': remainingReq } },
+      )
+
+    await fetchTickers(['KRW-BTC'])
+
+    expect(warn).toHaveBeenCalledWith(
+      `[upbit-rate-limit] path=/ticker?markets=KRW-BTC status=200 group=ticker sec=1 remainingReq="${remainingReq}"`,
+    )
+  })
+
+  it('does not log Remaining-Req while the per-second quota is healthy', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+    mockAgent
+      .get('https://api.upbit.com')
+      .intercept({
+        method: 'GET',
+        path: '/v1/ticker?markets=KRW-BTC',
+      })
+      .reply(
+        200,
+        [
+          {
+            market: 'KRW-BTC',
+            trade_price: 100_000,
+            signed_change_rate: 0.01,
+            acc_trade_price_24h: 5_000_000,
+          },
+        ],
+        { headers: { 'remaining-req': 'group=ticker; min=1800; sec=2' } },
+      )
+
+    await fetchTickers(['KRW-BTC'])
+
+    expect(warn).not.toHaveBeenCalled()
+  })
 
   it('fetches KRW markets and normalizes their names', async () => {
     mockAgent
@@ -691,6 +759,7 @@ describe('Upbit REST client', () => {
   it('retries a 429 response after the configured delays', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(0)
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
 
     mockUpbitReply(
       '/v1/ticker?markets=KRW-BTC',
@@ -732,12 +801,15 @@ describe('Upbit REST client', () => {
   it('throws a concise error after retryable responses keep failing', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(0)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const remainingReq = 'group=ticker; min=1800; sec=0'
 
     mockUpbitReply(
       '/v1/ticker?markets=KRW-BTC',
       429,
       { error: { name: 'too_many_requests' } },
       3,
+      { 'remaining-req': remainingReq },
     )
 
     const pending = fetchTickers(['KRW-BTC']).catch((caught) => caught)
@@ -749,6 +821,15 @@ describe('Upbit REST client', () => {
     expect(error).toHaveProperty(
       'message',
       'Upbit /ticker?markets=KRW-BTC -> 429',
+    )
+    expect(error).toHaveProperty('rateLimit', {
+      raw: remainingReq,
+      group: 'ticker',
+      sec: 0,
+    })
+    expect(warn).toHaveBeenCalledTimes(3)
+    expect(warn).toHaveBeenLastCalledWith(
+      `[upbit-rate-limit] path=/ticker?markets=KRW-BTC status=429 group=ticker sec=0 remainingReq="${remainingReq}"`,
     )
   })
 

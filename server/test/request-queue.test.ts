@@ -43,8 +43,8 @@ describe('Upbit request queue', () => {
     }, 'critical')
 
     releaseLow()
-    await vi.advanceTimersByTimeAsync(1_000)
-    await vi.advanceTimersByTimeAsync(1_000)
+    await vi.advanceTimersByTimeAsync(500)
+    await vi.advanceTimersByTimeAsync(500)
 
     await expect(Promise.all([low, critical, normal])).resolves.toEqual([
       'low',
@@ -70,12 +70,12 @@ describe('Upbit request queue', () => {
       return undefined
     })
 
-    await vi.advanceTimersByTimeAsync(999)
+    await vi.advanceTimersByTimeAsync(499)
     expect(startedAt).toEqual([0])
 
     await vi.advanceTimersByTimeAsync(1)
     await next
-    expect(startedAt).toEqual([0, 1_000])
+    expect(startedAt).toEqual([0, 500])
   })
 
   it('waits after the previous request completes', async () => {
@@ -100,11 +100,11 @@ describe('Upbit request queue', () => {
       return undefined
     })
 
-    await vi.advanceTimersByTimeAsync(999)
+    await vi.advanceTimersByTimeAsync(499)
     expect(startedAt).toEqual([0])
 
     await vi.advanceTimersByTimeAsync(1)
     await next
-    expect(startedAt).toEqual([0, 1_700])
+    expect(startedAt).toEqual([0, 1_200])
   })
 })

@@ -104,21 +104,6 @@ onMounted(() => {
       </article>
     </section>
 
-    <section id="signals" class="content-section reveal">
-      <p class="section-kicker">Live Market Signals</p>
-      <h2>필요한 시장 신호만 선명하게</h2>
-      <p class="section-lead">
-        가격, 캔들, 호가, 체결 데이터를 분산된 화면 없이 하나의 대시보드에서 읽습니다.
-      </p>
-      <article class="feature-grid">
-        <div v-for="feature in marketSignals" :key="feature.title" class="glass-card signal-card">
-          <span>{{ feature.label }}</span>
-          <h3>{{ feature.title }}</h3>
-          <p>{{ feature.description }}</p>
-        </div>
-      </article>
-    </section>
-
     <section class="content-section reveal stream-section">
       <p class="section-kicker">Built For Fast Streams</p>
       <h2>고빈도 시세를 가볍게 다루는 구조</h2>

@@ -15,16 +15,27 @@ import type {
   TradeDto,
 } from './types.js'
 
+export interface UpbitRateLimitSnapshot {
+  raw: string
+  group?: string
+  sec?: number
+}
+
 export class UpbitError extends Error {
   readonly retryable: boolean
+  readonly rateLimit?: UpbitRateLimitSnapshot
 
   constructor(
     message: string,
-    options: ErrorOptions & { retryable?: boolean } = {},
+    options: ErrorOptions & {
+      retryable?: boolean
+      rateLimit?: UpbitRateLimitSnapshot
+    } = {},
   ) {
     super(message, options)
     this.name = 'UpbitError'
     this.retryable = options.retryable ?? false
+    this.rateLimit = options.rateLimit
   }
 }
 
@@ -174,6 +185,75 @@ function isRetryableUpbitError(error: unknown): boolean {
   return error instanceof UpbitError && error.retryable
 }
 
+function getHeaderValue(headers: unknown, name: string): string | undefined {
+  if (!headers || typeof headers !== 'object') return undefined
+
+  const record = headers as Record<string, string | string[] | number | undefined>
+  const normalizedName = name.toLowerCase()
+  const matchedKey = Object.keys(record).find(
+    (key) => key.toLowerCase() === normalizedName,
+  )
+  const value = matchedKey ? record[matchedKey] : undefined
+
+  if (Array.isArray(value)) {
+    return value[0]
+  }
+
+  if (typeof value === 'number') {
+    return String(value)
+  }
+
+  return value
+}
+
+export function parseRemainingReqHeader(raw: string | undefined): UpbitRateLimitSnapshot | null {
+  if (!raw) return null
+
+  const entries = new Map<string, string>()
+
+  for (const part of raw.split(';')) {
+    const [key, ...valueParts] = part.split('=')
+    const value = valueParts.join('=').trim()
+
+    const normalizedKey = key.trim().toLowerCase()
+
+    if (normalizedKey.length > 0 && value.length > 0) {
+      entries.set(normalizedKey, value)
+    }
+  }
+
+  const secText = entries.get('sec')
+  const secValue = secText === undefined || secText.length === 0
+    ? undefined
+    : Number(secText)
+  const sec = typeof secValue === 'number' && Number.isFinite(secValue)
+    ? secValue
+    : undefined
+  const group = entries.get('group')
+
+  return {
+    raw,
+    group: group && group.length > 0 ? group : undefined,
+    sec,
+  }
+}
+
+function shouldLogRateLimit(statusCode: number, rateLimit: UpbitRateLimitSnapshot | null): boolean {
+  return statusCode === 429 || (rateLimit?.sec !== undefined && rateLimit.sec <= 1)
+}
+
+function logRateLimitIfNeeded(
+  path: string,
+  statusCode: number,
+  rateLimit: UpbitRateLimitSnapshot | null,
+): void {
+  if (!shouldLogRateLimit(statusCode, rateLimit)) return
+
+  console.warn(
+    `[upbit-rate-limit] path=${path} status=${statusCode} group=${rateLimit?.group ?? 'unknown'} sec=${rateLimit?.sec ?? 'unknown'} remainingReq="${rateLimit?.raw ?? 'missing'}"`,
+  )
+}
+
 async function requestJsonOnce<T>(
   path: string,
   schema: z.ZodType<T>,
@@ -186,7 +266,10 @@ async function requestJsonOnce<T>(
     throw new UpbitError('Upbit request failed', { cause, retryable: true })
   }
 
-  const { body, statusCode } = response
+  const { body, headers, statusCode } = response
+  const rateLimit = parseRemainingReqHeader(getHeaderValue(headers, 'remaining-req'))
+
+  logRateLimitIfNeeded(path, statusCode, rateLimit)
 
   if (statusCode < 200 || statusCode >= 300) {
     try {
@@ -196,6 +279,7 @@ async function requestJsonOnce<T>(
     }
 
     throw new UpbitError(`Upbit ${path} -> ${statusCode}`, {
+      rateLimit: rateLimit ?? undefined,
       retryable: isRetryableStatus(statusCode),
     })
   }

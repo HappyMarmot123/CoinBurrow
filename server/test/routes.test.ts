@@ -90,19 +90,24 @@ describe('market routes', () => {
     mockAgent.disableNetConnect()
     setGlobalDispatcher(mockAgent)
     app = buildApp()
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
   })
 
   afterEach(async () => {
     try {
-      mockAgent.assertNoPendingInterceptors()
-    } finally {
       try {
-        await app.close()
+        mockAgent.assertNoPendingInterceptors()
       } finally {
-        vi.useRealTimers()
-        setGlobalDispatcher(originalDispatcher)
-        await mockAgent.close()
+        try {
+          await app.close()
+        } finally {
+          vi.useRealTimers()
+          setGlobalDispatcher(originalDispatcher)
+          await mockAgent.close()
+        }
       }
+    } finally {
+      vi.restoreAllMocks()
     }
   })
 
