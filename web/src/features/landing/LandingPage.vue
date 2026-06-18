@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import gsap from "gsap";
 import SplineScene from "./SplineScene.vue";
 import { DEFAULT_SPLINE_SCENE } from "../../constants/landing.js";
@@ -7,9 +7,11 @@ import "./legacyHeroStars.scss";
 
 const heroRef = ref<HTMLElement | null>(null);
 const landingRef = ref<HTMLElement | null>(null);
+const cursorLayerRef = ref<HTMLElement | null>(null);
 const scene =
   (import.meta.env.VITE_SPLINE_SCENE as string | undefined) ??
   DEFAULT_SPLINE_SCENE;
+let cleanupCursorEffects: (() => void) | null = null;
 
 const marketSignals = [
   {
@@ -49,6 +51,111 @@ const streamFeatures = [
   },
 ];
 
+function setupCursorEffects(): (() => void) | null {
+  const landing = landingRef.value;
+  const cursorLayer = cursorLayerRef.value;
+
+  if (!landing || !cursorLayer || typeof window.matchMedia !== "function") {
+    return null;
+  }
+
+  const pointerFine = window.matchMedia("(pointer: fine)");
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  if (!pointerFine.matches) {
+    return null;
+  }
+
+  let cursorX = 0;
+  let cursorY = 0;
+  let animationFrame = 0;
+  let lastSparkAt = 0;
+  let sparkIndex = 0;
+
+  const updateCursorPosition = () => {
+    cursorLayer.style.setProperty("--cursor-x", `${cursorX}px`);
+    cursorLayer.style.setProperty("--cursor-y", `${cursorY}px`);
+    animationFrame = 0;
+  };
+
+  const queueCursorPosition = () => {
+    if (animationFrame === 0) {
+      animationFrame = window.requestAnimationFrame(updateCursorPosition);
+    }
+  };
+
+  const spawnSpark = () => {
+    if (reducedMotion.matches) return;
+
+    const now = performance.now();
+    if (now - lastSparkAt < 70) return;
+
+    lastSparkAt = now;
+
+    const spark = document.createElement("span");
+    const angle = (sparkIndex * 137.5) % 360;
+    const distance = 14 + (sparkIndex % 4) * 4;
+    const radians = (angle * Math.PI) / 180;
+
+    spark.className = "cursor-spark";
+    spark.style.setProperty("--spark-x", `${cursorX}px`);
+    spark.style.setProperty("--spark-y", `${cursorY}px`);
+    spark.style.setProperty("--spark-dx", `${Math.cos(radians) * distance}px`);
+    spark.style.setProperty("--spark-dy", `${Math.sin(radians) * distance}px`);
+    spark.addEventListener("animationend", () => spark.remove(), { once: true });
+
+    cursorLayer.append(spark);
+    sparkIndex += 1;
+  };
+
+  const handlePointerMove = (event: PointerEvent) => {
+    cursorX = event.clientX;
+    cursorY = event.clientY;
+    queueCursorPosition();
+    spawnSpark();
+  };
+
+  const handlePointerEnter = (event: PointerEvent) => {
+    cursorX = event.clientX;
+    cursorY = event.clientY;
+    cursorLayer.classList.add("is-active");
+    queueCursorPosition();
+  };
+
+  const handlePointerLeave = () => {
+    cursorLayer.classList.remove("is-active", "is-pressed");
+  };
+
+  const handlePointerDown = () => {
+    cursorLayer.classList.add("is-pressed");
+  };
+
+  const handlePointerUp = () => {
+    cursorLayer.classList.remove("is-pressed");
+  };
+
+  landing.addEventListener("pointerenter", handlePointerEnter);
+  landing.addEventListener("pointermove", handlePointerMove);
+  landing.addEventListener("pointerleave", handlePointerLeave);
+  landing.addEventListener("pointerdown", handlePointerDown);
+  window.addEventListener("pointerup", handlePointerUp);
+
+  return () => {
+    landing.removeEventListener("pointerenter", handlePointerEnter);
+    landing.removeEventListener("pointermove", handlePointerMove);
+    landing.removeEventListener("pointerleave", handlePointerLeave);
+    landing.removeEventListener("pointerdown", handlePointerDown);
+    window.removeEventListener("pointerup", handlePointerUp);
+
+    if (animationFrame !== 0) {
+      window.cancelAnimationFrame(animationFrame);
+    }
+
+    cursorLayer.classList.remove("is-active", "is-pressed");
+    cursorLayer.querySelectorAll(".cursor-spark").forEach((spark) => spark.remove());
+  };
+}
+
 onMounted(() => {
   if (heroRef.value) {
     gsap.from(heroRef.value.children, {
@@ -71,12 +178,22 @@ onMounted(() => {
       delay: 0.2,
     });
   }
+
+  cleanupCursorEffects = setupCursorEffects();
+});
+
+onUnmounted(() => {
+  cleanupCursorEffects?.();
+  cleanupCursorEffects = null;
 });
 </script>
 
 <template>
   <main id="landing-widget" ref="landingRef" class="landing">
     <div id="noise" aria-hidden="true" />
+    <div ref="cursorLayerRef" class="cursor-effects" aria-hidden="true">
+      <span class="cursor-ring" />
+    </div>
 
     <section class="hero-section">
       <article class="container" aria-hidden="true">
@@ -99,28 +216,9 @@ onMounted(() => {
           </p>
         </div>
         <div class="hero-actions">
-          <router-link to="/exchange" class="button button-green">대시보드 열기</router-link>
+          <router-link to="/exchange" class="button button-green">Burying</router-link>
         </div>
       </article>
-    </section>
-
-    <section class="content-section reveal stream-section">
-      <p class="section-kicker">Built For Fast Streams</p>
-      <h2>고빈도 시세를 가볍게 다루는 구조</h2>
-      <article class="stream-grid">
-        <div v-for="section in streamFeatures" :key="section.title" class="glass-card stream-card">
-          <h3>{{ section.title }}</h3>
-          <p>{{ section.description }}</p>
-        </div>
-      </article>
-    </section>
-
-    <section class="content-section final-cta reveal">
-      <p class="section-kicker">No Account, No Keys</p>
-      <h2>로그인 없이 바로 보는 공개 시장 데이터</h2>
-      <p>
-        API 키, 계정, DB 없이 Upbit 공개 REST와 WebSocket 데이터를 이용합니다.
-      </p>
     </section>
 
     <section class="features-band reveal">
@@ -131,17 +229,42 @@ onMounted(() => {
           />
         </svg>
       </article>
+      <article class="final-cta reveal">
+        <a
+          class="creator-link"
+          href="https://github.com/HappyMarmot123"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="HappyMarmot123 GitHub profile"
+        >
+          <svg
+            class="github-icon"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path
+              d="M12 2C6.48 2 2 6.58 2 12.25c0 4.52 2.87 8.35 6.84 9.7.5.1.68-.22.68-.49 0-.24-.01-.88-.01-1.73-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1 .07 1.53 1.06 1.53 1.06.89 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.36-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.31.1-2.71 0 0 .84-.28 2.75 1.05A9.35 9.35 0 0 1 12 6.98c.85 0 1.71.12 2.51.35 1.91-1.33 2.75-1.05 2.75-1.05.55 1.4.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.79-4.57 5.05.36.32.68.94.68 1.9 0 1.37-.01 2.48-.01 2.82 0 .27.18.59.69.49A10.1 10.1 0 0 0 22 12.25C22 6.58 17.52 2 12 2Z"
+            />
+          </svg>
+          <span>Made by @HappyMarmot123</span>
+        </a>
+      </article>
     </section>
   </main>
 </template>
 
 <style scoped lang="scss">
 .landing {
+  --landing-band: #5a6349;
+  --landing-text: #f8fbff;
+  --landing-accent: #a8d1a3;
+
   position: relative;
   min-height: 100vh;
   overflow: hidden;
   color: #f2f0dd;
-  background: linear-gradient(to bottom right, #111827, #1f2937);
+  background: #111827;
   font-family:
     Inter,
     ui-sans-serif,
@@ -150,6 +273,7 @@ onMounted(() => {
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
+  user-select: none;
 }
 
 :global(body) {
@@ -168,7 +292,82 @@ onMounted(() => {
   background: url("/noise.webp") no-repeat center center;
   background-size: cover;
   mix-blend-mode: overlay;
+  opacity: 0.62;
+}
+
+.cursor-effects {
+  --cursor-x: -100px;
+  --cursor-y: -100px;
+
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.cursor-effects.is-active {
   opacity: 1;
+}
+
+.cursor-ring {
+  position: fixed;
+  top: var(--cursor-y);
+  left: var(--cursor-x);
+  border-radius: 999px;
+  translate: -50% -50%;
+  will-change: top, left, scale;
+}
+
+.cursor-ring {
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(217, 255, 102, 0.76);
+  box-shadow:
+    0 0 0 1px rgba(255, 176, 46, 0.18),
+    0 0 22px rgba(217, 255, 102, 0.2);
+  scale: 1;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+  scale 0.18s ease;
+}
+
+.cursor-effects.is-pressed .cursor-ring {
+  border-color: rgba(255, 176, 46, 0.9);
+  box-shadow:
+    0 0 0 1px rgba(217, 255, 102, 0.24),
+    0 0 28px rgba(255, 176, 46, 0.28);
+  scale: 0.72;
+}
+
+:deep(.cursor-spark) {
+  position: fixed;
+  top: var(--spark-y);
+  left: var(--spark-x);
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #d9ff66;
+  box-shadow: 0 0 12px rgba(217, 255, 102, 0.72);
+  pointer-events: none;
+  translate: -50% -50%;
+  animation: cursor-spark-pop 720ms ease-out forwards;
+}
+
+@keyframes cursor-spark-pop {
+  to {
+    opacity: 0;
+    scale: 0.2;
+    translate: calc(-50% + var(--spark-dx)) calc(-50% + var(--spark-dy));
+  }
+}
+
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .cursor-effects {
+    display: none;
+  }
 }
 
 .hero-section {
@@ -193,14 +392,18 @@ onMounted(() => {
   transform: translate(-50%, -50%);
   justify-items: center;
   text-align: center;
-  text-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+  text-shadow: 0 18px 44px rgba(0, 0, 0, 0.32);
 }
 
 .eyebrow {
   display: inline-flex;
-  background: linear-gradient(315deg, #a8d1a3, #ddb650);
+  background: linear-gradient(315deg, #d9ff66, #ffb02e);
   background-clip: text;
   color: transparent;
+  filter:
+    drop-shadow(0 4px 0 rgba(92, 58, 6, 0.28))
+    drop-shadow(0 14px 18px rgba(0, 0, 0, 0.22))
+    drop-shadow(0 0 18px rgba(255, 176, 46, 0.22));
 }
 
 h1 {
@@ -210,7 +413,6 @@ h1 {
   font-weight: 900;
   line-height: 0.86;
   letter-spacing: 0;
-  filter: drop-shadow(0 26px 70px rgba(0, 0, 0, 0.42));
 }
 
 .hero-subcopy {
@@ -221,27 +423,23 @@ h1 {
   padding: 0;
 }
 
-.hero-subcopy h2,
-.content-section h2,
-.final-cta h2,
-.features-content h2 {
+.hero-subcopy h2 {
   margin: 0;
   color: #ffffff;
-  font-size: clamp(32px, 5vw, 54px);
+  font-size: clamp(28px, 4.2vw, 46px);
   font-weight: 850;
   line-height: 1.05;
   letter-spacing: 0;
+  text-wrap: balance;
 }
 
-.hero-subcopy p,
-.section-lead,
-.final-cta p,
-.features-content p {
+.hero-subcopy p {
   max-width: 760px;
   margin: 0 auto;
   color: #cbd5e1;
   font-size: 19px;
   line-height: 1.7;
+  text-wrap: pretty;
 }
 
 .button {
@@ -252,43 +450,34 @@ h1 {
   border-radius: 8px;
   padding: 0 24px;
   font-weight: 700;
+  line-height: 1;
   text-decoration: none;
   transition:
+    box-shadow 0.18s ease,
     transform 0.18s ease,
     background-color 0.18s ease;
 }
 
-.button:hover {
-  transform: translateY(-2px);
+.button:focus-visible {
+  outline: 2px solid var(--landing-accent);
+  outline-offset: 4px;
 }
 
 .button-green {
   color: #ffffff;
   background: #5f8d4e;
+  box-shadow: 0 14px 36px rgba(37, 61, 30, 0.18);
 }
 
-.button-green:hover {
-  background: #4c7a3b;
-}
+@media (hover: hover) {
+  .button:hover {
+    transform: translateY(-2px);
+  }
 
-.button-secondary {
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  color: #f8fbff;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(12px);
-}
-
-.button-secondary:hover {
-  background: rgba(255, 255, 255, 0.16);
-}
-
-.button-gold {
-  color: #ffffff;
-  background: #ddb650;
-}
-
-.button-gold:hover {
-  background: #c7a448;
+  .button-green:hover {
+    background: #4c7a3b;
+    box-shadow: 0 16px 42px rgba(37, 61, 30, 0.22);
+  }
 }
 
 .hero-actions {
@@ -320,135 +509,58 @@ h1 {
   height: 230%;
 }
 
-.content-section {
-  position: relative;
-  z-index: 4;
-  width: min(1180px, calc(100% - 40px));
-  margin: 0 auto;
-  padding: 140px 0;
-  text-align: center;
-}
-
-.section-kicker {
-  margin: 0 0 16px;
-  color: #a8d1a3;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.feature-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 24px;
-  margin-top: 48px;
-}
-
-.glass-card {
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 12px;
-  padding: 32px;
-  background: rgba(255, 255, 255, 0.09);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.18);
-  text-align: left;
-}
-
-.glass-card h3 {
-  margin: 0 0 16px;
-  color: #ffffff;
-  font-size: 21px;
-  line-height: 1.35;
-  letter-spacing: 0;
-}
-
-.glass-card p {
-  margin: 0;
-  color: #9ca3af;
-  font-size: 17px;
-  line-height: 1.7;
-}
-
-.signal-card {
-  transition:
-    border-color 0.2s ease,
-    transform 0.2s ease,
-    background-color 0.2s ease;
-}
-
-.signal-card:hover,
-.stream-card:hover {
-  border-color: rgba(168, 209, 163, 0.45);
-  background: rgba(255, 255, 255, 0.12);
-  transform: translateY(-4px);
-}
-
-.signal-card span {
+.creator-link {
   display: inline-flex;
-  margin-bottom: 18px;
-  color: #ddb650;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.stream-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
-  margin-top: 48px;
-}
-
-.stream-card h3 {
-  color: #d9f99d;
-}
-
-.tech-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 16px;
-  margin-top: 44px;
-}
-
-.tech-pill {
-  display: inline-flex;
-  min-height: 54px;
+  max-width: 100%;
+  min-height: 46px;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  gap: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 8px;
-  padding: 0 22px;
-  color: #f5f5eb;
+  padding: 0 18px;
+  color: var(--landing-text);
   background: rgba(255, 255, 255, 0.08);
-  font-size: 17px;
-  font-weight: 700;
-  opacity: 0.82;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.12);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
   transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
 }
 
-.tech-pill:hover {
-  opacity: 1;
-  transform: translateY(-2px);
+@media (hover: hover) {
+  .creator-link:hover {
+    border-color: rgba(168, 209, 163, 0.46);
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.16);
+    transform: translateY(-2px);
+  }
 }
 
-.final-cta {
-  padding-bottom: 180px;
+.creator-link:focus-visible {
+  outline: 2px solid var(--landing-accent);
+  outline-offset: 4px;
 }
 
-.final-cta p {
-  margin-top: 24px;
-  margin-bottom: 30px;
+.github-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  fill: currentColor;
 }
 
 .features-band {
   position: relative;
   z-index: 4;
-  margin-top: 20px;
-  padding: 92px 24px 96px;
+  padding: 2rem;
   color: #ffffff;
   background: #5a6349;
   text-align: center;
@@ -458,6 +570,7 @@ h1 {
   position: absolute;
   bottom: 100%;
   left: 0;
+  z-index: 1;
   width: 100%;
   overflow: hidden;
   line-height: 0;
@@ -466,22 +579,18 @@ h1 {
 .wave svg {
   display: block;
   width: 100%;
-  height: 150px;
+  height: 100px;
 }
 
 .wave path {
-  fill: #5a6349;
+  fill: var(--landing-band);
 }
 
-.features-content {
-  max-width: 860px;
+.final-cta {
+  position: relative;
+  z-index: 1;
+  width: min(1120px, 100%);
   margin: 0 auto;
-}
-
-.features-content p {
-  margin-top: 18px;
-  margin-bottom: 32px;
-  color: #eef2e8;
 }
 
 @media (max-width: 900px) {
@@ -506,7 +615,7 @@ h1 {
   }
 
   .hero-subcopy h2 {
-    font-size: clamp(30px, 6vw, 42px);
+    font-size: clamp(26px, 5.4vw, 36px);
   }
 
   .hero-subcopy p {
@@ -526,41 +635,6 @@ h1 {
     height: 220%;
   }
 
-  .feature-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .stream-grid {
-    grid-template-columns: 1fr;
-    max-width: 720px;
-    margin-right: auto;
-    margin-left: auto;
-  }
-
-  .content-section {
-    width: min(960px, calc(100% - 32px));
-    padding: clamp(80px, 11vw, 112px) 0;
-  }
-
-  .glass-card {
-    padding: 28px;
-  }
-}
-
-@media (max-width: 760px) {
-  .feature-grid,
-  .stream-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .content-section {
-    width: min(680px, calc(100% - 28px));
-    padding: 76px 0;
-  }
-
-  .glass-card {
-    padding: 26px;
-  }
 }
 
 @media (max-width: 640px) {
@@ -583,18 +657,12 @@ h1 {
     gap: 12px;
   }
 
-  .hero-subcopy h2,
-  .content-section h2,
-  .final-cta h2,
-  .features-content h2 {
-    font-size: clamp(24px, 7.5vw, 32px);
+  .hero-subcopy h2 {
+    font-size: clamp(22px, 6.8vw, 28px);
     line-height: 1.12;
   }
 
-  .hero-subcopy p,
-  .section-lead,
-  .final-cta p,
-  .features-content p {
+  .hero-subcopy p {
     font-size: 15.5px;
     line-height: 1.65;
   }
@@ -603,14 +671,6 @@ h1 {
     width: min(100%, 240px);
     min-height: 52px;
     padding: 0 18px;
-  }
-
-  .glass-card {
-    padding: 22px;
-  }
-
-  .feature-grid {
-    grid-template-columns: 1fr;
   }
 
   .hero-visual {
