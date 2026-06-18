@@ -4,7 +4,7 @@ import {
   setGlobalDispatcher,
   type Dispatcher,
 } from 'undici'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   UpbitError,
@@ -34,9 +34,32 @@ describe('Upbit REST client', () => {
   })
 
   afterEach(async () => {
+    vi.useRealTimers()
     setGlobalDispatcher(originalDispatcher)
     await mockAgent.close()
   })
+
+  function mockUpbitReply(
+    path: string,
+    statusCode: number,
+    body: object | string | Buffer | undefined,
+    times = 1,
+  ): void {
+    for (let index = 0; index < times; index += 1) {
+      mockAgent
+        .get('https://api.upbit.com')
+        .intercept({
+          method: 'GET',
+          path,
+        })
+        .reply(statusCode, body)
+    }
+  }
+
+  async function advanceRetryTimers(): Promise<void> {
+    await vi.advanceTimersByTimeAsync(3_000)
+    await vi.advanceTimersByTimeAsync(2_000)
+  }
 
   it('fetches KRW markets and normalizes their names', async () => {
     mockAgent
@@ -665,16 +688,62 @@ describe('Upbit REST client', () => {
     )
   })
 
-  it('throws a concise error for a non-2xx response', async () => {
+  it('retries a 429 response after the configured delays', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+
+    mockUpbitReply(
+      '/v1/ticker?markets=KRW-BTC',
+      429,
+      { error: { name: 'too_many_requests' } },
+    )
     mockAgent
       .get('https://api.upbit.com')
       .intercept({
         method: 'GET',
         path: '/v1/ticker?markets=KRW-BTC',
       })
-      .reply(429, { error: { name: 'too_many_requests' } })
+      .reply(200, [
+        {
+          market: 'KRW-BTC',
+          trade_price: 100_000,
+          signed_change_rate: 0.01,
+          acc_trade_price_24h: 5_000_000,
+        },
+      ])
 
-    const error = await fetchTickers(['KRW-BTC']).catch((caught) => caught)
+    const pending = fetchTickers(['KRW-BTC'])
+
+    await vi.advanceTimersByTimeAsync(2_999)
+    await expect(Promise.race([pending, Promise.resolve('pending')])).resolves.toBe('pending')
+
+    await vi.advanceTimersByTimeAsync(1)
+
+    await expect(pending).resolves.toEqual([
+      {
+        market: 'KRW-BTC',
+        tradePrice: 100_000,
+        signedChangeRate: 0.01,
+        accTradePrice24h: 5_000_000,
+      },
+    ])
+  })
+
+  it('throws a concise error after retryable responses keep failing', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+
+    mockUpbitReply(
+      '/v1/ticker?markets=KRW-BTC',
+      429,
+      { error: { name: 'too_many_requests' } },
+      3,
+    )
+
+    const pending = fetchTickers(['KRW-BTC']).catch((caught) => caught)
+    await advanceRetryTimers()
+
+    const error = await pending
 
     expect(error).toBeInstanceOf(UpbitError)
     expect(error).toHaveProperty(
@@ -702,7 +771,12 @@ describe('Upbit REST client', () => {
   })
 
   it('wraps transport failures as a stable UpbitError with a cause', async () => {
-    const error = await fetchMarkets().catch((caught) => caught)
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+
+    const pending = fetchMarkets().catch((caught) => caught)
+    await advanceRetryTimers()
+    const error = await pending
 
     expect(error).toBeInstanceOf(UpbitError)
     expect(error).toHaveProperty('message', 'Upbit request failed')

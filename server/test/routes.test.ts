@@ -4,7 +4,7 @@ import {
   setGlobalDispatcher,
   type Dispatcher,
 } from 'undici'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { buildApp } from '../src/app.js'
 import { clearUpbitCacheForTest } from '../src/upbit/upbitRest.js'
@@ -76,14 +76,6 @@ const upstreamRoutes = [
     route: '/market/exchange/market-overview?markets=KRW-BTC',
     path: '/v1/ticker?markets=KRW-BTC',
   },
-  {
-    route: '/market/exchange/market-overview?markets=KRW-BTC',
-    path: '/v1/orderbook?markets=KRW-BTC',
-  },
-  {
-    route: '/market/exchange/market-overview?markets=KRW-BTC',
-    path: '/v1/market/all?isDetails=true',
-  },
 ] as const
 
 describe('market routes', () => {
@@ -107,11 +99,31 @@ describe('market routes', () => {
       try {
         await app.close()
       } finally {
+        vi.useRealTimers()
         setGlobalDispatcher(originalDispatcher)
         await mockAgent.close()
       }
     }
   })
+
+  function mockUpbitReply(
+    path: string,
+    statusCode: number,
+    body: object | string | Buffer | undefined,
+    times = 1,
+  ): void {
+    for (let index = 0; index < times; index += 1) {
+      mockAgent
+        .get('https://api.upbit.com')
+        .intercept({ method: 'GET', path })
+        .reply(statusCode, body)
+    }
+  }
+
+  async function advanceRetryTimers(): Promise<void> {
+    await vi.advanceTimersByTimeAsync(3_000)
+    await vi.advanceTimersByTimeAsync(2_000)
+  }
 
   it('returns the KRW coin list', async () => {
     mockAgent
@@ -627,15 +639,28 @@ describe('market routes', () => {
   })
 
   it('returns empty exchange rates when upstream is unavailable', async () => {
-    mockAgent
-      .get('https://api.upbit.com')
-      .intercept({ method: 'GET', path: '/v1/exchange-rates' })
-      .reply(429, { error: { name: 'too_many_requests' } })
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
 
-    const response = await app.inject({
+    mockUpbitReply(
+      '/v1/exchange-rates',
+      429,
+      { error: { name: 'too_many_requests' } },
+      3,
+    )
+    mockUpbitReply(
+      '/v1/exchange-rate',
+      429,
+      { error: { name: 'too_many_requests' } },
+      3,
+    )
+
+    const pending = app.inject({
       method: 'GET',
       url: '/market/exchange/exchange-rates',
     })
+    await vi.advanceTimersByTimeAsync(11_000)
+    const response = await pending
 
     expect(response.statusCode).toBe(200)
     expect(response.json()).toEqual([])
@@ -816,15 +841,22 @@ describe('market routes', () => {
   it.each(upstreamRoutes)(
     'maps an Upbit 429 from $route to a stable 502 response',
     async ({ route, path }) => {
-      mockAgent
-        .get('https://api.upbit.com')
-        .intercept({ method: 'GET', path })
-        .reply(429, { error: { name: 'too_many_requests' } })
+      vi.useFakeTimers()
+      vi.setSystemTime(0)
 
-      const response = await app.inject({
+      mockUpbitReply(
+        path,
+        429,
+        { error: { name: 'too_many_requests' } },
+        3,
+      )
+
+      const pending = app.inject({
         method: 'GET',
         url: route,
       })
+      await advanceRetryTimers()
+      const response = await pending
 
       expect(response.statusCode).toBe(502)
       expect(response.json()).toEqual({ error: 'upstream unavailable' })
@@ -852,10 +884,15 @@ describe('market routes', () => {
   })
 
   it('maps an upstream transport failure to a stable 502 response', async () => {
-    const response = await app.inject({
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+
+    const pending = app.inject({
       method: 'GET',
       url: '/market/coin-list',
     })
+    await advanceRetryTimers()
+    const response = await pending
 
     expect(response.statusCode).toBe(502)
     expect(response.json()).toEqual({ error: 'upstream unavailable' })

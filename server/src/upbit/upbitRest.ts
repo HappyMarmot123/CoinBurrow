@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { config } from '../config.js'
 import { cached, clearCache } from './cache.js'
 import { normalizeMarkets, normalizeQuote } from './normalize.js'
+import { enqueueUpbitRequest, resetUpbitRequestQueueForTest } from './requestQueue.js'
 import type {
   CandleDto,
   MarketDto,
@@ -15,9 +16,15 @@ import type {
 } from './types.js'
 
 export class UpbitError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
+  readonly retryable: boolean
+
+  constructor(
+    message: string,
+    options: ErrorOptions & { retryable?: boolean } = {},
+  ) {
     super(message, options)
     this.name = 'UpbitError'
+    this.retryable = options.retryable ?? false
   }
 }
 
@@ -102,14 +109,19 @@ const candleIntervalMap = {
 
 type CandleTimeframe = keyof typeof candleIntervalMap
 type QueryValue = string | undefined
+type UpbitRequestPriority = Parameters<typeof enqueueUpbitRequest>[1]
 
 const MARKET_DETAILS_CACHE_KEY = 'market:all:details'
 const MARKET_DETAILS_TTL_MS = 60_000
 const EXCHANGE_RATE_CACHE_KEY = 'exchange-rates'
 const EXCHANGE_RATE_TTL_MS = 30_000
+const INITIAL_RETRY_DELAY_MS = 3_000
+const RETRY_INTERVAL_MS = 2_000
+const MAX_RETRY_ATTEMPTS = 2
 
 export function clearUpbitCacheForTest(): void {
   clearCache()
+  resetUpbitRequestQueueForTest()
 }
 
 function resolveCandlePath(timeframe?: string): string {
@@ -148,7 +160,21 @@ interface MarketFetchOptions {
   isDetails?: boolean
 }
 
-async function getJson<T>(
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}
+
+function isRetryableStatus(statusCode: number): boolean {
+  return statusCode === 429 || statusCode >= 500
+}
+
+function isRetryableUpbitError(error: unknown): boolean {
+  return error instanceof UpbitError && error.retryable
+}
+
+async function requestJsonOnce<T>(
   path: string,
   schema: z.ZodType<T>,
 ): Promise<T> {
@@ -157,7 +183,7 @@ async function getJson<T>(
   try {
     response = await request(`${config.upbitRestUrl}${path}`)
   } catch (cause) {
-    throw new UpbitError('Upbit request failed', { cause })
+    throw new UpbitError('Upbit request failed', { cause, retryable: true })
   }
 
   const { body, statusCode } = response
@@ -166,10 +192,12 @@ async function getJson<T>(
     try {
       await body.dump()
     } catch (cause) {
-      throw new UpbitError('Upbit request failed', { cause })
+      throw new UpbitError('Upbit request failed', { cause, retryable: true })
     }
 
-    throw new UpbitError(`Upbit ${path} -> ${statusCode}`)
+    throw new UpbitError(`Upbit ${path} -> ${statusCode}`, {
+      retryable: isRetryableStatus(statusCode),
+    })
   }
 
   try {
@@ -179,11 +207,35 @@ async function getJson<T>(
   }
 }
 
+async function getJson<T>(
+  path: string,
+  schema: z.ZodType<T>,
+  priority: UpbitRequestPriority = 'normal',
+): Promise<T> {
+  let attempt = 0
+
+  while (true) {
+    try {
+      return await enqueueUpbitRequest(
+        () => requestJsonOnce(path, schema),
+        priority,
+      )
+    } catch (error) {
+      if (!isRetryableUpbitError(error) || attempt >= MAX_RETRY_ATTEMPTS) {
+        throw error
+      }
+
+      attempt += 1
+      await delay(attempt === 1 ? INITIAL_RETRY_DELAY_MS : RETRY_INTERVAL_MS)
+    }
+  }
+}
+
 function fetchMarketDetails(): Promise<Record<string, unknown>[]> {
   return cached(
     MARKET_DETAILS_CACHE_KEY,
     MARKET_DETAILS_TTL_MS,
-    () => getJson('/market/all?isDetails=true', marketDetailsSchema),
+    () => getJson('/market/all?isDetails=true', marketDetailsSchema, 'low'),
   )
 }
 
@@ -193,7 +245,7 @@ export async function fetchMarkets(
   const path = buildPath('/market/all', {
     isDetails: options.isDetails ? 'true' : 'false',
   })
-  const markets = await getJson(path, marketSchema)
+  const markets = await getJson(path, marketSchema, 'normal')
   const quote = normalizeQuote(options.quote)
 
   return markets
@@ -213,7 +265,7 @@ export async function fetchMarketSummaries(
   })
   const markets = options.isDetails
     ? await fetchMarketDetails()
-    : await getJson(path, marketSummarySchema)
+    : await getJson(path, marketSummarySchema, 'low')
   const quote = normalizeQuote(options.quote)
 
   return markets
@@ -237,7 +289,7 @@ export async function fetchMarketSummaries(
 
 export async function fetchTickers(markets: string[]): Promise<TickerDto[]> {
   const path = `/ticker?markets=${markets.map(encodeURIComponent).join(',')}`
-  const tickers = await getJson(path, tickerSchema)
+  const tickers = await getJson(path, tickerSchema, 'high')
 
   return tickers.map(
     ({
@@ -271,7 +323,7 @@ export async function fetchCandles(
     count: String(resolvedCount),
     to,
   })
-  const candles = await getJson(path, candleSchema)
+  const candles = await getJson(path, candleSchema, 'critical')
 
   return candles.map(
     ({
@@ -307,6 +359,7 @@ export async function fetchOrderbook(
   const orderbooks = await getJson(
     path,
     orderbookSchema,
+    'high',
   )
 
   return orderbooks.map(({ market: orderbookMarket, timestamp, orderbook_units }) => ({
@@ -333,7 +386,7 @@ export async function fetchTradeTicks(
     count: String(count),
     to,
   })
-  const trades = await getJson(path, tradeSchema)
+  const trades = await getJson(path, tradeSchema, 'high')
 
   return trades.map(
     ({ market: tradeMarket, trade_price, trade_volume, ask_bid, timestamp }) => ({
@@ -381,7 +434,7 @@ export async function fetchExchangeRates(): Promise<Record<string, unknown>[]> {
 
     for (const path of paths) {
       try {
-        return await getJson(path, exchangeRateSchema)
+        return await getJson(path, exchangeRateSchema, 'low')
       } catch {
         // Try fallback endpoint.
       }
@@ -429,11 +482,9 @@ export async function fetchMarketOverview(markets: string[]): Promise<MarketOver
     return []
   }
 
-  const [tickers, orderbooks, statuses] = await Promise.all([
-    fetchTickers(normalized),
-    fetchOrderbook(normalized),
-    fetchMarketStatus(normalized),
-  ])
+  const tickers = await fetchTickers(normalized)
+  const orderbooks = await fetchOrderbook(normalized)
+  const statuses = await fetchMarketStatus(normalized)
 
   const tickerByMarket = new Map(tickers.map((ticker) => [ticker.market, ticker]))
   const orderbookByMarket = new Map(orderbooks.map((orderbook) => [orderbook.market, orderbook]))
