@@ -10,6 +10,13 @@ import type {
   TradeDto,
 } from './types.js'
 
+export class UpbitError extends Error {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options)
+    this.name = 'UpbitError'
+  }
+}
+
 const marketSchema = z.array(
   z.object({
     market: z.string(),
@@ -68,17 +75,30 @@ async function getJson<T>(
   path: string,
   schema: z.ZodType<T>,
 ): Promise<T> {
-  const { body, statusCode } = await request(`${config.upbitRestUrl}${path}`)
+  let response
+
+  try {
+    response = await request(`${config.upbitRestUrl}${path}`)
+  } catch (cause) {
+    throw new UpbitError('Upbit request failed', { cause })
+  }
+
+  const { body, statusCode } = response
 
   if (statusCode < 200 || statusCode >= 300) {
-    await body.dump()
-    throw new Error(`Upbit ${path} -> ${statusCode}`)
+    try {
+      await body.dump()
+    } catch (cause) {
+      throw new UpbitError('Upbit request failed', { cause })
+    }
+
+    throw new UpbitError(`Upbit ${path} -> ${statusCode}`)
   }
 
   try {
     return schema.parse(await body.json())
-  } catch {
-    throw new Error(`Upbit ${path} -> invalid response`)
+  } catch (cause) {
+    throw new UpbitError(`Upbit ${path} -> invalid response`, { cause })
   }
 }
 

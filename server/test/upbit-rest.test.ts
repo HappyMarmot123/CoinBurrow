@@ -7,6 +7,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import {
+  UpbitError,
   fetchCandles,
   fetchMarkets,
   fetchOrderbook,
@@ -115,7 +116,11 @@ describe('Upbit REST client', () => {
         },
       ])
 
-    await expect(fetchTickers(['KRW-BTC'])).rejects.toThrow(
+    const error = await fetchTickers(['KRW-BTC']).catch((caught) => caught)
+
+    expect(error).toBeInstanceOf(UpbitError)
+    expect(error).toHaveProperty(
+      'message',
       'Upbit /ticker?markets=KRW-BTC -> invalid response',
     )
   })
@@ -271,7 +276,13 @@ describe('Upbit REST client', () => {
         },
       ])
 
-    await expect(fetchTradeTicks('KRW-BTC', 1)).rejects.toThrow(
+    const error = await fetchTradeTicks('KRW-BTC', 1).catch(
+      (caught) => caught,
+    )
+
+    expect(error).toBeInstanceOf(UpbitError)
+    expect(error).toHaveProperty(
+      'message',
       'Upbit /trades/ticks?market=KRW-BTC&count=1 -> invalid response',
     )
   })
@@ -285,7 +296,11 @@ describe('Upbit REST client', () => {
       })
       .reply(429, { error: { name: 'too_many_requests' } })
 
-    await expect(fetchTickers(['KRW-BTC'])).rejects.toThrow(
+    const error = await fetchTickers(['KRW-BTC']).catch((caught) => caught)
+
+    expect(error).toBeInstanceOf(UpbitError)
+    expect(error).toHaveProperty(
+      'message',
       'Upbit /ticker?markets=KRW-BTC -> 429',
     )
   })
@@ -299,8 +314,21 @@ describe('Upbit REST client', () => {
       })
       .reply(302, 'redirected')
 
-    await expect(fetchTickers(['KRW-BTC'])).rejects.toThrow(
+    const error = await fetchTickers(['KRW-BTC']).catch((caught) => caught)
+
+    expect(error).toBeInstanceOf(UpbitError)
+    expect(error).toHaveProperty(
+      'message',
       'Upbit /ticker?markets=KRW-BTC -> 302',
     )
+  })
+
+  it('wraps transport failures as a stable UpbitError with a cause', async () => {
+    const error = await fetchMarkets().catch((caught) => caught)
+
+    expect(error).toBeInstanceOf(UpbitError)
+    expect(error).toHaveProperty('message', 'Upbit request failed')
+    expect(error).toHaveProperty('cause')
+    expect(error.cause).toBeInstanceOf(Error)
   })
 })
