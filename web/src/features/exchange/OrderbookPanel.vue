@@ -1,17 +1,11 @@
 <script setup lang="ts">
 import { useOrderbookStore } from "../../stores/orderbook.js";
 import { computed } from "vue";
+import { formatNumber } from "../../utils/format.js";
 
 const orderbookStore = useOrderbookStore();
 
 const rows = computed(() => orderbookStore.current?.units ?? []);
-
-function formatNumber(value: number) {
-  return new Intl.NumberFormat("ko-KR", {
-    maximumFractionDigits: 4,
-    minimumFractionDigits: 0,
-  }).format(value);
-}
 </script>
 
 <template>
@@ -40,7 +34,7 @@ function formatNumber(value: number) {
   </section>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .orderbook {
   min-width: 0;
 }

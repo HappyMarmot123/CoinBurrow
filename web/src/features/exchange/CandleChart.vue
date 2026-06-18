@@ -97,7 +97,7 @@ const chartOptions = computed<Options>(() => ({
   </section>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .chart {
   min-width: 0;
 }

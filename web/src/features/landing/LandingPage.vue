@@ -2,13 +2,14 @@
 import { onMounted, ref } from "vue";
 import gsap from "gsap";
 import SplineScene from "./SplineScene.vue";
-import "./legacyHeroStars.css";
+import { DEFAULT_SPLINE_SCENE } from "../../constants/landing.js";
+import "./legacyHeroStars.scss";
 
 const heroRef = ref<HTMLElement | null>(null);
 const landingRef = ref<HTMLElement | null>(null);
 const scene =
   (import.meta.env.VITE_SPLINE_SCENE as string | undefined) ??
-  "https://prod.spline.design/54XoC-XFGmLSkJ1e/scene.splinecode";
+  DEFAULT_SPLINE_SCENE;
 
 const marketSignals = [
   {
@@ -149,7 +150,7 @@ onMounted(() => {
   </main>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .landing {
   position: relative;
   min-height: 100vh;

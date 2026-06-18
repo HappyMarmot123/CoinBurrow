@@ -56,7 +56,7 @@ const totalCount = computed(() => marketStore.list.length);
   </aside>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .coin-list {
   display: flex;
   min-width: 220px;

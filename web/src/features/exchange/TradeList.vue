@@ -1,24 +1,10 @@
 <script setup lang="ts">
 import { useTradeStore } from "../../stores/trade.js";
 import { computed } from "vue";
+import { formatNumber, formatTime } from "../../utils/format.js";
 
 const tradeStore = useTradeStore();
 const trades = computed(() => tradeStore.recent.slice(0, 50));
-
-function formatTime(timestamp: number) {
-  return new Intl.DateTimeFormat("ko-KR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  }).format(timestamp);
-}
-
-function formatNumber(value: number) {
-  return new Intl.NumberFormat("ko-KR", {
-    maximumFractionDigits: 4,
-    minimumFractionDigits: 0,
-  }).format(value);
-}
 
 function sideLabel(side: "ASK" | "BID") {
   return side === "BID" ? "매수" : "매도";
@@ -47,7 +33,7 @@ function sideLabel(side: "ASK" | "BID") {
   </section>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .trades-head {
   display: flex;
   align-items: flex-end;

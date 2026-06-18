@@ -1,405 +1,60 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
 import CandleChart from "./CandleChart.vue";
 import CoinList from "./CoinList.vue";
+import ExchangeHero from "./ExchangeHero.vue";
+import MarketMovementPanel from "./MarketMovementPanel.vue";
+import MarketSummaryPanel from "./MarketSummaryPanel.vue";
 import OrderbookPanel from "./OrderbookPanel.vue";
 import TradeList from "./TradeList.vue";
-import {
-  getCandles,
-  getCoinList,
-  getAvailableQuotes,
-  getExchangeRates,
-  getTradeSnapshot,
-  getMarketSummaries,
-  getMarketStatus,
-  TIMEFRAME_LABELS,
-} from "../../api/rest.js";
-import { useMarketSocket } from "../../composables/useMarketSocket.js";
-import { useCandleStore } from "../../stores/candle.js";
-import { useMarketStore } from "../../stores/market.js";
-import { useOrderbookStore } from "../../stores/orderbook.js";
-import { useTradeStore } from "../../stores/trade.js";
-import { useTickerStore } from "../../stores/ticker.js";
-import type { CandleTimeframe, ExchangeRateView, MarketStatusView, MarketSummaryView } from "../../api/rest.js";
+import { useExchangeData } from "../../composables/useExchangeData.js";
+import { useMarketMeta } from "../../composables/useMarketMeta.js";
+import { CANDLE_COUNT_OPTIONS, TIMEFRAME_OPTIONS } from "../../constants/exchange.js";
+import { DEFAULT_MARKET } from "../../constants/market.js";
+import type { CandleTimeframe } from "../../api/rest.js";
 
-interface TimeframeOption {
-  value: CandleTimeframe;
-  label: string;
-}
-
-const market = ref("KRW-BTC");
+const market = ref(DEFAULT_MARKET);
 const selectedQuote = ref("KRW");
 const candleTimeframe = ref<CandleTimeframe>("1m");
 const candleCount = ref(200);
-const marketStatus = ref<MarketStatusView[]>([]);
-const exchangeRates = ref<ExchangeRateView[]>([]);
-const availableQuotes = ref<string[]>(["KRW"]);
-const marketSummaries = ref<Record<string, MarketSummaryView>>({});
-const tradeStore = useTradeStore();
-const statusError = ref("");
-const { subscribe, unsubscribe } = useMarketSocket();
-const marketStore = useMarketStore();
-const candleStore = useCandleStore();
-const tickerStore = useTickerStore();
-const orderbookStore = useOrderbookStore();
-const exchangeError = ref("");
-const quoteLoadError = ref("");
-const activeCandleChannel = ref<("candle" | `candle.${string}`) | null>(null);
-const activeTickerMarkets = ref<string[]>([]);
 
-function resolveCandleSubscriptionChannel(
-  timeframe: CandleTimeframe,
-): ("candle" | `candle.${string}`) | null {
-  if (timeframe === "1s") return "candle.1s";
-  if (timeframe === "1m") return "candle.1m";
-  if (timeframe === "3m") return "candle.3m";
-  if (timeframe === "5m") return "candle.5m";
-  if (timeframe === "10m") return "candle.10m";
-  if (timeframe === "15m") return "candle.15m";
-  if (timeframe === "30m") return "candle.30m";
-  if (timeframe === "60m") return "candle.60m";
-  if (timeframe === "240m") return "candle.240m";
-  if (timeframe === "1h") return "candle.60m";
-  if (timeframe === "4h") return "candle.240m";
-  return null;
-}
+const timeframeOptions = TIMEFRAME_OPTIONS;
+const countOptions = CANDLE_COUNT_OPTIONS;
 
-const timeframeOptions: TimeframeOption[] = [
-  { value: "1s", label: TIMEFRAME_LABELS["1s"] },
-  { value: "1m", label: `${TIMEFRAME_LABELS["1m"]} (기본)` },
-  { value: "3m", label: `${TIMEFRAME_LABELS["3m"]}` },
-  { value: "5m", label: `${TIMEFRAME_LABELS["5m"]}` },
-  { value: "15m", label: `${TIMEFRAME_LABELS["15m"]}` },
-  { value: "30m", label: `${TIMEFRAME_LABELS["30m"]}` },
-  { value: "60m", label: `${TIMEFRAME_LABELS["60m"]}` },
-  { value: "240m", label: `${TIMEFRAME_LABELS["240m"]}` },
-  { value: "1h", label: `${TIMEFRAME_LABELS["1h"]}` },
-  { value: "4h", label: `${TIMEFRAME_LABELS["4h"]}` },
-  { value: "1d", label: `${TIMEFRAME_LABELS["1d"]}` },
-  { value: "1w", label: `${TIMEFRAME_LABELS["1w"]}` },
-  { value: "1M", label: `${TIMEFRAME_LABELS["1M"]}` },
-  { value: "1mo", label: `${TIMEFRAME_LABELS["1mo"]}` },
-  { value: "1y", label: `${TIMEFRAME_LABELS["1y"]}` },
-];
+const {
+  availableQuotes,
+  statusError,
+  selectedMarketSummary,
+  selectedMarketStatus,
+  marketStatusCautions,
+  selectedMarketTradeCurrency,
+  marketState,
+  marketRestriction,
+  usdKrwRate,
+  loadAvailableQuotes,
+  loadMeta,
+  loadMarketStatus,
+} = useMarketMeta(selectedQuote, market);
 
-const countOptions = [30, 50, 100, 200];
-
-const selectedMarketLabel = computed(() => {
-  const current = marketStore.list.find((item) => item.market === market.value);
-  if (!current) return market.value;
-  return `${current.koreanName} (${current.englishName})`;
+const {
+  exchangeError,
+  selectedMarketLabel,
+  liveTicker,
+  selectedOrderbook,
+  selectedMarketSpread,
+  topByVolume,
+  topGainers,
+  topLosers,
+  resolveMarketName,
+  loadMarketsByQuote,
+  loadMarket,
+  unsubscribeMarket,
+} = useExchangeData({
+  market,
+  candleTimeframe,
+  candleCount,
+  loadMarketStatus,
 });
-
-const liveTicker = computed(() => tickerStore.byMarket[market.value]);
-const selectedOrderbook = computed(() => orderbookStore.current);
-const selectedMarketSummary = computed(() => marketSummaries.value[market.value]);
-const selectedMarketStatus = computed(() =>
-  marketStatus.value.find((status) => status.market === market.value || status.code === market.value),
-);
-const selectedMarketSpread = computed(() => {
-  const rows = selectedOrderbook.value?.units ?? [];
-  if (rows.length === 0) return null;
-  const ask = rows[0].askPrice;
-  const bid = rows[0].bidPrice;
-  if (!ask || !bid) return null;
-  return {
-    ask,
-    bid,
-    ratio: ((ask - bid) / bid) * 100,
-    amount: ask - bid,
-  };
-});
-
-const usdKrwRate = computed(() => {
-  const rate = exchangeRates.value.find((entry) => entry.currency === "USD");
-  if (!rate) return null;
-  const raw = rate.base_price ?? rate.rate ?? "";
-  const normalized = Number(String(raw).replaceAll(",", ""));
-  if (Number.isNaN(normalized)) return null;
-  return normalized;
-});
-
-const cautionLabels: Record<string, string> = {
-  PRICE_FLUCTUATIONS: "가격 급변동",
-  TRADING_VOLUME_SOARING: "거래량 급증",
-  DEPOSIT_AMOUNT_SOARING: "예치량 급증",
-  GLOBAL_PRICE_DIFFERENCES: "가격 괴리 확대",
-  CONCENTRATION_OF_SMALL_ACCOUNTS: "소수 계정 집중",
-};
-
-const marketStatusCautions = computed(() => {
-  const caution = selectedMarketStatus.value?.caution;
-  if (!caution || typeof caution !== "object") return [];
-  return Object.entries(caution)
-    .filter(([, active]) => active)
-    .map(([key]) => cautionLabels[key] ?? key)
-    .sort();
-});
-
-const selectedMarketTradeCurrency = computed(() => {
-  const fromSummary = selectedMarketSummary.value?.trade_currency;
-  if (typeof fromSummary === "string" && fromSummary.length > 0) return fromSummary;
-  const fromStatus = selectedMarketStatus.value?.trade_currency;
-  if (typeof fromStatus === "string" && fromStatus.length > 0) return fromStatus;
-  return "-";
-});
-
-function parseLegacyMarketWarning(value: unknown): string {
-  if (typeof value !== "string") return "";
-  const normalized = value.trim();
-  if (!normalized || normalized.toUpperCase() === "NONE") return "";
-  return normalized;
-}
-
-function parseLegacyMarketRestriction(value: unknown): string {
-  if (typeof value !== "string") return "";
-  const normalized = value.trim();
-  if (!normalized) return "";
-  if (normalized.toUpperCase() === "NONE") return "없음";
-  return normalized;
-}
-
-const marketState = computed(() => {
-  const current = selectedMarketStatus.value;
-  if (!current) {
-    return "확인중";
-  }
-
-  if (typeof current.warning === "boolean") {
-    const warningText = current.warning
-      ? "제재 경보"
-      : marketStatusCautions.value.length > 0
-        ? "주의 항목"
-        : "정상";
-    return marketStatusCautions.value.length > 0
-      ? `${warningText} (${marketStatusCautions.value.join(", ")})`
-      : warningText;
-  }
-
-  if (marketStatusCautions.value.length > 0) {
-    return `주의 항목 (${marketStatusCautions.value.join(", ")})`;
-  }
-
-  const fallbackWarning =
-    parseLegacyMarketWarning(current.market_warning_message) ||
-    parseLegacyMarketWarning(current.market_warning) ||
-    "";
-  if (fallbackWarning.length > 0) {
-    return fallbackWarning;
-  }
-
-  const event = current.market_event;
-  if (typeof event === "string" && event.length > 0) {
-    return event;
-  }
-
-  return "정상";
-});
-
-const marketRestriction = computed(() => {
-  const current = selectedMarketStatus.value;
-  if (!current) return "-";
-  if (typeof current.warning === "boolean") {
-    return current.warning ? "있음" : "없음";
-  }
-  const rawWarning = parseLegacyMarketRestriction(current.market_warning);
-  if (rawWarning) return rawWarning;
-  return "-";
-});
-
-const topByVolume = computed(() => {
-  return [...Object.values(tickerStore.byMarket)]
-    .filter((item) => typeof item.accTradePrice24h === "number")
-    .sort((a, b) => b.accTradePrice24h - a.accTradePrice24h)
-    .slice(0, 3);
-});
-
-const topGainers = computed(() => {
-  return [...Object.values(tickerStore.byMarket)]
-    .filter((item) => typeof item.signedChangeRate === "number")
-    .sort((a, b) => b.signedChangeRate - a.signedChangeRate)
-    .slice(0, 3);
-});
-const topLosers = computed(() => {
-  return [...Object.values(tickerStore.byMarket)]
-    .filter((item) => typeof item.signedChangeRate === "number")
-    .sort((a, b) => a.signedChangeRate - b.signedChangeRate)
-    .slice(0, 3);
-});
-
-function formatPrice(value?: number): string {
-  if (typeof value !== "number") return "-";
-  return new Intl.NumberFormat("ko-KR").format(Math.round(value));
-}
-
-function formatCompact(value?: number): string {
-  if (typeof value !== "number") return "-";
-  if (value >= 1_000_000_000_000) {
-    return `${(value / 1_000_000_000_000).toFixed(1)}T`;
-  }
-  if (value >= 1_000_000_000) {
-    return `${(value / 1_000_000_000).toFixed(1)}B`;
-  }
-  if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(1)}M`;
-  }
-  if (value >= 1_000) {
-    return `${(value / 1_000).toFixed(1)}K`;
-  }
-
-  return formatPrice(value);
-}
-
-function formatRate(rate?: number): string {
-  if (typeof rate !== "number") return "-";
-  return `${(rate * 100).toFixed(2)}%`;
-}
-
-function formatRatio(ratio?: number): string {
-  if (typeof ratio !== "number") return "-";
-  return `${ratio >= 0 ? "+" : ""}${ratio.toFixed(3)}%`;
-}
-
-function resolveMarketName(marketCode: string): string {
-  const found = marketStore.list.find((item) => item.market === marketCode);
-  return found ? found.koreanName : marketCode;
-}
-
-async function loadAvailableQuotes() {
-  try {
-    const summaries = await getAvailableQuotes();
-    const quotes = summaries.map((summary) => summary.quote).filter(Boolean);
-
-    availableQuotes.value = quotes.length > 0 ? quotes : ["KRW"];
-    if (!availableQuotes.value.includes(selectedQuote.value)) {
-      selectedQuote.value = availableQuotes.value[0];
-    }
-    quoteLoadError.value = "";
-  } catch {
-    availableQuotes.value = ["KRW"];
-    selectedQuote.value = "KRW";
-    quoteLoadError.value = "지원 가능한 마켓 기준통화 목록을 불러오지 못했습니다.";
-  }
-}
-
-async function loadMarketsByQuote(nextQuote: string): Promise<string> {
-  const previousMarkets = [...activeTickerMarkets.value];
-
-  try {
-    const list = await getCoinList({ quote: nextQuote, isDetails: false });
-    marketStore.setList(list);
-
-    const nextMarkets = list.map((item) => item.market);
-
-    const toSubscribe = nextMarkets.filter((marketCode) => !previousMarkets.includes(marketCode));
-    const toUnsubscribe = previousMarkets.filter((marketCode) => !nextMarkets.includes(marketCode));
-
-    if (toUnsubscribe.length > 0) {
-      unsubscribe("ticker", toUnsubscribe);
-    }
-    if (toSubscribe.length > 0) {
-      subscribe("ticker", toSubscribe);
-    }
-
-    activeTickerMarkets.value = nextMarkets;
-
-    const nextSelected = list.some((item) => item.market === market.value)
-      ? market.value
-      : list[0]?.market;
-
-    if (nextSelected) {
-      market.value = nextSelected;
-    } else {
-      market.value = "KRW-BTC";
-    }
-
-    exchangeError.value = "";
-    return market.value;
-  } catch (error) {
-    exchangeError.value = `코인 목록 로딩 실패: ${
-      error instanceof Error ? error.message : "알 수 없는 오류"
-    }`;
-    return market.value;
-  }
-}
-
-async function loadMarket(nextMarket: string) {
-  if (!nextMarket) {
-    candleStore.setInitial([]);
-    return;
-  }
-
-  try {
-    candleStore.setInitial(
-      await getCandles(nextMarket, {
-        timeframe: candleTimeframe.value,
-        count: candleCount.value,
-      }),
-    );
-    exchangeError.value = "";
-  } catch (error) {
-    candleStore.setInitial([]);
-    exchangeError.value = `캔들 로딩 실패: ${error instanceof Error ? error.message : "알 수 없는 오류"}`;
-  } finally {
-    const nextCandleChannel = resolveCandleSubscriptionChannel(candleTimeframe.value);
-
-    if (activeCandleChannel.value && activeCandleChannel.value !== nextCandleChannel) {
-      unsubscribe(activeCandleChannel.value, [nextMarket]);
-    }
-
-    subscribe("orderbook", [nextMarket]);
-    subscribe("trade", [nextMarket]);
-
-    if (nextCandleChannel) {
-      subscribe(nextCandleChannel, [nextMarket]);
-    } else {
-      if (activeCandleChannel.value) {
-        unsubscribe(activeCandleChannel.value, [nextMarket]);
-      }
-    }
-    activeCandleChannel.value = nextCandleChannel;
-
-    try {
-      tradeStore.setInitial(
-        await getTradeSnapshot(nextMarket, {
-          count: Math.min(candleCount.value, 50),
-        }),
-      );
-    } catch {
-      tradeStore.setInitial([]);
-    }
-
-    try {
-      marketStatus.value = await getMarketStatus([nextMarket]);
-      statusError.value = "";
-    } catch (error) {
-      marketStatus.value = [];
-      statusError.value = `마켓 상태 로딩 실패: ${
-        error instanceof Error ? error.message : "알 수 없는 오류"
-      }`;
-    }
-  }
-}
-
-async function loadMeta() {
-  try {
-    exchangeRates.value = await getExchangeRates();
-  } catch {
-    exchangeRates.value = [];
-  }
-
-  try {
-    const summariesPayload = await getMarketSummaries({
-      quote: selectedQuote.value,
-      isDetails: true,
-    });
-    marketSummaries.value = Object.fromEntries(
-      summariesPayload.map((item) => [item.market, item]),
-    );
-  } catch {
-    marketSummaries.value = {};
-  }
-}
 
 onMounted(async () => {
   await loadAvailableQuotes();
@@ -415,12 +70,7 @@ watch(selectedQuote, (nextQuote) => {
 });
 
 watch(market, (nextMarket, previousMarket) => {
-  unsubscribe("orderbook", [previousMarket]);
-  unsubscribe("trade", [previousMarket]);
-  if (activeCandleChannel.value) {
-    unsubscribe(activeCandleChannel.value, [previousMarket]);
-  }
-  activeCandleChannel.value = null;
+  unsubscribeMarket(previousMarket);
   void loadMarket(nextMarket);
 });
 
@@ -435,43 +85,16 @@ watch(candleCount, () => {
 
 <template>
   <main class="exchange-page">
-    <section class="exchange-hero">
-      <p class="kicker">CoinBurrow Exchange Console</p>
-      <h1>실시간 마켓 레이어</h1>
-      <p class="hero-lead">코인 리스트, 1분봉, 호가, 체결 체인을 한 화면에서 연결해 전환하는 데 걸리는 시간을 최소화한 대시보드입니다.</p>
-      <div class="hero-metrics">
-        <p v-if="exchangeError" class="hero-error">{{ exchangeError }}</p>
-        <p v-if="statusError" class="hero-error">{{ statusError }}</p>
-        <article class="metric-card">
-          <span>선택 마켓</span>
-          <strong>{{ selectedMarketLabel }}</strong>
-        </article>
-        <article class="metric-card">
-          <span>시장 상태</span>
-          <strong>{{ marketState }}</strong>
-        </article>
-        <article class="metric-card">
-          <span>마켓 구분</span>
-          <strong>{{ selectedMarketSummary?.quote ?? "KRW" }}</strong>
-        </article>
-        <article class="metric-card">
-          <span>거래대금(24h)</span>
-          <strong>{{ formatPrice(liveTicker?.accTradePrice24h) }}</strong>
-        </article>
-        <article class="metric-card">
-          <span>스프레드</span>
-          <strong>{{ formatRatio(selectedOrderbook ? selectedMarketSpread?.ratio : undefined) }}</strong>
-        </article>
-        <article class="metric-card">
-          <span>실시간 채널</span>
-          <strong>ticker / candle / orderbook / trade</strong>
-        </article>
-        <article v-if="usdKrwRate" class="metric-card">
-          <span>USD/KRW</span>
-          <strong>{{ formatPrice(usdKrwRate) }}</strong>
-        </article>
-      </div>
-    </section>
+    <ExchangeHero
+      :exchange-error="exchangeError"
+      :status-error="statusError"
+      :selected-market-label="selectedMarketLabel"
+      :market-state="marketState"
+      :quote="selectedMarketSummary?.quote ?? 'KRW'"
+      :live-ticker="liveTicker"
+      :spread-ratio="selectedOrderbook ? selectedMarketSpread?.ratio : undefined"
+      :usd-krw-rate="usdKrwRate"
+    />
 
     <section class="exchange-layout">
       <aside class="panel panel-sidebar">
@@ -520,88 +143,23 @@ watch(candleCount, () => {
           <CandleChart :timeframe="candleTimeframe" />
         </section>
 
-        <section class="panel">
-          <div class="panel-head">
-            <h3>마켓 무브먼트</h3>
-            <span class="muted">상승·하락 상위</span>
-          </div>
-          <div class="ticker-grid">
-            <div class="ticker-col">
-              <p class="ticker-col__title ticker-col__title--up">상승 TOP</p>
-              <ul>
-                <li v-for="ticker in topGainers" :key="ticker.market">
-                  <span>{{ resolveMarketName(ticker.market) }}</span>
-                  <strong :class="{ up: true }">{{ formatRate(ticker.signedChangeRate) }}</strong>
-                </li>
-              </ul>
-            </div>
-            <div class="ticker-col">
-              <p class="ticker-col__title ticker-col__title--down">하락 TOP</p>
-              <ul>
-                <li v-for="ticker in topLosers" :key="ticker.market">
-                  <span>{{ resolveMarketName(ticker.market) }}</span>
-                  <strong :class="{ down: true }">{{ formatRate(ticker.signedChangeRate) }}</strong>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel">
-          <div class="panel-head">
-            <h3>거래대금 TOP</h3>
-            <span class="muted">24h 거래대금 기준</span>
-          </div>
-          <div class="summary-list-wrap">
-            <ul class="summary-list">
-              <li v-for="ticker in topByVolume" :key="ticker.market">
-                <span>{{ resolveMarketName(ticker.market) }}</span>
-                <strong>{{ formatCompact(ticker.accTradePrice24h) }}</strong>
-              </li>
-            </ul>
-          </div>
-        </section>
+        <MarketMovementPanel
+          :top-gainers="topGainers"
+          :top-losers="topLosers"
+          :top-by-volume="topByVolume"
+          :resolve-market-name="resolveMarketName"
+        />
 
         <div class="split-grid">
-          <section class="panel">
-            <div class="panel-head">
-              <h3>선택 마켓 상세</h3>
-              <span class="muted">요약/경고/이벤트</span>
-            </div>
-            <p v-if="selectedMarketStatus" class="market-summary-empty">
-              {{ marketState }}
-            </p>
-            <p v-else class="market-summary-empty">선택 마켓 메타정보 대기중입니다.</p>
-            <dl class="market-summary-grid">
-              <div>
-                <dt>마켓</dt>
-                <dd>{{ selectedMarketSummary?.market ?? market }}</dd>
-              </div>
-              <div>
-                <dt>심볼</dt>
-                <dd>{{ selectedMarketSummary?.englishName ?? "-" }}</dd>
-              </div>
-              <div>
-                <dt>거래 통화</dt>
-                <dd>{{ selectedMarketTradeCurrency }}</dd>
-              </div>
-              <div>
-                <dt>제재</dt>
-                <dd>{{ marketRestriction }}</dd>
-              </div>
-              <div>
-                <dt>주의 항목</dt>
-                <dd v-if="marketStatusCautions.length === 0">-</dd>
-                <dd v-else>
-                  <ul class="market-caution-list">
-                    <li v-for="caution in marketStatusCautions" :key="caution">
-                      {{ caution }}
-                    </li>
-                  </ul>
-                </dd>
-              </div>
-            </dl>
-          </section>
+          <MarketSummaryPanel
+            :market="market"
+            :selected-market-status="selectedMarketStatus"
+            :selected-market-summary="selectedMarketSummary"
+            :market-state="marketState"
+            :selected-market-trade-currency="selectedMarketTradeCurrency"
+            :market-restriction="marketRestriction"
+            :market-status-cautions="marketStatusCautions"
+          />
           <section class="panel">
             <div class="panel-head">
               <h3>호가</h3>
@@ -622,7 +180,7 @@ watch(candleCount, () => {
   </main>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 :global(body) {
   margin: 0;
 }
