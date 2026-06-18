@@ -19,3 +19,6 @@
 /web-front-end/dist/
 
 # 로그 파일
+
+# 로컬 Git worktree
+/.worktrees/
