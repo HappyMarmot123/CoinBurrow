@@ -4,13 +4,17 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import LandingPage from "../src/features/landing/LandingPage.vue";
 
+function readSource(path: string): string {
+  return readFileSync(path, "utf8").replace(/\r\n/g, "\n");
+}
+
 describe("LandingPage", () => {
   it("presents CoinBurrow as a real-time crypto dashboard", () => {
     const wrapper = mount(LandingPage, {
       global: { stubs: { "router-link": { template: "<a><slot /></a>" }, SplineScene: true } },
     });
     const text = wrapper.text();
-    const source = readFileSync(join(process.cwd(), "src/features/landing/LandingPage.vue"), "utf8");
+    const source = readSource(join(process.cwd(), "src/features/landing/LandingPage.vue"));
 
     expect(wrapper.find("h1").text()).toBe("CoinBurrow");
     expect(text).toContain("Realtime Market Dashboard");
@@ -61,7 +65,7 @@ describe("LandingPage", () => {
     const wrapper = mount(LandingPage, {
       global: { stubs: { "router-link": { template: "<a><slot /></a>" }, SplineScene: true } },
     });
-    const source = readFileSync(join(process.cwd(), "src/features/landing/LandingPage.vue"), "utf8");
+    const source = readSource(join(process.cwd(), "src/features/landing/LandingPage.vue"));
     const legacyStyles = readFileSync(join(process.cwd(), "src/features/landing/legacyHeroStars.scss"), "utf8");
     const noiseImage = join(process.cwd(), "public/noise.webp");
 
@@ -77,7 +81,7 @@ describe("LandingPage", () => {
   });
 
   it("keeps the desktop hero as the source of truth while tuning responsive breakpoints", () => {
-    const source = readFileSync(join(process.cwd(), "src/features/landing/LandingPage.vue"), "utf8");
+    const source = readSource(join(process.cwd(), "src/features/landing/LandingPage.vue"));
 
     expect(source).toContain("@media (max-width: 900px)");
     expect(source).toContain("padding: clamp(48px, 8svh, 72px) 20px clamp(36px, 7svh, 56px);");

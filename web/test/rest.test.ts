@@ -67,6 +67,16 @@ describe("rest client", () => {
     );
   });
 
+  it("does not issue fallback requests when the proxy returns an error", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 502 }));
+
+    await expect(getCandles("KRW-BTC")).rejects.toThrow(
+      "failed to load /market/exchange/candle?market=KRW-BTC; status 502",
+    );
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledWith("/market/exchange/candle?market=KRW-BTC");
+  });
+
   it("getMarketStatus accepts market filter", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
 

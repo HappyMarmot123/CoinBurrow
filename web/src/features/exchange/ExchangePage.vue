@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { nextTick, onMounted, ref, watch } from "vue";
 import CandleChart from "./CandleChart.vue";
 import CoinList from "./CoinList.vue";
 import ExchangeHero from "./ExchangeHero.vue";
@@ -20,6 +20,8 @@ const candleCount = ref(200);
 
 const timeframeOptions = TIMEFRAME_OPTIONS;
 const countOptions = CANDLE_COUNT_OPTIONS;
+let initializingExchange = true;
+let loadingMarketFromQuote = false;
 
 const {
   availableQuotes,
@@ -56,21 +58,37 @@ const {
   loadMarketStatus,
 });
 
+async function loadQuoteMarkets(nextQuote: string) {
+  loadingMarketFromQuote = true;
+  let nextMarket = market.value;
+  try {
+    nextMarket = await loadMarketsByQuote(nextQuote);
+    await nextTick();
+  } finally {
+    loadingMarketFromQuote = false;
+  }
+
+  await loadMarket(nextMarket);
+  void loadMeta();
+}
+
 onMounted(async () => {
-  await loadAvailableQuotes();
-  await loadMarketsByQuote(selectedQuote.value);
-  await loadMeta();
-  await loadMarket(market.value);
+  try {
+    await loadAvailableQuotes();
+    await loadQuoteMarkets(selectedQuote.value);
+  } finally {
+    initializingExchange = false;
+  }
 });
 
 watch(selectedQuote, (nextQuote) => {
-  void loadMarketsByQuote(nextQuote).then((nextMarket) => {
-    void loadMarket(nextMarket);
-  });
+  if (initializingExchange) return;
+  void loadQuoteMarkets(nextQuote);
 });
 
 watch(market, (nextMarket, previousMarket) => {
   unsubscribeMarket(previousMarket);
+  if (loadingMarketFromQuote) return;
   void loadMarket(nextMarket);
 });
 
