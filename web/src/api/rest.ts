@@ -36,10 +36,25 @@ export interface TradeQueryOptions {
 export interface MarketStatusView {
   market?: string;
   code?: string;
+  warning?: boolean;
+  caution?: Record<string, boolean>;
   market_warning?: unknown;
   market_warning_message?: string;
   market_event?: string | null;
+  trade_currency?: string;
   [key: string]: unknown;
+}
+
+function normalizeCautionFlags(raw: unknown): Record<string, boolean> {
+  if (!raw || typeof raw !== "object") {
+    return {};
+  }
+
+  const entries = Object.entries(raw as Record<string, unknown>)
+    .filter(([, value]) => typeof value === "boolean")
+    .map(([key, value]) => [key, value] as const);
+
+  return Object.fromEntries(entries) as Record<string, boolean>;
 }
 
 export interface ExchangeRateView {
@@ -380,7 +395,11 @@ function mapMarketStatus(raw: unknown): MarketStatusView[] {
           : typeof item.code === "string"
             ? item.code
             : "";
-      return { ...item, market };
+      return {
+        ...item,
+        market,
+        caution: normalizeCautionFlags((item as { caution?: unknown }).caution),
+      };
     })
     .filter((item) => item.market.length > 0);
 }

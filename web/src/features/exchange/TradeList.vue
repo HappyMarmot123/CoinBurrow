@@ -32,7 +32,11 @@ function sideLabel(side: "ASK" | "BID") {
       <p class="trades-head__count">{{ trades.length.toLocaleString() }}건</p>
     </div>
     <ul v-if="trades.length > 0">
-      <li v-for="trade in trades" :key="trade.timestamp" :class="trade.side === 'BID' ? 'up' : 'down'">
+      <li
+        v-for="(trade, index) in trades"
+        :key="`${trade.market}-${trade.timestamp}-${index}`"
+        :class="trade.side === 'BID' ? 'up' : 'down'"
+      >
         <span class="trades-time">{{ formatTime(trade.timestamp) }}</span>
         <span class="trades-side">{{ sideLabel(trade.side) }}</span>
         <span class="trades-volume">{{ formatNumber(trade.volume) }}</span>

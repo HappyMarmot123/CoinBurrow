@@ -93,6 +93,9 @@ const selectedMarketLabel = computed(() => {
 const liveTicker = computed(() => tickerStore.byMarket[market.value]);
 const selectedOrderbook = computed(() => orderbookStore.current);
 const selectedMarketSummary = computed(() => marketSummaries.value[market.value]);
+const selectedMarketStatus = computed(() =>
+  marketStatus.value.find((status) => status.market === market.value || status.code === market.value),
+);
 const selectedMarketSpread = computed(() => {
   const rows = selectedOrderbook.value?.units ?? [];
   if (rows.length === 0) return null;
@@ -116,20 +119,73 @@ const usdKrwRate = computed(() => {
   return normalized;
 });
 
+const cautionLabels: Record<string, string> = {
+  PRICE_FLUCTUATIONS: "가격 급변동",
+  TRADING_VOLUME_SOARING: "거래량 급증",
+  DEPOSIT_AMOUNT_SOARING: "예치량 급증",
+  GLOBAL_PRICE_DIFFERENCES: "가격 괴리 확대",
+  CONCENTRATION_OF_SMALL_ACCOUNTS: "소수 계정 집중",
+};
+
+const marketStatusCautions = computed(() => {
+  const caution = selectedMarketStatus.value?.caution;
+  if (!caution || typeof caution !== "object") return [];
+  return Object.entries(caution)
+    .filter(([, active]) => active)
+    .map(([key]) => cautionLabels[key] ?? key)
+    .sort();
+});
+
+const selectedMarketTradeCurrency = computed(() => {
+  const fromSummary = selectedMarketSummary.value?.trade_currency;
+  if (typeof fromSummary === "string" && fromSummary.length > 0) return fromSummary;
+  const fromStatus = selectedMarketStatus.value?.trade_currency;
+  if (typeof fromStatus === "string" && fromStatus.length > 0) return fromStatus;
+  return "-";
+});
+
+function parseLegacyMarketWarning(value: unknown): string {
+  if (typeof value !== "string") return "";
+  const normalized = value.trim();
+  if (!normalized || normalized.toUpperCase() === "NONE") return "";
+  return normalized;
+}
+
+function parseLegacyMarketRestriction(value: unknown): string {
+  if (typeof value !== "string") return "";
+  const normalized = value.trim();
+  if (!normalized) return "";
+  if (normalized.toUpperCase() === "NONE") return "없음";
+  return normalized;
+}
+
 const marketState = computed(() => {
-  const current = marketStatus.value.find(
-    (status) => status.market === market.value || status.code === market.value,
-  );
+  const current = selectedMarketStatus.value;
   if (!current) {
     return "확인중";
   }
 
-  if (typeof current.market_warning === "string" && current.market_warning.length > 0) {
-    return current.market_warning;
+  if (typeof current.warning === "boolean") {
+    const warningText = current.warning
+      ? "제재 경보"
+      : marketStatusCautions.value.length > 0
+        ? "주의 항목"
+        : "정상";
+    return marketStatusCautions.value.length > 0
+      ? `${warningText} (${marketStatusCautions.value.join(", ")})`
+      : warningText;
   }
 
-  if (typeof current.market_warning_message === "string" && current.market_warning_message.length > 0) {
-    return current.market_warning_message;
+  if (marketStatusCautions.value.length > 0) {
+    return `주의 항목 (${marketStatusCautions.value.join(", ")})`;
+  }
+
+  const fallbackWarning =
+    parseLegacyMarketWarning(current.market_warning_message) ||
+    parseLegacyMarketWarning(current.market_warning) ||
+    "";
+  if (fallbackWarning.length > 0) {
+    return fallbackWarning;
   }
 
   const event = current.market_event;
@@ -138,6 +194,17 @@ const marketState = computed(() => {
   }
 
   return "정상";
+});
+
+const marketRestriction = computed(() => {
+  const current = selectedMarketStatus.value;
+  if (!current) return "-";
+  if (typeof current.warning === "boolean") {
+    return current.warning ? "있음" : "없음";
+  }
+  const rawWarning = parseLegacyMarketRestriction(current.market_warning);
+  if (rawWarning) return rawWarning;
+  return "-";
 });
 
 const topByVolume = computed(() => {
@@ -501,8 +568,8 @@ watch(candleCount, () => {
               <h3>선택 마켓 상세</h3>
               <span class="muted">요약/경고/이벤트</span>
             </div>
-            <p v-if="selectedMarketSummary" class="market-summary-empty">
-              {{ selectedMarketSummary.market_warning ?? selectedMarketSummary.market_warning_message ?? selectedMarketSummary.market_event ?? "정상" }}
+            <p v-if="selectedMarketStatus" class="market-summary-empty">
+              {{ marketState }}
             </p>
             <p v-else class="market-summary-empty">선택 마켓 메타정보 대기중입니다.</p>
             <dl class="market-summary-grid">
@@ -516,11 +583,22 @@ watch(candleCount, () => {
               </div>
               <div>
                 <dt>거래 통화</dt>
-                <dd>{{ selectedMarketSummary?.trade_currency ?? "-" }}</dd>
+                <dd>{{ selectedMarketTradeCurrency }}</dd>
               </div>
               <div>
                 <dt>제재</dt>
-                <dd>{{ selectedMarketSummary?.market_warning ?? "-" }}</dd>
+                <dd>{{ marketRestriction }}</dd>
+              </div>
+              <div>
+                <dt>주의 항목</dt>
+                <dd v-if="marketStatusCautions.length === 0">-</dd>
+                <dd v-else>
+                  <ul class="market-caution-list">
+                    <li v-for="caution in marketStatusCautions" :key="caution">
+                      {{ caution }}
+                    </li>
+                  </ul>
+                </dd>
               </div>
             </dl>
           </section>
@@ -827,6 +905,18 @@ h1 {
 .market-summary-grid dd {
   margin: 0;
   color: #f1f6ff;
+}
+
+.market-caution-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.market-caution-list li {
+  margin: 0;
 }
 
 .split-grid {
