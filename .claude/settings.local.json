@@ -5,7 +5,11 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(curl -s \"https://api.github.com/repos/obra/superpowers/readme\")",
-      "Bash(python3 -c \"import sys,json,base64; data=json.load\\(sys.stdin\\); print\\(base64.b64decode\\(data['content']\\).decode\\(\\)\\)\")"
+      "Bash(python3 -c \"import sys,json,base64; data=json.load\\(sys.stdin\\); print\\(base64.b64decode\\(data['content']\\).decode\\(\\)\\)\")",
+      "Bash(timeout 300 npm run build --workspace web)",
+      "Bash(timeout 120 npm run build --workspace web)",
+      "Bash(npm install *)",
+      "Bash(node -e \"const l=require\\('./package-lock.json'\\); const root=l.packages['']; console.log\\('root devDependencies:', JSON.stringify\\(root.devDependencies||{}\\)\\); console.log\\('linux rollup in lock?', !!l.packages['node_modules/@rollup/rollup-linux-x64-gnu']\\); console.log\\('linux esbuild in lock?', !!l.packages['node_modules/@esbuild/linux-x64']\\);\")"
     ]
   }
 }
