@@ -12,7 +12,11 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        additionalData: `@use "@/styles/variables" as *;\n@use "@/styles/mixins" as *;\n`,
+        additionalData: (source: string, filename: string) => {
+          const normalized = filename.replaceAll("\\", "/");
+          if (normalized.endsWith("/src/styles/index.scss")) return source;
+          return `@use "@/styles/variables" as * with ($emit-css-vars: false);\n@use "@/styles/mixins" as *;\n${source}`;
+        },
       },
     },
   },

@@ -464,11 +464,13 @@ export async function fetchTradeTicks(
   market: string,
   count = 50,
   to?: string,
+  daysAgo?: number,
 ): Promise<TradeDto[]> {
   const path = buildPath('/trades/ticks', {
     market,
     count: String(count),
     to,
+    daysAgo: typeof daysAgo === 'number' ? String(daysAgo) : undefined,
   })
   const trades = await getJson(path, tradeSchema, 'high')
 

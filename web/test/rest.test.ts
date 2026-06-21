@@ -10,6 +10,7 @@ import {
   getOrderbookSnapshots,
   getOrderbookSnapshot,
   getTickersByMarkets,
+  getTradeSnapshot,
 } from "../src/api/rest";
 
 afterEach(() => vi.restoreAllMocks());
@@ -125,5 +126,15 @@ describe("rest client", () => {
     await getOrderbookSnapshot("KRW-BTC");
 
     expect(fetch).toHaveBeenCalledWith("/market/exchange/orderbook?market=KRW-BTC");
+  });
+
+  it("getTradeSnapshot supports daysAgo", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
+
+    await getTradeSnapshot("KRW-BTC", { count: 10, daysAgo: 3 });
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/market/exchange/trade-ticks?market=KRW-BTC&count=10&daysAgo=3",
+    );
   });
 });

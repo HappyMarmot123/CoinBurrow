@@ -685,6 +685,18 @@ describe('Upbit REST client', () => {
     await expect(fetchTradeTicks('KRW-BTC', 20, '2024-01-01T00:00:00Z')).resolves.toEqual([])
   })
 
+  it('fetches trade ticks with daysAgo', async () => {
+    mockAgent
+      .get('https://api.upbit.com')
+      .intercept({
+        method: 'GET',
+        path: '/v1/trades/ticks?market=KRW-BTC&count=20&daysAgo=3',
+      })
+      .reply(200, [])
+
+    await expect(fetchTradeTicks('KRW-BTC', 20, undefined, 3)).resolves.toEqual([])
+  })
+
   it('fetches market status from upbit', async () => {
     mockAgent
       .get('https://api.upbit.com')

@@ -25,11 +25,20 @@ const props = withDefaults(
   },
 );
 const hasCandles = computed(() => candleStore.candles.length > 0);
-const lastPrice = computed(() => {
-  const last = candleStore.candles[candleStore.candles.length - 1];
-  return last ? last.close : null;
-});
-const candleCount = computed(() => candleStore.candles.length);
+
+function readCssToken(name: string, fallback: string) {
+  if (typeof window === "undefined") return fallback;
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+}
+
+const chartColors = computed(() => ({
+  axis: readCssToken("--chart-axis", "gray"),
+  axisSoft: readCssToken("--chart-axis-soft", "gray"),
+  grid: readCssToken("--chart-grid", "gray"),
+  label: readCssToken("--text-muted", "silver"),
+  up: readCssToken("--c-up", "limegreen"),
+  down: readCssToken("--c-down", "orange"),
+}));
 const chartOptions = computed<Options>(() => ({
   chart: {
     type: "candlestick",
@@ -39,23 +48,26 @@ const chartOptions = computed<Options>(() => ({
   },
   title: { text: "" },
   credits: { enabled: false },
+  rangeSelector: { enabled: false },
+  navigator: { enabled: false },
+  scrollbar: { enabled: false },
   xAxis: {
     type: "datetime",
-    tickColor: "rgba(255, 255, 255, 0.15)",
-    lineColor: "rgba(255, 255, 255, 0.2)",
-    labels: { style: { color: "#b2b9c8" } },
+    tickColor: chartColors.value.axisSoft,
+    lineColor: chartColors.value.axis,
+    labels: { style: { color: chartColors.value.label } },
   },
   yAxis: {
     title: { text: null },
-    gridLineColor: "rgba(255, 255, 255, 0.1)",
-    labels: { style: { color: "#b2b9c8" } },
+    gridLineColor: chartColors.value.grid,
+    labels: { style: { color: chartColors.value.label } },
   },
   series: [
     {
       type: "candlestick",
       name: "KRW Price",
-      color: "#f97373",
-      upColor: "#6cb5ff",
+      color: chartColors.value.down,
+      upColor: chartColors.value.up,
       data: candleStore.candles.map((candle) => [
         candle.timestamp,
         candle.open,
@@ -80,13 +92,6 @@ const chartOptions = computed<Options>(() => ({
 
 <template>
   <section class="chart">
-    <div class="chart-head">
-      <p class="chart-title">{{ props.timeframe }} 캔들</p>
-      <p class="chart-sub">
-        {{ props.timeframe }} · {{ hasCandles ? `${candleCount.toLocaleString()}개 캔들` : "데이터 연결 대기" }}
-      </p>
-    </div>
-    <p class="chart-price" v-if="lastPrice !== null">현재가 {{ lastPrice.toLocaleString() }}</p>
     <Chart
       v-if="hasCandles"
       :options="chartOptions"
@@ -102,36 +107,9 @@ const chartOptions = computed<Options>(() => ({
   min-width: 0;
 }
 
-.chart-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.chart-title {
-  margin: 0;
-  color: #f5f8ff;
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.chart-sub {
-  margin: 0;
-  color: #9bb0cb;
-  font-size: 12px;
-}
-
-.chart-price {
-  margin: 0 0 10px;
-  color: #d9e2f0;
-  font-size: 14px;
-}
-
 .chart-empty {
   margin: 64px 0;
   text-align: center;
-  color: #9fb0c4;
+  color: var(--text-muted);
 }
 </style>

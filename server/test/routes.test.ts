@@ -607,6 +607,54 @@ describe('market routes', () => {
     ])
   })
 
+  it('returns trade ticks with daysAgo', async () => {
+    mockAgent
+      .get('https://api.upbit.com')
+      .intercept({
+        method: 'GET',
+        path: '/v1/trades/ticks?market=KRW-BTC&count=20&daysAgo=3',
+      })
+      .reply(200, [
+        {
+          market: 'KRW-BTC',
+          trade_price: 100,
+          trade_volume: 0.25,
+          ask_bid: 'ASK',
+          timestamp: 1_700_000_000_000,
+        },
+      ])
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/market/exchange/trade-ticks?market=KRW-BTC&count=20&daysAgo=3',
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toEqual([
+      {
+        market: 'KRW-BTC',
+        price: 100,
+        volume: 0.25,
+        side: 'ASK',
+        timestamp: 1_700_000_000_000,
+      },
+    ])
+  })
+
+  it('rejects trade ticks daysAgo outside the supported range', async () => {
+    const tooEarly = await app.inject({
+      method: 'GET',
+      url: '/market/exchange/trade-ticks?market=KRW-BTC&daysAgo=0',
+    })
+    const tooLate = await app.inject({
+      method: 'GET',
+      url: '/market/exchange/trade-ticks?market=KRW-BTC&daysAgo=8',
+    })
+
+    expect(tooEarly.statusCode).toBe(400)
+    expect(tooLate.statusCode).toBe(400)
+  })
+
   it('returns market status for requested markets', async () => {
     mockAgent
       .get('https://api.upbit.com')

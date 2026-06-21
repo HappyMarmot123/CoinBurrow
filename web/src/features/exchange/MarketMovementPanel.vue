@@ -14,7 +14,6 @@ defineProps<{
   <section class="panel">
     <div class="panel-head">
       <h3>마켓 무브먼트</h3>
-      <span class="muted">상승·하락 상위</span>
     </div>
     <div class="ticker-grid">
       <div class="ticker-col">
@@ -41,7 +40,6 @@ defineProps<{
   <section class="panel">
     <div class="panel-head">
       <h3>거래대금 TOP</h3>
-      <span class="muted">24h 거래대금 기준</span>
     </div>
     <div class="summary-list-wrap">
       <ul class="summary-list">
@@ -56,60 +54,29 @@ defineProps<{
 
 <style scoped lang="scss">
 .panel {
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 14px;
-  padding: 18px;
-  background: rgba(255, 255, 255, 0.075);
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.2);
+  @include exchange-panel;
 }
 
 .panel-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
+  @include panel-head;
 }
 
 .panel-head h3 {
-  margin: 0;
-  color: #ffffff;
-  font-size: 18px;
-  letter-spacing: 0;
-  line-height: 1.25;
-}
-
-.muted {
-  color: #9aa7bc;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  @include panel-title(17px);
 }
 
 .ticker-grid {
-  display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  @include ticker-grid;
 }
 
 .ticker-col ul,
 .summary-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 10px;
+  @include summary-list;
 }
 
 .ticker-col li,
 .summary-list li {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
-  padding-bottom: 8px;
+  @include summary-row;
 }
 
 .ticker-col li:last-child,
@@ -123,30 +90,34 @@ defineProps<{
 }
 
 .ticker-col span {
-  color: #d6e1f1;
+  color: var(--text);
   font-size: 13px;
 }
 
 .ticker-col__title {
   margin: 0 0 8px;
-  color: #d2dced;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  @include muted-label;
 }
 
 .ticker-col__title--up {
-  color: #6cb5ff;
+  color: var(--c-up);
 }
 
 .ticker-col__title--down {
-  color: #f97373;
+  color: var(--c-down);
 }
 
 .summary-list span,
 .summary-list strong {
-  color: #d6e1f1;
+  color: var(--text);
+}
+
+.up {
+  color: var(--c-up);
+}
+
+.down {
+  color: var(--c-down);
 }
 
 @media (max-width: 640px) {
@@ -155,7 +126,7 @@ defineProps<{
   }
 
   .panel {
-    padding: 16px;
+    padding: 14px;
   }
 
   .panel-head {

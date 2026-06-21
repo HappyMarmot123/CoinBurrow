@@ -32,6 +32,7 @@ export interface OrderbookQueryOptions {
 export interface TradeQueryOptions {
   count?: number;
   to?: string;
+  daysAgo?: number;
 }
 
 export interface MarketStatusView {
@@ -217,6 +218,7 @@ export const getTradeSnapshot = async (
     market,
     count: options.count,
     to: options.to,
+    daysAgo: options.daysAgo,
   }));
 };
 

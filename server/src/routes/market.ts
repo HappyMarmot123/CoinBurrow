@@ -36,6 +36,7 @@ const tradeQuerySchema = z.object({
   market: z.string().trim().min(1),
   count: z.coerce.number().int().min(1).max(200).default(50),
   to: z.string().trim().optional(),
+  daysAgo: z.coerce.number().int().min(1).max(7).optional(),
 })
 
 const marketsQuerySchema = z.object({
@@ -186,10 +187,10 @@ export function registerMarketRoutes(app: FastifyInstance): void {
       request.query,
       tradeQuerySchema,
       missingMarketErrorMessage,
-      ({ market, count, to }) =>
+      ({ market, count, to, daysAgo }) =>
         handleUpbitRequest(
           reply,
-          () => fetchTradeTicks(market, count, to),
+          () => fetchTradeTicks(market, count, to, daysAgo),
         ),
     ),
   )

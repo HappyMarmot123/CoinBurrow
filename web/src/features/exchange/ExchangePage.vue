@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import CandleChart from "./CandleChart.vue";
 import CoinList from "./CoinList.vue";
 import ExchangeHero from "./ExchangeHero.vue";
 import MarketMovementPanel from "./MarketMovementPanel.vue";
-import MarketSummaryPanel from "./MarketSummaryPanel.vue";
 import OrderbookPanel from "./OrderbookPanel.vue";
 import TradeList from "./TradeList.vue";
 import { useExchangeData } from "../../composables/useExchangeData.js";
 import { useMarketMeta } from "../../composables/useMarketMeta.js";
+import { useCandleStore } from "../../stores/candle.js";
 import { CANDLE_COUNT_OPTIONS, TIMEFRAME_OPTIONS } from "../../constants/exchange.js";
 import { DEFAULT_MARKET } from "../../constants/market.js";
 import type { CandleTimeframe } from "../../api/rest.js";
@@ -17,9 +17,19 @@ const market = ref(DEFAULT_MARKET);
 const selectedQuote = ref("KRW");
 const candleTimeframe = ref<CandleTimeframe>("1m");
 const candleCount = ref(200);
+const candleStore = useCandleStore();
 
 const timeframeOptions = TIMEFRAME_OPTIONS;
 const countOptions = CANDLE_COUNT_OPTIONS;
+const visibleCandleCount = computed(() => candleStore.candles.length);
+const chartSubLabel = computed(() =>
+  visibleCandleCount.value > 0
+    ? `${candleTimeframe.value} · ${visibleCandleCount.value.toLocaleString()}개 캔들`
+    : `${candleTimeframe.value} · 데이터 연결 대기`,
+);
+const primaryTimeframeOptions = timeframeOptions.filter(({ value }) =>
+  ["1m", "3m", "5m", "15m", "30m", "1h", "4h", "1d"].includes(value),
+);
 let initializingExchange = true;
 let loadingMarketFromQuote = false;
 
@@ -29,7 +39,6 @@ const {
   selectedMarketSummary,
   selectedMarketStatus,
   marketStatusCautions,
-  selectedMarketTradeCurrency,
   marketState,
   marketRestriction,
   usdKrwRate,
@@ -99,6 +108,10 @@ watch(candleTimeframe, () => {
 watch(candleCount, () => {
   void loadMarket(market.value);
 });
+
+function compactTimeframeLabel(label: string) {
+  return label.replace(" (기본)", "");
+}
 </script>
 
 <template>
@@ -106,19 +119,81 @@ watch(candleCount, () => {
     <ExchangeHero
       :exchange-error="exchangeError"
       :status-error="statusError"
+      :market="market"
       :selected-market-label="selectedMarketLabel"
       :market-state="marketState"
       :quote="selectedMarketSummary?.quote ?? 'KRW'"
+      :selected-market-status="selectedMarketStatus"
+      :selected-market-summary="selectedMarketSummary"
+      :market-restriction="marketRestriction"
+      :market-status-cautions="marketStatusCautions"
       :live-ticker="liveTicker"
       :spread-ratio="selectedOrderbook ? selectedMarketSpread?.ratio : undefined"
       :usd-krw-rate="usdKrwRate"
     />
 
     <section class="exchange-layout">
+      <section class="panel-stack">
+        <section class="panel panel-chart">
+          <div class="panel-head">
+            <h2>캔들 차트</h2>
+            <span class="chart-sub">{{ chartSubLabel }}</span>
+          </div>
+          <div class="chart-controls">
+            <div class="chart-control chart-control--timeframe" data-row>
+              <div class="timeframe-group">
+                <span class="timeframe-label">타임프레임</span>
+                <div class="timeframe-tabs" role="group" aria-label="주요 타임프레임">
+                  <button
+                    v-for="option in primaryTimeframeOptions"
+                    :key="option.value"
+                    :class="{ active: candleTimeframe === option.value }"
+                    type="button"
+                    @click="candleTimeframe = option.value"
+                  >
+                    {{ compactTimeframeLabel(option.label) }}
+                  </button>
+                </div>
+              </div>
+              <label class="chart-control chart-control--count">
+                <span>개수</span>
+                <select v-model.number="candleCount">
+                  <option v-for="count in countOptions" :key="count" :value="count">
+                    {{ count }}개
+                  </option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <CandleChart :timeframe="candleTimeframe" />
+        </section>
+
+        <div class="split-grid">
+          <section class="panel">
+            <div class="panel-head">
+              <h3>호가</h3>
+            </div>
+            <OrderbookPanel />
+          </section>
+          <section class="panel">
+            <div class="panel-head">
+              <h3>체결</h3>
+            </div>
+            <TradeList :market="market" />
+          </section>
+        </div>
+
+        <MarketMovementPanel
+          :top-gainers="topGainers"
+          :top-losers="topLosers"
+          :top-by-volume="topByVolume"
+          :resolve-market-name="resolveMarketName"
+        />
+      </section>
+
       <aside class="panel panel-sidebar">
         <div class="panel-head">
           <h2>코인 리스트</h2>
-          <span class="muted">빠른 전환 · 실시간 검색</span>
         </div>
         <label class="quote-selector">
           <span>기준통화</span>
@@ -130,70 +205,6 @@ watch(candleCount, () => {
         </label>
         <CoinList :selected="market" @select="market = $event" />
       </aside>
-
-      <section class="panel-stack">
-        <section class="panel panel-chart">
-          <div class="panel-head">
-            <h2>캔들 차트</h2>
-            <span class="muted">차트 단위/범위 제어</span>
-          </div>
-          <div class="chart-controls">
-            <label class="chart-control">
-              <span>타임프레임</span>
-              <select v-model="candleTimeframe">
-                <option v-for="option in timeframeOptions" :key="option.value" :value="option.value">
-                  {{ option.label }}
-                </option>
-              </select>
-            </label>
-            <label class="chart-control">
-              <span>개수</span>
-              <select v-model.number="candleCount">
-                <option v-for="count in countOptions" :key="count" :value="count">
-                  {{ count }}개
-                </option>
-              </select>
-            </label>
-          </div>
-          <p class="panel-sub">
-            {{ selectedMarketLabel }} · 가격 추이와 변동성 추적
-          </p>
-          <CandleChart :timeframe="candleTimeframe" />
-        </section>
-
-        <MarketMovementPanel
-          :top-gainers="topGainers"
-          :top-losers="topLosers"
-          :top-by-volume="topByVolume"
-          :resolve-market-name="resolveMarketName"
-        />
-
-        <div class="split-grid">
-          <MarketSummaryPanel
-            :market="market"
-            :selected-market-status="selectedMarketStatus"
-            :selected-market-summary="selectedMarketSummary"
-            :market-state="marketState"
-            :selected-market-trade-currency="selectedMarketTradeCurrency"
-            :market-restriction="marketRestriction"
-            :market-status-cautions="marketStatusCautions"
-          />
-          <section class="panel">
-            <div class="panel-head">
-              <h3>호가</h3>
-              <span class="muted">호가창 깊이</span>
-            </div>
-            <OrderbookPanel />
-          </section>
-          <section class="panel">
-            <div class="panel-head">
-              <h3>체결</h3>
-              <span class="muted">최근 50개</span>
-            </div>
-            <TradeList />
-          </section>
-        </div>
-      </section>
     </section>
   </main>
 </template>
@@ -205,148 +216,57 @@ watch(candleCount, () => {
 
 .exchange-page {
   min-height: 100vh;
-  padding: clamp(30px, 6svh, 54px) 0 40px;
-  color: #f2f0dd;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  padding: 0 0 36px;
+  color: var(--text);
+  font-family: $font-sans;
   background:
-    radial-gradient(1100px 500px at 50% -120px, rgba(95, 141, 78, 0.2), transparent 65%),
-    linear-gradient(to bottom right, #111827, #1a2030 38%, #222f43 72%);
+    radial-gradient(1100px 500px at 50% -120px, var(--bg-glow), transparent 65%),
+    linear-gradient(to bottom right, var(--bg-page), var(--bg-page-mid) 38%, var(--bg-page-soft) 72%);
 }
 
 .exchange-hero,
 .exchange-layout {
   width: min(1500px, calc(100% - 40px));
   margin: 0 auto;
-}
-
-.exchange-hero {
-  margin-bottom: clamp(22px, 4vw, 34px);
-}
-
-.kicker {
-  display: inline-flex;
-  margin: 0 0 12px;
-  color: #a8d1a3;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-h1 {
-  margin: 0;
-  color: #ffffff;
-  font-size: clamp(36px, 5.3vw, 52px);
-  line-height: 1.06;
-  letter-spacing: 0;
-}
-
-.hero-lead {
-  margin: 14px 0 24px;
-  max-width: 840px;
-  color: #c2cedf;
-  font-size: 19px;
-  line-height: 1.7;
-}
-
-.hero-error {
-  grid-column: 1 / -1;
-  margin: 0;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 123, 123, 0.45);
-  background: rgba(220, 50, 50, 0.18);
-  color: #ffe7e7;
-  font-size: 13px;
-  line-height: 1.45;
-  font-weight: 700;
-  padding: 12px 14px;
-}
-
-.hero-metrics {
-  display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-}
-
-.metric-card {
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 12px;
-  padding: 16px 18px;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(6px);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.18);
-}
-
-.metric-card span {
-  display: block;
-  margin-bottom: 8px;
-  color: #b9c3d4;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.metric-card strong {
-  color: #f2f0dd;
-  font-size: 17px;
-  line-height: 1.35;
-  font-weight: 700;
+  padding-bottom: 14px;
 }
 
 .exchange-layout {
   display: grid;
-  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
-  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  gap: 14px;
 }
 
 .panel-stack {
   display: grid;
-  gap: 18px;
+  gap: 14px;
   min-width: 0;
 }
 
 .panel {
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 14px;
-  padding: 18px;
-  background: rgba(255, 255, 255, 0.075);
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.2);
+  @include exchange-panel;
 }
 
 .panel-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
+  @include panel-head;
 }
 
 .panel-head h2,
 .panel-head h3 {
-  margin: 0;
-  color: #ffffff;
-  font-size: 20px;
-  letter-spacing: 0;
-  line-height: 1.25;
+  @include panel-title(19px);
 }
 
 .panel-head h3 {
-  font-size: 18px;
+  font-size: 17px;
 }
 
-.muted {
-  color: #9aa7bc;
+.chart-sub {
+  margin: 0;
+  color: var(--text-muted);
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.panel-sub {
-  margin: 0 0 14px;
-  color: #bfc6d8;
-  font-size: 15px;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .chart-controls {
@@ -363,184 +283,143 @@ h1 {
   max-width: 100%;
 }
 
+.chart-control--timeframe[data-row] {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(104px, 140px);
+  grid-template-areas:
+    "timeframe count";
+  align-items: end;
+  gap: 6px 10px;
+}
+
+.timeframe-group {
+  grid-area: timeframe;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.timeframe-label {
+  min-width: 0;
+}
+
+.chart-control--count {
+  grid-area: count;
+  width: 100%;
+  justify-self: end;
+}
+
+.timeframe-tabs {
+  min-width: 0;
+}
+
 .chart-control span {
-  color: #b6c2d8;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
+  @include muted-label;
 }
 
 .chart-control select {
-  width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 8px;
-  padding: 8px 10px;
-  background: rgba(0, 0, 0, 0.25);
-  color: #f2f0dd;
+  @include select-control;
 }
 
-.ticker-grid {
-  display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.ticker-col ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 10px;
-}
-
-.ticker-col li {
+.timeframe-tabs {
   display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
-  padding-bottom: 8px;
-}
-
-.ticker-col li:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.summary-list-wrap {
-  display: block;
-}
-
-.ticker-col span {
-  color: #d6e1f1;
-  font-size: 13px;
-}
-
-.ticker-col__title {
-  margin: 0 0 8px;
-  color: #d2dced;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.ticker-col__title--up {
-  color: #6cb5ff;
-}
-
-.ticker-col__title--down {
-  color: #f97373;
-}
-
-.summary-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 10px;
-}
-
-.summary-list li {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
-  padding-bottom: 8px;
-}
-
-.summary-list li:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.summary-list span,
-.summary-list strong {
-  color: #d6e1f1;
-}
-
-.market-summary-empty {
-  margin: 6px 0 12px;
-  color: #b7c5d7;
-}
-
-.market-summary-grid {
-  margin: 0;
-  display: grid;
-  gap: 10px;
-}
-
-.market-summary-grid dt {
-  color: #9fb0c4;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.market-summary-grid dd {
-  margin: 0;
-  color: #f1f6ff;
-}
-
-.market-caution-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
-.market-caution-list li {
-  margin: 0;
+.timeframe-tabs button {
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  color: var(--text-muted);
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+  transition:
+    border-color var(--ease),
+    color var(--ease),
+    background var(--ease);
+}
+
+.timeframe-tabs button:hover,
+.timeframe-tabs button:focus-visible,
+.timeframe-tabs button.active {
+  border-color: var(--panel-border-hover);
+  color: var(--brand-lime);
+  background: var(--panel-bg-strong);
+  outline: none;
 }
 
 .split-grid {
   display: grid;
-  gap: 18px;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 360px);
+  gap: 14px;
+  grid-template-columns: 1fr;
 }
 
 .panel-sidebar {
+  position: sticky;
+  top: 14px;
   align-self: start;
+  display: grid;
+  grid-template-columns: minmax(96px, 0.42fr) minmax(0, 1fr);
+  gap: 10px;
+  max-height: calc(100svh - 28px);
+  overflow: hidden;
+}
+
+.panel-sidebar > .panel-head {
+  grid-column: 1 / -1;
 }
 
 .panel-sidebar :deep(.coin-list) {
+  display: contents;
+}
+
+.panel-sidebar :deep(.coin-search),
+.panel-sidebar :deep(.coin-tools),
+.panel-sidebar :deep(.coin-list__rows),
+.panel-sidebar :deep(.coin-empty) {
   min-width: 0;
 }
 
+.panel-sidebar :deep(.coin-search) {
+  grid-column: 2;
+  align-self: end;
+}
+
+.panel-sidebar :deep(.coin-tools),
+.panel-sidebar :deep(.coin-list__rows),
+.panel-sidebar :deep(.coin-empty) {
+  grid-column: 1 / -1;
+}
+
 .panel-sidebar :deep(input) {
-  color: #f2f2f2;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: rgba(0, 0, 0, 0.2);
+  color: var(--text);
+  border-color: var(--input-border);
+  background: var(--input-bg);
 }
 
 .quote-selector {
+  grid-column: 1;
+  align-self: end;
   display: grid;
   gap: 8px;
-  margin-top: 10px;
-  margin-bottom: 10px;
+  margin: 0;
 }
 
 .quote-selector span {
-  color: #b9c3d4;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  @include muted-label;
 }
 
 .quote-selector select {
-  width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 8px;
-  padding: 8px 10px;
-  color: #f2f0dd;
-  background: rgba(0, 0, 0, 0.2);
+  @include select-control;
 }
 
 .panel-sidebar :deep(input::placeholder) {
-  color: rgba(194, 207, 227, 0.72);
+  color: var(--text-dim);
 }
 
 .panel-sidebar :deep(ul) {
@@ -549,18 +428,18 @@ h1 {
 }
 
 .panel-sidebar :deep(li) {
-  color: #f2f0dd;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  border-color: var(--panel-border-soft);
+  background: var(--panel-bg);
 }
 
 .panel-sidebar :deep(li.selected) {
-  background: rgba(168, 209, 163, 0.18);
-  border-color: rgba(168, 209, 163, 0.55);
+  background: var(--c-up-bg);
+  border-color: var(--panel-border-hover);
 }
 
 .panel-sidebar :deep(small) {
-  color: rgba(194, 207, 227, 0.75);
+  color: var(--text-muted);
 }
 
 .panel-chart :deep(.chart) {
@@ -583,42 +462,41 @@ h1 {
 }
 
 .panel :deep(.orderbook table td) {
-  color: #dde6f5;
-  border-top-color: rgba(255, 255, 255, 0.16);
+  color: var(--text);
+  border-top-color: var(--panel-line);
 }
 
 .panel :deep(.trades ul li) {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+  border-bottom-color: var(--panel-line);
 }
 
 .panel :deep(.orderbook .ask),
 .panel :deep(.trades .down) {
-  color: #f97373;
+  color: var(--c-down);
 }
 
 .panel :deep(.orderbook .bid),
 .panel :deep(.trades .up) {
-  color: #6cb5ff;
+  color: var(--c-up);
 }
 
 @media (max-width: 1200px) {
   .exchange-page {
-    padding-top: 28px;
+    padding-top: 0;
   }
 
   .exchange-hero,
-  .exchange-layout,
-  .hero-metrics {
+  .exchange-layout {
     width: min(1300px, calc(100% - 28px));
-  }
-
-  .hero-metrics {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .chart-controls {
     flex-direction: column;
     width: 100%;
+  }
+
+  .chart-control--count {
+    justify-self: end;
   }
 }
 
@@ -631,17 +509,17 @@ h1 {
     grid-template-columns: 1fr;
   }
 
+  .panel-sidebar {
+    position: relative;
+    top: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
   .split-grid {
     grid-template-columns: 1fr;
   }
 
-  h1 {
-    font-size: clamp(34px, 7.4vw, 44px);
-  }
-
-  .hero-lead {
-    font-size: 18px;
-  }
 }
 
 @media (max-width: 640px) {
@@ -650,34 +528,26 @@ h1 {
     width: min(640px, calc(100% - 20px));
   }
 
-  .hero-lead {
-    font-size: 16px;
+  .panel-sidebar {
+    grid-template-columns: 1fr;
   }
 
-  .hero-metrics,
+  .quote-selector,
+  .panel-sidebar :deep(.coin-search) {
+    grid-column: 1;
+  }
+
   .split-grid,
   .panel-head {
     gap: 10px;
-  }
-
-  .ticker-grid {
-    grid-template-columns: 1fr;
   }
 
   .chart-control {
     width: 100%;
   }
 
-  .exchange-page {
-    padding-top: 22px;
-  }
-
-  .metric-card strong {
-    font-size: 16px;
-  }
-
   .panel {
-    padding: 16px;
+    padding: 14px;
   }
 }
 </style>
