@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
+import AppNav from "../../components/AppNav.vue";
 import CandleChart from "./CandleChart.vue";
 import CoinList from "./CoinList.vue";
 import ExchangeHero from "./ExchangeHero.vue";
@@ -156,13 +157,7 @@ function closeCoinDetail() {
 
 <template>
   <main class="exchange-page">
-    <nav class="exchange-nav" aria-label="주요 메뉴">
-      <router-link to="/" class="exchange-nav__brand">CoinBurrow</router-link>
-      <div>
-        <router-link to="/exchange" aria-current="page">마켓</router-link>
-        <router-link to="/news">뉴스</router-link>
-      </div>
-    </nav>
+    <AppNav class="exchange-nav" />
 
     <ExchangeHero
       :exchange-error="exchangeError"
@@ -299,40 +294,8 @@ function closeCoinDetail() {
 }
 
 .exchange-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
   width: min(1500px, calc(100% - 40px));
   margin: 0 auto 12px;
-}
-
-.exchange-nav div {
-  display: flex;
-  gap: 8px;
-}
-
-.exchange-nav a {
-  border: 1px solid var(--panel-border);
-  border-radius: var(--radius-sm);
-  padding: 8px 10px;
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 850;
-  text-decoration: none;
-}
-
-.exchange-nav a:hover,
-.exchange-nav a:focus-visible,
-.exchange-nav a[aria-current="page"] {
-  color: var(--brand-lime);
-  outline: none;
-}
-
-.exchange-nav .exchange-nav__brand {
-  border-color: transparent;
-  color: var(--text-strong);
-  font-size: 17px;
 }
 
 .exchange-hero,
@@ -652,20 +615,6 @@ function closeCoinDetail() {
 }
 
 @media (max-width: 640px) {
-  .exchange-nav {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .exchange-nav div {
-    width: 100%;
-  }
-
-  .exchange-nav div a {
-    flex: 1 1 0;
-    text-align: center;
-  }
-
   .exchange-nav,
   .exchange-hero,
   .exchange-layout {

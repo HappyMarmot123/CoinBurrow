@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import AppNav from "../../components/AppNav.vue";
 import NewsCard from "./NewsCard.vue";
 import NewsEmptyState from "./NewsEmptyState.vue";
 import NewsFilters from "./NewsFilters.vue";
@@ -56,16 +57,10 @@ function resetFilters() {
 
 <template>
   <main class="news-page">
+    <AppNav class="news-nav" />
+
     <section class="news-layout">
       <aside class="panel news-filter-panel">
-        <nav class="news-nav" aria-label="News navigation">
-          <router-link to="/" class="brand">CoinBurrow</router-link>
-          <div>
-            <router-link to="/exchange">Market</router-link>
-            <router-link to="/news" aria-current="page">News</router-link>
-          </div>
-        </nav>
-
         <NewsFilters
           v-model:query="searchInput"
           :article-count="newsStore.articles.length"
@@ -131,43 +126,12 @@ function resetFilters() {
 .news-layout {
   width: min(1320px, calc(100% - 40px));
   margin: 0 auto;
+  padding: 14px;
 }
 
 .news-nav {
-  display: grid;
-  gap: 14px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--panel-line);
-}
-
-.news-nav div {
-  display: flex;
-  gap: 8px;
-}
-
-.news-nav a {
-  border: 1px solid var(--panel-border);
-  border-radius: var(--radius-sm);
-  padding: 8px 10px;
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 850;
-  text-decoration: none;
-}
-
-.news-nav a:hover,
-.news-nav a:focus-visible,
-.news-nav a[aria-current="page"] {
-  border-color: var(--panel-border-hover);
-  color: var(--brand-lime);
-  outline: none;
-}
-
-.news-nav .brand {
-  border-color: transparent;
-  padding-left: 0;
-  color: var(--text-strong);
-  font-size: 17px;
+  width: min(1320px, calc(100% - 40px));
+  margin: 0 auto 14px;
 }
 
 .news-layout {
@@ -246,15 +210,6 @@ function resetFilters() {
 @media (max-width: 640px) {
   .news-page {
     padding-top: 12px;
-  }
-
-  .news-nav div {
-    width: 100%;
-  }
-
-  .news-nav div a {
-    flex: 1 1 0;
-    text-align: center;
   }
 }
 </style>
