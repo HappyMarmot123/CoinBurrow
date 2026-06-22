@@ -56,3 +56,9 @@ export const NEWS_SOURCE_FILTERS = [
 
 export const NEWS_PAGE_SIZE = 20;
 export const NEWS_REFRESH_INTERVAL_MS = 300_000;
+export const NEWS_HOT_ALERT_TOP_N = 6;
+export const NEWS_HOT_ALERT_HISTORY_LIMIT = 10;
+export const NEWS_HOT_ALERT_COOLDOWN_MS = 6 * 60 * 60 * 1000;
+export const NEWS_HOT_ALERT_POLL_INTERVAL_MS = 60_000;
+export const NEWS_HOT_ALERT_POLL_LIMIT = 50;
+export const NEWS_HOT_ALERT_RECENCY_WINDOW_MS = 2 * 60 * 60 * 1000;

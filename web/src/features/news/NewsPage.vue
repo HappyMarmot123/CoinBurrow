@@ -6,11 +6,13 @@ import NewsEmptyState from "./NewsEmptyState.vue";
 import NewsFilters from "./NewsFilters.vue";
 import NewsSkeleton from "./NewsSkeleton.vue";
 import { useNewsStore } from "../../stores/news.js";
+import { NEWS_HOT_ALERT_POLL_INTERVAL_MS } from "../../constants/news.js";
 
 const newsStore = useNewsStore();
 const searchInput = ref(newsStore.query.q);
 
 let searchTimer: number | undefined;
+let pollTimer: number | undefined;
 
 const statusText = computed(() => {
   if (newsStore.refreshing) return "refreshing";
@@ -27,11 +29,20 @@ const categoryCount = computed(() => newsStore.sources?.categories.length ?? 0);
 
 onMounted(() => {
   void newsStore.loadSources();
-  void newsStore.loadNews();
+  void (async () => {
+    await newsStore.loadHotAlertState();
+    await newsStore.loadNews();
+    await newsStore.refreshHotAlertSnapshot();
+  })();
+  pollTimer = window.setInterval(() => {
+    if (newsStore.loading || newsStore.refreshing || newsStore.loadingMore) return;
+    void newsStore.refreshHotAlertSnapshot();
+  }, NEWS_HOT_ALERT_POLL_INTERVAL_MS);
 });
 
 onBeforeUnmount(() => {
   if (searchTimer) window.clearTimeout(searchTimer);
+  if (pollTimer) window.clearInterval(pollTimer);
 });
 
 watch(searchInput, (value) => {
@@ -53,6 +64,14 @@ function resetFilters() {
   searchInput.value = "";
   void newsStore.resetFilters();
 }
+
+function setHotAlertEnabled(enabled: boolean) {
+  void newsStore.setHotAlertEnabled(enabled);
+}
+
+function requestHotAlertPermission() {
+  void newsStore.requestNotificationPermission();
+}
 </script>
 
 <template>
@@ -69,12 +88,18 @@ function resetFilters() {
           :status-text="statusText"
           :source-count="sourceCount"
           :category-count="categoryCount"
+          :hot-alert-enabled="newsStore.hotAlertEnabled"
+          :hot-alert-permission="newsStore.hotAlertPermission"
+          :hot-alert-top-issues="newsStore.hotAlertTopIssues"
+          :hot-alert-history="newsStore.hotAlertHistory"
           :refreshing="newsStore.refreshing"
           :disabled="newsStore.loading"
           @update:asset="setAsset"
           @update:source="setSource"
           @refresh="newsStore.refreshNews"
           @reset="resetFilters"
+          @toggle-hot-alert="setHotAlertEnabled"
+          @request-hot-alert-permission="requestHotAlertPermission"
         />
       </aside>
 

@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { NEWS_ASSET_FILTERS, NEWS_SOURCE_FILTERS } from "../../constants/news.js";
+import type { NewsHotAlertHistoryItem, NewsHotIssue } from "../../stores/news.js";
 
-defineProps<{
+const props = defineProps<{
   asset: string;
   source: string;
   query: string;
@@ -10,6 +12,10 @@ defineProps<{
   statusText: string;
   sourceCount: number;
   categoryCount: number;
+  hotAlertEnabled: boolean;
+  hotAlertPermission: "default" | "granted" | "denied";
+  hotAlertTopIssues: NewsHotIssue[];
+  hotAlertHistory: NewsHotAlertHistoryItem[];
   disabled?: boolean;
 }>();
 
@@ -19,7 +25,36 @@ const emit = defineEmits<{
   "update:query": [value: string];
   refresh: [];
   reset: [];
+  "toggle-hot-alert": [value: boolean];
+  "request-hot-alert-permission": [];
 }>();
+
+const isPermissionGranted = computed(() => props.hotAlertPermission === "granted");
+const isPermissionBlocked = computed(() => props.hotAlertPermission === "denied");
+
+const alertButtonText = computed(() => {
+  if (!isPermissionGranted.value) {
+    return props.hotAlertPermission === "default" ? "Enable notifications" : "Notification blocked";
+  }
+  return props.hotAlertEnabled ? "Stop hot alerts" : "Start hot alerts";
+});
+
+function toggleHotAlert() {
+  if (!isPermissionGranted.value) {
+    emit("request-hot-alert-permission");
+    return;
+  }
+  emit("toggle-hot-alert", !props.hotAlertEnabled);
+}
+
+function formatHistoryDate(timestamp: number): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(timestamp));
+}
 </script>
 
 <template>
@@ -28,8 +63,40 @@ const emit = defineEmits<{
       <p>Crypto News</p>
       <h1>Crypto News</h1>
       <p class="news-title__stats">
-        Status: {{ statusText }} · Sources: {{ sourceCount.toLocaleString() }} · Categories: {{ categoryCount.toLocaleString() }} · Articles: {{ articleCount.toLocaleString() }}
+        Status: {{ statusText }} | Sources: {{ sourceCount.toLocaleString() }} | Categories: {{ categoryCount.toLocaleString() }} | Articles: {{ articleCount.toLocaleString() }}
       </p>
+    </section>
+
+    <section class="filter-section filter-section--alerts" aria-label="Hot alerts">
+      <p class="filter-section__title">Hot alerts</p>
+      <p class="news-filters__meta">Permission: {{ hotAlertPermission }}</p>
+      <div class="filter-row">
+        <button class="text-button" type="button" :disabled="disabled || isPermissionBlocked" @click="toggleHotAlert">
+          {{ alertButtonText }}
+        </button>
+      </div>
+
+      <div class="news-filters__list-wrap">
+        <p class="news-filters__sub-title">Top hot issues</p>
+        <ul v-if="hotAlertTopIssues.length > 0" class="news-filters__list">
+          <li v-for="issue in hotAlertTopIssues" :key="issue.topic" class="news-filters__item">
+            <a :href="issue.url" target="_blank" rel="noopener noreferrer">{{ issue.label }}</a>
+            <span class="news-filters__item-meta">{{ issue.count }} mentions</span>
+          </li>
+        </ul>
+        <p v-else class="news-filters__muted">No issue data yet.</p>
+      </div>
+
+      <div class="news-filters__list-wrap">
+        <p class="news-filters__sub-title">Recent alerts</p>
+        <ul v-if="hotAlertHistory.length > 0" class="news-filters__list news-filters__list--history">
+          <li v-for="issue in hotAlertHistory" :key="`${issue.topic}-${issue.seenAt}`" class="news-filters__item">
+            <span>{{ issue.label }} ({{ issue.count }})</span>
+            <span class="news-filters__item-meta">{{ formatHistoryDate(issue.seenAt) }}</span>
+          </li>
+        </ul>
+        <p v-else class="news-filters__muted">No alert history yet.</p>
+      </div>
     </section>
 
     <div class="filter-section filter-section--asset" role="group" aria-label="Asset filter">
@@ -80,7 +147,7 @@ const emit = defineEmits<{
       </label>
 
       <button class="icon-button" type="button" :disabled="disabled || refreshing" @click="emit('refresh')">
-        <span aria-hidden="true">↻</span>
+        <span aria-hidden="true">?</span>
         <span class="sr-only">Refresh</span>
       </button>
 
@@ -98,11 +165,12 @@ const emit = defineEmits<{
 }
 
 .filter-section,
-.filter-row {
+.filter-row,
+.news-filters__list-wrap {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  align-items: end;
+  align-items: start;
 }
 
 .filter-section {
@@ -118,6 +186,71 @@ const emit = defineEmits<{
   font-weight: 900;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.news-filters__meta,
+.news-filters__item-meta,
+.news-filters__muted {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.news-filters__sub-title {
+  width: 100%;
+  margin: 0;
+  color: var(--text-subtle);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.news-filters__list {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.news-filters__list--history {
+  max-height: 150px;
+  overflow: auto;
+}
+
+.news-filters__item {
+  border: 1px solid var(--panel-border-soft);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  display: grid;
+  gap: 6px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.03);
+  min-width: 0;
+}
+
+.news-filters__item a,
+.news-filters__item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.news-filters__item a {
+  color: var(--text-strong);
+  text-decoration: none;
+  font-weight: 750;
+}
+
+.news-filters__item a:hover,
+.news-filters__item a:focus-visible {
+  color: var(--brand-lime);
+  outline: none;
+}
+
+.filter-section--alerts {
+  border-left: 3px solid var(--panel-border-hover);
+  padding-left: 10px;
 }
 
 .filter-section--asset {
@@ -264,8 +397,12 @@ input {
     font-size: 11px;
   }
 
-  .filter-row {
-    align-items: stretch;
+  .filter-row,
+  .news-filters__list-wrap,
+  .news-filters__item,
+  .news-filters__item a,
+  .news-filters__item span {
+    width: 100%;
   }
 
   label,
@@ -274,3 +411,5 @@ input {
   }
 }
 </style>
+
+
