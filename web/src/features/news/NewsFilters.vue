@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { NEWS_ASSET_FILTERS, NEWS_SOURCE_FILTERS } from "../../constants/news.js";
 import type { NewsHotAlertHistoryItem, NewsHotIssue } from "../../stores/news.js";
+import TooltipButton from "../../components/TooltipButton.vue";
 
 const props = defineProps<{
   asset: string;
@@ -118,18 +119,17 @@ function formatHistoryDate(timestamp: number): string {
     <div class="filter-section filter-section--source" role="group" aria-label="Source filter">
       <p class="filter-section__title">Source</p>
       <div class="filter-group source-group">
-        <button
+        <TooltipButton
           v-for="option in NEWS_SOURCE_FILTERS"
           :key="option.value"
-          type="button"
-          :class="{ active: source === option.value }"
+          :button-class="['filter-group__source-button', { active: source === option.value }]"
           :disabled="disabled"
-          :title="option.blurb"
           :aria-label="option.value === 'ALL' ? option.label : `${option.label}: ${option.blurb}`"
+          :tooltip="option.blurb"
           @click="emit('update:source', option.value)"
         >
           {{ option.label }}
-        </button>
+        </TooltipButton>
       </div>
     </div>
 
@@ -146,10 +146,16 @@ function formatHistoryDate(timestamp: number): string {
         >
       </label>
 
-      <button class="icon-button" type="button" :disabled="disabled || refreshing" @click="emit('refresh')">
+      <TooltipButton
+        button-class="icon-button"
+        tooltip="Refresh news"
+        type="button"
+        :disabled="disabled || refreshing"
+        @click="emit('refresh')"
+      >
         <span aria-hidden="true">?</span>
         <span class="sr-only">Refresh</span>
-      </button>
+      </TooltipButton>
 
       <button class="text-button" type="button" :disabled="disabled" @click="emit('reset')">
         Reset
@@ -270,6 +276,7 @@ function formatHistoryDate(timestamp: number): string {
 }
 
 .filter-group button,
+.filter-group__source-button,
 .text-button,
 .icon-button {
   border: 1px solid var(--panel-border);
@@ -292,11 +299,16 @@ function formatHistoryDate(timestamp: number): string {
   padding: 8px 10px;
 }
 
-.filter-section--source button {
+.filter-section--source .filter-group__source-button {
   border-color: rgba(122, 162, 255, 0.45);
 }
 
-.filter-section--source button.active {
+.filter-group__source-button {
+  min-height: 36px;
+  padding: 8px 10px;
+}
+
+.filter-section--source .filter-group__source-button.active {
   color: #d2dcff;
   background: rgba(122, 162, 255, 0.14);
 }
@@ -312,6 +324,9 @@ function formatHistoryDate(timestamp: number): string {
 .filter-group button:hover,
 .filter-group button:focus-visible,
 .filter-group button.active,
+.filter-group__source-button:hover,
+.filter-group__source-button:focus-visible,
+.filter-group__source-button.active,
 .text-button:hover,
 .text-button:focus-visible,
 .icon-button:hover,
@@ -322,9 +337,9 @@ function formatHistoryDate(timestamp: number): string {
   outline: none;
 }
 
-.filter-section--source button:hover,
-.filter-section--source button:focus-visible,
-.filter-section--source button.active {
+.filter-section--source .filter-group__source-button:hover,
+.filter-section--source .filter-group__source-button:focus-visible,
+.filter-section--source .filter-group__source-button.active {
   border-color: #7aa2ff;
   color: #b8c9ff;
   background: rgba(122, 162, 255, 0.12);
