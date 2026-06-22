@@ -39,10 +39,19 @@ const chartColors = computed(() => ({
   up: readCssToken("--c-up", "limegreen"),
   down: readCssToken("--c-down", "orange"),
 }));
+
+const volumeData = computed(() =>
+  candleStore.candles.map((candle) => ({
+    x: candle.timestamp,
+    y: candle.volume,
+    // 캔들 방향대로 색 구분(상승=up, 하락=down) — 거래소 표준 UX
+    color: candle.close >= candle.open ? chartColors.value.up : chartColors.value.down,
+  })),
+);
+
 const chartOptions = computed<Options>(() => ({
   chart: {
-    type: "candlestick",
-    height: 410,
+    height: 460,
     backgroundColor: "transparent",
     animation: false,
   },
@@ -57,15 +66,55 @@ const chartOptions = computed<Options>(() => ({
     lineColor: chartColors.value.axis,
     labels: { style: { color: chartColors.value.label } },
   },
-  yAxis: {
-    title: { text: null },
-    gridLineColor: chartColors.value.grid,
-    labels: { style: { color: chartColors.value.label } },
+  yAxis: [
+    {
+      // 가격 pane (상단)
+      title: { text: null },
+      height: "74%",
+      top: "0%",
+      lineWidth: 1,
+      lineColor: chartColors.value.axis,
+      gridLineColor: chartColors.value.grid,
+      labels: { style: { color: chartColors.value.label } },
+    },
+    {
+      // 거래량 pane (하단) — 그리드/라벨 최소화로 클러터 제거
+      title: { text: null },
+      top: "80%",
+      height: "20%",
+      offset: 0,
+      gridLineWidth: 0,
+      labels: { enabled: false },
+    },
+  ],
+  plotOptions: {
+    candlestick: {
+      lineWidth: 1,
+      upLineColor: chartColors.value.up,
+      upColor: chartColors.value.up,
+      color: chartColors.value.down,
+      states: {
+        hover: {
+          lineWidth: 1.5,
+        },
+      },
+    },
+    column: {
+      borderWidth: 0,
+      maxPointWidth: 16,
+      pointPadding: 0.1,
+      groupPadding: 0.1,
+    },
+  },
+  tooltip: {
+    shared: true,
+    split: false,
   },
   series: [
     {
       type: "candlestick",
-      name: "KRW Price",
+      name: "가격",
+      yAxis: 0,
       color: chartColors.value.down,
       upColor: chartColors.value.up,
       data: candleStore.candles.map((candle) => [
@@ -76,17 +125,14 @@ const chartOptions = computed<Options>(() => ({
         candle.close,
       ]),
     },
-  ],
-  plotOptions: {
-    candlestick: {
-      lineWidth: 1,
-      states: {
-        hover: {
-          lineWidth: 1.5,
-        },
-      },
+    {
+      type: "column",
+      name: "거래량",
+      yAxis: 1,
+      opacity: 0.55,
+      data: volumeData.value,
     },
-  },
+  ],
 }));
 </script>
 
@@ -98,7 +144,7 @@ const chartOptions = computed<Options>(() => ({
       :highcharts="Highcharts"
       constructor-type="stockChart"
     />
-    <p v-else class="chart-empty">캔들 데이터를 불러오는 중입니다.</p>
+    <p v-else class="chart-empty">차트 데이터가 없습니다.</p>
   </section>
 </template>
 
