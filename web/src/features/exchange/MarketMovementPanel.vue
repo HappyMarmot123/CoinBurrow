@@ -13,7 +13,9 @@ defineProps<{
 <template>
   <section class="panel">
     <div class="panel-head">
-      <h3>마켓 무브먼트</h3>
+      <div class="panel-head-title">
+        <h3>마켓 무브먼트</h3>
+      </div>
     </div>
     <div class="ticker-grid">
       <div class="ticker-col">
@@ -39,7 +41,9 @@ defineProps<{
 
   <section class="panel">
     <div class="panel-head">
-      <h3>거래대금 TOP</h3>
+      <div class="panel-head-title">
+        <h3>거래대금 TOP</h3>
+      </div>
     </div>
     <div class="summary-list-wrap">
       <ul class="summary-list">
@@ -63,6 +67,24 @@ defineProps<{
 
 .panel-head h3 {
   @include panel-title(17px);
+}
+
+.panel-head-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.source-tooltip-button {
+  width: 16px;
+  height: 16px;
+  min-height: 16px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  padding: 0;
+  font-size: 11px;
+  line-height: 1;
 }
 
 .ticker-grid {
