@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import { useMarketStore } from "../../stores/market.js";
 import { useTickerStore } from "../../stores/ticker.js";
 import type { MarketView, TickerView } from "../../stores/types.js";
-import { getBithumbMarkets, type BithumbMarketView } from "../../api/rest.js";
 import { formatCompact, formatPrice } from "../../utils/format.js";
 
 const props = defineProps<{ selected: string; quote?: string }>();
@@ -15,110 +14,12 @@ const emit = defineEmits<{
 const marketStore = useMarketStore();
 const tickerStore = useTickerStore();
 const query = ref("");
-const sortKey = ref<"volume" | "price" | "change" | "premium">("volume");
-const premiumPrices = ref<Record<string, number>>({});
-const premiumLoadError = ref("");
-const premiumLoadToken = ref(0);
+const sortKey = ref<"volume" | "price" | "change">("volume");
 
 interface MarketRow {
   market: MarketView;
   ticker?: TickerView;
-  source: string;
-  premium: number | null;
 }
-
-const quote = computed(() => (props.quote ?? "").trim().toUpperCase());
-
-function normalizeMarketForBithumb(marketCode: string): string | null {
-  const base = marketCode.split("-").at(-1)?.toUpperCase();
-  if (!base) return null;
-  return `${base}/KRW`;
-}
-
-function parseBithumbPrice(raw: BithumbMarketView["lastPrice"]): number | null {
-  const normalized = String(raw).replace(/,/g, "");
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function calculatePremium(upbitPrice: number, bithumbPrice: number): number | null {
-  if (!Number.isFinite(upbitPrice) || !Number.isFinite(bithumbPrice)) {
-    return null;
-  }
-
-  if (upbitPrice <= 0) return null;
-  return ((bithumbPrice - upbitPrice) / upbitPrice) * 100;
-}
-
-function premiumClass(value: number | null): string {
-  if (value === null) return "";
-  if (value > 0) return "is-up";
-  if (value < 0) return "is-down";
-  return "";
-}
-
-function formatPremium(value: number | null): string {
-  if (value === null) return "-";
-  const sign = value > 0 ? "+" : "";
-  return `${sign}${value.toFixed(2)}%`;
-}
-
-async function loadPremiumMarkets() {
-  const currentToken = ++premiumLoadToken.value;
-  const isActiveCall = () => currentToken === premiumLoadToken.value;
-  premiumLoadError.value = "";
-
-  if (quote.value !== "KRW") {
-    if (isActiveCall()) {
-      premiumPrices.value = {};
-    }
-    return;
-  }
-
-  const symbols = [...new Set(
-    marketStore.list
-      .filter((market) => market.market.startsWith("KRW-"))
-      .map((market) => normalizeMarketForBithumb(market.market))
-      .filter((symbol): symbol is string => typeof symbol === "string"),
-  )];
-
-  if (symbols.length === 0) {
-    if (isActiveCall()) {
-      premiumPrices.value = {};
-    }
-    return;
-  }
-
-  try {
-    const payload = await getBithumbMarkets(symbols);
-
-    if (currentToken !== premiumLoadToken.value) return;
-
-    const next: Record<string, number> = {};
-    payload.forEach((item) => {
-      const base = item.symbol.split("/")[0]?.toUpperCase();
-      if (!base) return;
-      const price = parseBithumbPrice(item.lastPrice);
-      if (price === null) return;
-      next[`KRW-${base}`] = price;
-    });
-
-    premiumPrices.value = next;
-  } catch (cause) {
-    if (isActiveCall()) {
-      premiumPrices.value = {};
-      premiumLoadError.value = cause instanceof Error ? cause.message : "failed to load premium source data";
-    }
-  }
-}
-
-watch(
-  () => [quote.value, marketStore.list],
-  () => {
-    void loadPremiumMarkets();
-  },
-  { immediate: true, deep: true },
-);
 
 const filteredMarkets = computed(() => {
   const value = query.value.trim().toLowerCase();
@@ -135,11 +36,6 @@ const filteredMarkets = computed(() => {
     .map<MarketRow>((market) => ({
       market,
       ticker: tickerStore.byMarket[market.market],
-      source: premiumPrices.value[market.market] !== undefined ? "UPBIT / BITHUMB" : "UPBIT",
-      premium: calculatePremium(
-        tickerStore.byMarket[market.market]?.tradePrice ?? Number.NaN,
-        premiumPrices.value[market.market] ?? Number.NaN,
-      ),
     }))
     .sort((a, b) => {
       if (sortKey.value === "price") {
@@ -147,9 +43,6 @@ const filteredMarkets = computed(() => {
       }
       if (sortKey.value === "change") {
         return (b.ticker?.signedChangeRate ?? Number.NEGATIVE_INFINITY) - (a.ticker?.signedChangeRate ?? Number.NEGATIVE_INFINITY);
-      }
-      if (sortKey.value === "premium") {
-        return (b.premium ?? Number.NEGATIVE_INFINITY) - (a.premium ?? Number.NEGATIVE_INFINITY);
       }
       return (b.ticker?.accTradePrice24h ?? Number.NEGATIVE_INFINITY) - (a.ticker?.accTradePrice24h ?? Number.NEGATIVE_INFINITY);
     });
@@ -193,17 +86,8 @@ function openDetail(event: MouseEvent, marketCode: string) {
         <button :class="{ active: sortKey === 'volume' }" type="button" @click="sortKey = 'volume'">거래대금</button>
         <button :class="{ active: sortKey === 'price' }" type="button" @click="sortKey = 'price'">현재가</button>
         <button :class="{ active: sortKey === 'change' }" type="button" @click="sortKey = 'change'">등락률</button>
-        <button
-          v-if="quote === 'KRW'"
-          :class="{ active: sortKey === 'premium' }"
-          type="button"
-          @click="sortKey = 'premium'"
-        >
-          프리미엄
-        </button>
       </div>
     </div>
-    <p v-if="premiumLoadError" class="coin-premium-error">{{ premiumLoadError }}</p>
 
     <ul v-if="hasMarkets" class="coin-list__rows" role="listbox" :aria-label="`검색 결과 ${visibleCount}개`">
       <li
@@ -221,12 +105,6 @@ function openDetail(event: MouseEvent, marketCode: string) {
         <div class="coin-main">
           <span class="coin-main__name">{{ row.market.koreanName }}</span>
           <small class="coin-main__code">{{ assetCode(row.market.market) }} · {{ row.market.englishName }}</small>
-          <div class="coin-main__meta">
-            <span class="coin-main__source">{{ row.source }}</span>
-            <span v-if="quote === 'KRW'" class="coin-main__premium" :class="premiumClass(row.premium)">
-              {{ formatPremium(row.premium) }}
-            </span>
-          </div>
         </div>
         <div class="coin-price">
           <strong>{{ formatPrice(row.ticker?.tradePrice) }}</strong>
@@ -395,38 +273,6 @@ input::placeholder {
   min-width: 0;
   gap: 2px;
 }
-.coin-main__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.coin-main__source,
-.coin-main__premium {
-  border: 1px solid var(--panel-border);
-  border-radius: var(--radius-sm);
-  padding: 2px 6px;
-  color: var(--text-muted);
-  font-size: 10px;
-  font-weight: 750;
-}
-
-.coin-main__premium.is-up {
-  border-color: rgba(80, 188, 140, 0.55);
-  color: var(--c-up);
-}
-
-.coin-main__premium.is-down {
-  border-color: rgba(246, 99, 99, 0.55);
-  color: var(--c-down);
-}
-
-.coin-premium-error {
-  margin: 0;
-  color: var(--c-flat);
-  font-size: 11px;
-}
-
 .coin-main__name {
   overflow: hidden;
   color: #f5f8ff;
