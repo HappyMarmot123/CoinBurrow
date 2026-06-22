@@ -5,8 +5,10 @@ import CoinList from "./CoinList.vue";
 import ExchangeHero from "./ExchangeHero.vue";
 import MarketMovementPanel from "./MarketMovementPanel.vue";
 import OrderbookPanel from "./OrderbookPanel.vue";
+import DerivativesPanel from "./DerivativesPanel.vue";
 import TradeList from "./TradeList.vue";
 import CoinMetaDrawer from "./CoinMetaDrawer.vue";
+import { useDerivatives } from "../../composables/useDerivatives.js";
 import { useExchangeData } from "../../composables/useExchangeData.js";
 import { useMarketMeta } from "../../composables/useMarketMeta.js";
 import { useCoinMeta } from "../../composables/useCoinMeta.js";
@@ -69,6 +71,13 @@ const {
   candleCount,
   loadMarketStatus,
 });
+
+const {
+  derivatives,
+  loading: derivativesLoading,
+  error: derivativesError,
+  hasDerivatives,
+} = useDerivatives(market);
 
 const {
   coinMeta,
@@ -209,6 +218,13 @@ function closeCoinDetail() {
         </section>
 
         <div class="split-grid">
+          <DerivativesPanel
+            v-if="hasDerivatives || derivativesLoading || derivativesError"
+            :loading="derivativesLoading"
+            :derivatives="derivatives"
+            :error="hasDerivatives ? '' : derivativesError"
+          />
+
           <section class="panel">
             <div class="panel-head">
               <h3>호가</h3>

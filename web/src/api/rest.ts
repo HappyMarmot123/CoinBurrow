@@ -111,6 +111,24 @@ export interface CoinMetaQueryOptions {
   coinId: string;
 }
 
+export interface DerivativesView {
+  symbol: string;
+  source: string;
+  openInterest?: string;
+  fundingRate?: string;
+  ts: number;
+}
+
+export interface BithumbMarketView {
+  symbol: string;
+  source: string;
+  lastPrice: string;
+  changeRate: string;
+  volume: string;
+  quoteVolume: string;
+  ts: number;
+}
+
 export interface FreeApiRequestPolicy {
   timeoutMs: number;
   maxRetries: number;
@@ -325,6 +343,24 @@ export const getCoinMetaByProvider = async (
 ): Promise<CoinMetaView> => {
   return getJson<CoinMetaView>(`/market/freeapi/${provider}/meta${buildPath("", {
     coinId: options.coinId,
+  })}`);
+};
+
+export const getDerivativesBySymbol = async (
+  symbol: string,
+  category: "spot" | "linear" | "inverse" = "linear",
+): Promise<DerivativesView> => {
+  return getJson<DerivativesView>(`/market/freeapi/bybit/derivatives${buildPath("", {
+    symbol,
+    category,
+  })}`);
+};
+
+export const getBithumbMarkets = async (
+  symbols: string[] = [],
+): Promise<BithumbMarketView[]> => {
+  return getJson<BithumbMarketView[]>(`/market/freeapi/bithumb/markets${buildPath("", {
+    symbols: symbols.join(","),
   })}`);
 };
 
