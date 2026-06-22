@@ -282,7 +282,7 @@ function onCoinLogoError() {
   align-self: center;
   min-width: 0;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto max-content auto;
   align-items: baseline;
   justify-content: start;
   gap: 10px;
@@ -297,11 +297,13 @@ function onCoinLogoError() {
 
 .market-price strong {
   overflow: hidden;
+  width: fit-content;
   color: var(--text-strong);
   font-size: clamp(26px, 3vw, 36px);
   font-weight: 850;
   line-height: 1;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .market-price em {
