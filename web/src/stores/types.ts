@@ -41,3 +41,57 @@ export interface MarketView {
   koreanName: string;
   englishName: string;
 }
+
+export type NewsSentiment = "positive" | "negative" | "neutral" | "unknown";
+
+export interface CryptoNewsArticle {
+  id: string;
+  title: string;
+  url: string;
+  source: string;
+  publishedAt: number;
+  summary?: string;
+  language?: string;
+  originalLanguage?: string;
+  assets: string[];
+  categories: string[];
+  sentiment: NewsSentiment;
+  imageUrl?: string;
+  provider: "cryptocurrency.cv";
+  isStale?: boolean;
+}
+
+export interface CryptoNewsResponse {
+  articles: CryptoNewsArticle[];
+  nextCursor?: string;
+  fetchedAt: number;
+  cacheTtlMs: number;
+  provider: string;
+  stale: boolean;
+  degraded?: boolean;
+  degradedReason?: string;
+}
+
+export interface CryptoNewsSourceSummary {
+  provider: string;
+  sources: string[];
+  categories: string[];
+  languages: string[];
+  fetchedAt: number;
+  cacheTtlMs: number;
+  stale: boolean;
+  degraded?: boolean;
+  degradedReason?: string;
+}
+
+export interface CryptoNewsHealth {
+  provider: string;
+  status: "healthy" | "degraded" | "unavailable";
+  checkedAt: number;
+  responseTimeMs?: number;
+  upstream?: unknown;
+  cache: {
+    ttlMs: number;
+    staleTtlMs: number;
+  };
+}

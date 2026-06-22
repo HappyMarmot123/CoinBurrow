@@ -1,4 +1,13 @@
-import type { MarketView, CandleView, TickerView, OrderbookView, TradeView } from "../stores/types.js";
+import type {
+  CryptoNewsHealth,
+  CryptoNewsResponse,
+  CryptoNewsSourceSummary,
+  MarketView,
+  CandleView,
+  TickerView,
+  OrderbookView,
+  TradeView,
+} from "../stores/types.js";
 import { TIMEFRAME_LABELS } from "../constants/candle.js";
 
 export type CandleTimeframe =
@@ -71,6 +80,15 @@ export interface MarketOverviewItem {
   ticker: TickerView | null;
   orderbook: OrderbookView | null;
   status: MarketStatusView | null;
+}
+
+export interface NewsQueryOptions {
+  q?: string;
+  asset?: string;
+  category?: string;
+  language?: "all" | "ko" | "en";
+  limit?: number;
+  cursor?: string;
 }
 
 type QueryValue = string | number | boolean | undefined;
@@ -238,6 +256,27 @@ export const getExchangeRates = async (): Promise<ExchangeRateView[]> => {
   } catch {
     return [];
   }
+};
+
+export const getNewsArticles = async (
+  options: NewsQueryOptions = {},
+): Promise<CryptoNewsResponse> => {
+  return getJson<CryptoNewsResponse>(buildPath("/market/news/articles", {
+    q: options.q,
+    asset: options.asset,
+    category: options.category,
+    language: options.language,
+    limit: options.limit,
+    cursor: options.cursor,
+  }));
+};
+
+export const getNewsSources = async (): Promise<CryptoNewsSourceSummary> => {
+  return getJson<CryptoNewsSourceSummary>("/market/news/sources");
+};
+
+export const getNewsHealth = async (): Promise<CryptoNewsHealth> => {
+  return getJson<CryptoNewsHealth>("/market/news/health");
 };
 
 export const getCoinListWithFallback = async (): Promise<MarketView[]> => {

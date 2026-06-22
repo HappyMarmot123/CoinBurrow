@@ -116,6 +116,14 @@ function compactTimeframeLabel(label: string) {
 
 <template>
   <main class="exchange-page">
+    <nav class="exchange-nav" aria-label="?? ??">
+      <router-link to="/" class="exchange-nav__brand">CoinBurrow</router-link>
+      <div>
+        <router-link to="/exchange" aria-current="page">??</router-link>
+        <router-link to="/news">??</router-link>
+      </div>
+    </nav>
+
     <ExchangeHero
       :exchange-error="exchangeError"
       :status-error="statusError"
@@ -216,12 +224,51 @@ function compactTimeframeLabel(label: string) {
 
 .exchange-page {
   min-height: 100vh;
-  padding: 0 0 36px;
+  padding: 14px 0 36px;
   color: var(--text);
   font-family: $font-sans;
   background:
     radial-gradient(1100px 500px at 50% -120px, var(--bg-glow), transparent 65%),
     linear-gradient(to bottom right, var(--bg-page), var(--bg-page-mid) 38%, var(--bg-page-soft) 72%);
+}
+
+.exchange-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: min(1500px, calc(100% - 40px));
+  margin: 0 auto 12px;
+}
+
+.exchange-nav div {
+  display: flex;
+  gap: 8px;
+}
+
+.exchange-nav a {
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.exchange-nav a:hover,
+.exchange-nav a:focus-visible,
+.exchange-nav a[aria-current="page"] {
+  border-color: var(--panel-border-hover);
+  color: var(--brand-lime);
+  outline: none;
+}
+
+.exchange-nav .exchange-nav__brand {
+  border-color: transparent;
+  padding-left: 0;
+  color: var(--text-strong);
+  font-size: 17px;
 }
 
 .exchange-hero,
@@ -482,9 +529,10 @@ function compactTimeframeLabel(label: string) {
 
 @media (max-width: 1200px) {
   .exchange-page {
-    padding-top: 0;
+    padding-top: 14px;
   }
 
+  .exchange-nav,
   .exchange-hero,
   .exchange-layout {
     width: min(1300px, calc(100% - 28px));
@@ -523,6 +571,21 @@ function compactTimeframeLabel(label: string) {
 }
 
 @media (max-width: 640px) {
+  .exchange-nav {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .exchange-nav div {
+    width: 100%;
+  }
+
+  .exchange-nav div a {
+    flex: 1 1 0;
+    text-align: center;
+  }
+
+  .exchange-nav,
   .exchange-hero,
   .exchange-layout {
     width: min(640px, calc(100% - 20px));
