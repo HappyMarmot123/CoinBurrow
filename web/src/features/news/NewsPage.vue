@@ -166,7 +166,7 @@ function markHotAlertsSeen() {
 
 .news-page {
   min-height: 100vh;
-  padding: 18px 0 36px;
+  padding: 14px 0 36px;
   color: var(--text);
   font-family: $font-sans;
   background:
@@ -183,7 +183,7 @@ function markHotAlertsSeen() {
 
 .news-nav {
   width: min(1320px, calc(100% - 40px));
-  margin: 0 auto 14px;
+  margin: 0 auto 12px;
 }
 
 .news-layout {
