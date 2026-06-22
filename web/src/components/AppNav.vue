@@ -43,33 +43,6 @@
   align-items: center;
 }
 
-.app-nav__links :deep(.news-alert-popover__trigger) {
-  border: 1px solid var(--panel-border);
-  border-radius: var(--radius-sm);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 10px;
-  color: var(--text-muted);
-  font-size: 13px;
-  line-height: 1;
-  font-weight: 850;
-  background: transparent;
-  cursor: pointer;
-  transition:
-    border-color var(--ease),
-    color var(--ease),
-    background var(--ease);
-}
-
-.app-nav__links :deep(.news-alert-popover__trigger:hover),
-.app-nav__links :deep(.news-alert-popover__trigger:focus-visible) {
-  color: var(--brand-lime);
-  border-color: var(--panel-border-hover);
-  background: var(--panel-bg-strong);
-  outline: none;
-}
-
 .app-nav__link {
   border: 1px solid var(--panel-border);
   border-radius: var(--radius-sm);
