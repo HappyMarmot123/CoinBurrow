@@ -129,6 +129,15 @@ export interface BithumbMarketView {
   ts: number;
 }
 
+export interface BithumbOrderbookView {
+  symbol: string;
+  source: string;
+  bids: Array<[string, string]>;
+  asks: Array<[string, string]>;
+  ts?: number;
+  lastUpdateTs?: number;
+}
+
 export interface FreeApiRequestPolicy {
   timeoutMs: number;
   maxRetries: number;
@@ -361,6 +370,14 @@ export const getBithumbMarkets = async (
 ): Promise<BithumbMarketView[]> => {
   return getJson<BithumbMarketView[]>(`/market/freeapi/bithumb/markets${buildPath("", {
     symbols: symbols.join(","),
+  })}`);
+};
+
+export const getBithumbOrderbook = async (
+  symbol: string,
+): Promise<BithumbOrderbookView> => {
+  return getJson<BithumbOrderbookView>(`/market/freeapi/bithumb/orderbook${buildPath("", {
+    symbol,
   })}`);
 };
 

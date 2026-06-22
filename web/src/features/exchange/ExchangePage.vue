@@ -8,6 +8,7 @@ import MarketMovementPanel from "./MarketMovementPanel.vue";
 import OrderbookPanel from "./OrderbookPanel.vue";
 import DerivativesPanel from "./DerivativesPanel.vue";
 import BithumbMarketPanel from "./BithumbMarketPanel.vue";
+import BithumbOrderbookPanel from "./BithumbOrderbookPanel.vue";
 import TradeList from "./TradeList.vue";
 import CoinMetaDrawer from "./CoinMetaDrawer.vue";
 import { useDerivatives } from "../../composables/useDerivatives.js";
@@ -16,6 +17,7 @@ import { useMarketMeta } from "../../composables/useMarketMeta.js";
 import { useCoinMeta } from "../../composables/useCoinMeta.js";
 import { useFreeApiPolicy } from "../../composables/useFreeApiPolicy.js";
 import { useBithumbMarket } from "../../composables/useBithumbMarket.js";
+import { useBithumbOrderbook } from "../../composables/useBithumbOrderbook.js";
 import { useCandleStore } from "../../stores/candle.js";
 import { CANDLE_COUNT_OPTIONS, TIMEFRAME_OPTIONS } from "../../constants/exchange.js";
 import { DEFAULT_MARKET } from "../../constants/market.js";
@@ -89,6 +91,14 @@ const {
   bithumbIsApplicable,
   bithumbHasMarket,
 } = useBithumbMarket(market);
+
+const {
+  orderbook: bithumbOrderbook,
+  loading: bithumbOrderbookLoading,
+  error: bithumbOrderbookError,
+  isApplicable: bithumbOrderbookApplicable,
+  hasOrderbook: bithumbOrderbookHasData,
+} = useBithumbOrderbook(market);
 
 const {
   coinMeta,
@@ -236,6 +246,13 @@ function closeCoinDetail() {
             :error="bithumbError"
             :is-applicable="bithumbIsApplicable"
             :selected-market="market"
+          />
+          <BithumbOrderbookPanel
+            v-if="bithumbOrderbookApplicable || bithumbOrderbookLoading || bithumbOrderbookError || bithumbOrderbookHasData"
+            :loading="bithumbOrderbookLoading"
+            :orderbook="bithumbOrderbook"
+            :error="bithumbOrderbookError"
+            :is-applicable="bithumbOrderbookApplicable"
           />
 
           <section class="panel">
