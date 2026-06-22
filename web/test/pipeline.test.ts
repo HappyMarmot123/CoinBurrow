@@ -44,6 +44,10 @@ describe("normalizeUpbit", () => {
   it("returns null for unknown type", () => {
     expect(normalizeUpbit({ type: "myOrder" })).toBeNull();
   });
+
+  it("returns null for invalid known payloads", () => {
+    expect(normalizeUpbit({ type: "ticker", code: "KRW-BTC", trade_price: "5" })).toBeNull();
+  });
 });
 
 describe("createOutputStream", () => {
@@ -84,6 +88,31 @@ describe("createOutputStream", () => {
       ]),
     );
     expect(tick.data).toHaveLength(2);
+    sub.unsubscribe();
+  });
+
+  it("emits validation errors without emitting invalid channel data", () => {
+    const raw$ = new Subject<any>();
+    const got: any[] = [];
+    const sub = createOutputStream(raw$).subscribe((response) => got.push(response));
+
+    raw$.next({
+      type: "ticker",
+      code: "KRW-BTC",
+      trade_price: "1",
+      signed_change_rate: 0,
+      acc_trade_price_24h: 0,
+    });
+
+    expect(got).toEqual([
+      expect.objectContaining({
+        type: "validation-error",
+        error: expect.objectContaining({
+          code: "SCHEMA_MISMATCH",
+          source: "websocket",
+        }),
+      }),
+    ]);
     sub.unsubscribe();
   });
 });

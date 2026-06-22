@@ -48,6 +48,27 @@ const upstreamRoutes = [
   },
 ] as const
 
+function expectSuccessData(response: { json: () => unknown }, data: unknown): void {
+  expect(response.json()).toEqual({
+    success: true,
+    data,
+    timestamp: expect.any(Number),
+  })
+}
+
+function expectErrorEnvelope(
+  response: { json: () => unknown },
+  code: string,
+  message: string,
+): void {
+  expect(response.json()).toMatchObject({
+    success: false,
+    code,
+    message,
+    timestamp: expect.any(Number),
+  })
+}
+
 describe('market routes', () => {
   let app: ReturnType<typeof buildApp>
   let mockAgent: MockAgent
@@ -95,7 +116,7 @@ describe('market routes', () => {
     })
 
     expect(response.statusCode).toBe(200)
-    expect(response.json()).toEqual([
+    expectSuccessData(response, [
       {
         market: 'KRW-BTC',
         koreanName: '비트코인',
@@ -127,7 +148,7 @@ describe('market routes', () => {
     })
 
     expect(response.statusCode).toBe(200)
-    expect(response.json()).toEqual([
+    expectSuccessData(response, [
       {
         market: 'KRW-BTC',
         tradePrice: 100_000_000,
@@ -147,9 +168,7 @@ describe('market routes', () => {
         })
 
         expect(response.statusCode, name).toBe(400)
-        expect(response.json(), name).toEqual({
-          error: 'market is required',
-        })
+        expectErrorEnvelope(response, 'VALIDATION_ERROR', 'market is required')
       }
     },
   )
@@ -179,7 +198,7 @@ describe('market routes', () => {
     })
 
     expect(response.statusCode).toBe(200)
-    expect(response.json()).toEqual([
+    expectSuccessData(response, [
       {
         market: 'KRW-BTC',
         timestamp: 1_700_000_000_000,
@@ -220,7 +239,7 @@ describe('market routes', () => {
     })
 
     expect(response.statusCode).toBe(200)
-    expect(response.json()).toEqual([
+    expectSuccessData(response, [
       {
         market: 'KRW-BTC',
         timestamp: 1_700_000_000_000,
@@ -259,7 +278,7 @@ describe('market routes', () => {
     })
 
     expect(response.statusCode).toBe(200)
-    expect(response.json()).toEqual([
+    expectSuccessData(response, [
       {
         market: 'KRW-BTC',
         price: 100,
@@ -284,7 +303,7 @@ describe('market routes', () => {
       })
 
       expect(response.statusCode).toBe(502)
-      expect(response.json()).toEqual({ error: 'upstream unavailable' })
+      expectErrorEnvelope(response, 'RATE_LIMIT', 'Upstream rate limit exceeded')
       expect(response.body).not.toContain(path)
     },
   )
@@ -304,7 +323,7 @@ describe('market routes', () => {
     })
 
     expect(response.statusCode).toBe(502)
-    expect(response.json()).toEqual({ error: 'upstream unavailable' })
+    expectErrorEnvelope(response, 'SCHEMA_MISMATCH', 'Upstream response schema mismatch')
     expect(response.body).not.toContain('invalid response')
   })
 
@@ -315,7 +334,7 @@ describe('market routes', () => {
     })
 
     expect(response.statusCode).toBe(502)
-    expect(response.json()).toEqual({ error: 'upstream unavailable' })
+    expectErrorEnvelope(response, 'NETWORK_ERROR', 'Upstream network request failed')
     expect(response.body).not.toContain('Mock dispatch not matched')
   })
 })

@@ -4,6 +4,7 @@ import CandleChart from "./CandleChart.vue";
 import CoinList from "./CoinList.vue";
 import OrderbookPanel from "./OrderbookPanel.vue";
 import TradeList from "./TradeList.vue";
+import DebugValidationPanel from "../../components/DebugValidationPanel.vue";
 import { getCandles, getCoinList } from "../../api/rest.js";
 import { useMarketSocket } from "../../composables/useMarketSocket.js";
 import { useCandleStore } from "../../stores/candle.js";
@@ -42,6 +43,7 @@ watch(market, (nextMarket, previousMarket) => {
   <main class="exchange">
     <CoinList :selected="market" @select="market = $event" />
     <section class="main-panel">
+      <DebugValidationPanel />
       <CandleChart />
       <div class="bottom">
         <OrderbookPanel />

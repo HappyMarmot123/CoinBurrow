@@ -3,6 +3,7 @@ import { setActivePinia, createPinia } from "pinia";
 import { useTickerStore } from "../src/stores/ticker";
 import { useCandleStore } from "../src/stores/candle";
 import { useTradeStore } from "../src/stores/trade";
+import { useValidationHealthStore } from "../src/stores/validation-health";
 
 beforeEach(() => setActivePinia(createPinia()));
 
@@ -34,5 +35,30 @@ describe("stores", () => {
 
     expect(store.recent).toHaveLength(50);
     expect(store.recent[0].price).toBe(59);
+  });
+
+  it("validation health tracks mismatch, retry, fallback, and stale state", () => {
+    const store = useValidationHealthStore();
+
+    store.recordConnectionStatus(true);
+    store.recordConnectionStatus(false);
+    store.recordError({
+      source: "websocket",
+      code: "SCHEMA_MISMATCH",
+      message: "bad payload",
+      retryable: true,
+      path: "trade_price",
+    });
+    store.recordFallback("ticker", "schema mismatch");
+
+    expect(store.stale).toBe(true);
+    expect(store.mismatchCount).toBe(1);
+    expect(store.retryCount).toBe(2);
+    expect(store.fallbackCount).toBe(1);
+
+    store.clearEvents();
+
+    expect(store.stale).toBe(false);
+    expect(store.recentEvents).toHaveLength(0);
   });
 });

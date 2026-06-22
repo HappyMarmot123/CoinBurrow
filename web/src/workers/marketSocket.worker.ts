@@ -1,6 +1,7 @@
 import { Subject } from "rxjs";
 import { buildUpbitSubscription, type Channel, type WorkerCommand } from "./protocol.js";
 import { createOutputStream } from "./pipeline.js";
+import { createNormalizedError } from "../shared/validation/error/normalized-error.js";
 
 const UPBIT_WS = "wss://api.upbit.com/websocket/v1";
 const subs: Record<Channel, Set<string>> = {
@@ -32,7 +33,16 @@ function connect() {
     try {
       raw$.next(JSON.parse(text));
     } catch {
-      // Ignore malformed frames from the upstream socket.
+      self.postMessage({
+        type: "validation-error",
+        error: createNormalizedError({
+          source: "websocket",
+          code: "SCHEMA_MISMATCH",
+          message: "Malformed WebSocket JSON frame",
+          retryable: true,
+          provider: "upbit",
+        }),
+      });
     }
   };
 }

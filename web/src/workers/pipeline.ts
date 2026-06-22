@@ -1,13 +1,38 @@
 import { type Observable, merge } from "rxjs";
-import { filter, map, groupBy, mergeMap, bufferTime, throttleTime } from "rxjs/operators";
+import { filter, map, groupBy, mergeMap, bufferTime, throttleTime, share } from "rxjs/operators";
 import type { Channel, WorkerResponse } from "./protocol.js";
+import { parseWithSchema } from "../shared/validation/parse.js";
+import { schemaForUpbitMessage } from "../shared/validation/schemas/ws/upbit.js";
+import type { NormalizedError } from "../shared/validation/error/normalized-error.js";
+
+type ParsedUpbitMessage =
+  | { kind: "item"; channel: Channel; item: any }
+  | { kind: "error"; error: NormalizedError }
+  | null;
 
 export function normalizeUpbit(raw: any): { channel: Channel; item: any } | null {
+  const parsed = parseUpbitMessage(raw);
+  return parsed?.kind === "item" ? { channel: parsed.channel, item: parsed.item } : null;
+}
+
+function parseUpbitMessage(raw: any): ParsedUpbitMessage {
   const type: string = raw?.type ?? "";
+  const schema = schemaForUpbitMessage(type);
+
+  if (!schema) {
+    return null;
+  }
+
+  const parsed = parseWithSchema(schema, raw, "websocket");
+  if (!parsed.ok) {
+    return { kind: "error", error: parsed.error };
+  }
+
   const market = raw.code ?? raw.market;
 
   if (type === "ticker") {
     return {
+      kind: "item",
       channel: "ticker",
       item: {
         market,
@@ -20,6 +45,7 @@ export function normalizeUpbit(raw: any): { channel: Channel; item: any } | null
 
   if (type === "orderbook") {
     return {
+      kind: "item",
       channel: "orderbook",
       item: {
         market,
@@ -36,6 +62,7 @@ export function normalizeUpbit(raw: any): { channel: Channel; item: any } | null
 
   if (type.startsWith("candle")) {
     return {
+      kind: "item",
       channel: "candle",
       item: {
         market,
@@ -51,6 +78,7 @@ export function normalizeUpbit(raw: any): { channel: Channel; item: any } | null
 
   if (type === "trade") {
     return {
+      kind: "item",
       channel: "trade",
       item: {
         market,
@@ -66,9 +94,14 @@ export function normalizeUpbit(raw: any): { channel: Channel; item: any } | null
 }
 
 export function createOutputStream(raw$: Observable<any>): Observable<WorkerResponse> {
-  const normalized$ = raw$.pipe(
-    map(normalizeUpbit),
-    filter((value): value is { channel: Channel; item: any } => value !== null),
+  const parsed$ = raw$.pipe(map(parseUpbitMessage), share());
+  const validationError$ = parsed$.pipe(
+    filter((value): value is Extract<ParsedUpbitMessage, { kind: "error" }> => value?.kind === "error"),
+    map((value) => ({ type: "validation-error" as const, error: value.error })),
+  );
+  const normalized$ = parsed$.pipe(
+    filter((value): value is Extract<ParsedUpbitMessage, { kind: "item" }> => value?.kind === "item"),
+    map((value) => ({ channel: value.channel, item: value.item })),
   );
 
   const ticker$ = normalized$.pipe(
@@ -93,5 +126,5 @@ export function createOutputStream(raw$: Observable<any>): Observable<WorkerResp
     ),
   );
 
-  return merge(ticker$, otherChannels$);
+  return merge(ticker$, otherChannels$, validationError$);
 }
