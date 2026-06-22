@@ -4,15 +4,17 @@
 <template>
   <nav class="app-nav" aria-label="주요 네비게이션">
     <div class="app-nav__left">
-      <router-link to="/" class="app-nav__brand">CoinBurrow</router-link>
-      <div class="app-nav__links">
-        <router-link to="/exchange">거래소</router-link>
-        <router-link to="/news">뉴스</router-link>
+      <router-link to="/" class="app-nav__link app-nav__brand">CoinBurrow</router-link>
+      <div class="app-nav__links" aria-label="주요 네비게이션 메뉴">
+        <router-link to="/exchange" class="app-nav__link">거래소</router-link>
+        <router-link to="/news" class="app-nav__link">뉴스</router-link>
       </div>
     </div>
 
     <div class="app-nav__right">
-      <slot name="actions" />
+      <div class="app-nav__actions">
+        <slot name="actions" />
+      </div>
     </div>
   </nav>
 </template>
@@ -36,36 +38,51 @@
   gap: 8px;
 }
 
+.app-nav__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .app-nav__right {
   margin-left: auto;
   display: flex;
   align-items: center;
 }
 
-.app-nav a:not(.app-nav__brand) {
+.app-nav__link {
   border: 1px solid var(--panel-border);
   border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 8px 10px;
   color: var(--text-muted);
   font-size: 13px;
+  line-height: 1;
   font-weight: 850;
   text-decoration: none;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    border-color var(--ease),
+    color var(--ease),
+    background var(--ease);
 }
 
-.app-nav a:not(.app-nav__brand):hover,
-.app-nav a:not(.app-nav__brand):focus-visible,
-.app-nav a:not(.app-nav__brand)[aria-current="page"] {
+.app-nav__link:hover,
+.app-nav__link:focus-visible,
+.app-nav__link[aria-current="page"] {
   color: var(--brand-lime);
+  border-color: var(--panel-border-hover);
+  background: var(--panel-bg-strong);
   outline: none;
 }
 
 .app-nav__brand {
-  border: 0 !important;
-  outline: none;
-  box-shadow: none;
-  padding-inline: 0;
-  text-decoration: none;
-  display: inline-flex;
+  border: none;
+  padding: 0;
   background: linear-gradient(315deg, #d9ff66, #ffb02e);
   background-clip: text;
   -webkit-background-clip: text;
@@ -77,8 +94,16 @@
   font-size: 17px;
   margin: 0;
   font-weight: 900;
-  line-height: 1;
   letter-spacing: 0;
+}
+
+.app-nav__brand:hover,
+.app-nav__brand:focus-visible {
+  color: transparent;
+  border: none;
+  background: linear-gradient(315deg, #d9ff66, #ffb02e);
+  background-clip: text;
+  -webkit-background-clip: text;
 }
 
 @media (max-width: 640px) {
@@ -88,13 +113,14 @@
     gap: 10px;
   }
 
-  .app-nav__left {
+  .app-nav__left,
+  .app-nav__links,
+  .app-nav__right {
     width: 100%;
-    flex-wrap: wrap;
   }
 
-  .app-nav__links {
-    width: 100%;
+  .app-nav__left {
+    flex-wrap: wrap;
   }
 
   .app-nav__links a {
@@ -104,7 +130,10 @@
 
   .app-nav__right {
     margin-left: 0;
-    width: 100%;
+  }
+
+  .app-nav__actions {
+    justify-content: flex-end;
   }
 }
 </style>
