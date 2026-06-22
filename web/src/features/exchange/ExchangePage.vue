@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import AppNav from "../../components/AppNav.vue";
 import CandleChart from "./CandleChart.vue";
 import CoinList from "./CoinList.vue";
@@ -8,6 +8,7 @@ import MarketMovementPanel from "./MarketMovementPanel.vue";
 import OrderbookPanel from "./OrderbookPanel.vue";
 import DerivativesPanel from "./DerivativesPanel.vue";
 import TradeList from "./TradeList.vue";
+import NewsAlertsPopover from "../news/NewsAlertsPopover.vue";
 import CoinMetaDrawer from "./CoinMetaDrawer.vue";
 import { useDerivatives } from "../../composables/useDerivatives.js";
 import { useExchangeData } from "../../composables/useExchangeData.js";
@@ -15,8 +16,10 @@ import { useMarketMeta } from "../../composables/useMarketMeta.js";
 import { useCoinMeta } from "../../composables/useCoinMeta.js";
 import { useFreeApiPolicy } from "../../composables/useFreeApiPolicy.js";
 import { useCandleStore } from "../../stores/candle.js";
+import { useNewsStore } from "../../stores/news.js";
 import { CANDLE_COUNT_OPTIONS, TIMEFRAME_OPTIONS } from "../../constants/exchange.js";
 import { DEFAULT_MARKET } from "../../constants/market.js";
+import { NEWS_HOT_ALERT_POLL_INTERVAL_MS } from "../../constants/news.js";
 import type { CandleTimeframe } from "../../api/rest.js";
 
 const market = ref(DEFAULT_MARKET);
@@ -24,6 +27,7 @@ const selectedQuote = ref("KRW");
 const candleTimeframe = ref<CandleTimeframe>("1m");
 const candleCount = ref(200);
 const candleStore = useCandleStore();
+const newsStore = useNewsStore();
 
 const timeframeOptions = TIMEFRAME_OPTIONS;
 const countOptions = CANDLE_COUNT_OPTIONS;
@@ -38,6 +42,7 @@ const primaryTimeframeOptions = timeframeOptions.filter(({ value }) =>
 );
 let initializingExchange = true;
 let loadingMarketFromQuote = false;
+let hotAlertPollTimer: number | undefined;
 
 const {
   availableQuotes,
@@ -110,13 +115,51 @@ async function loadQuoteMarkets(nextQuote: string) {
   void loadMeta();
 }
 
+async function initializeHotAlertState() {
+  await newsStore.loadHotAlertState();
+
+  if (newsStore.hotAlertHasUserPreference) {
+    if (!newsStore.hotAlertEnabled) {
+      return;
+    }
+    if (newsStore.hotAlertPermission !== "granted") {
+      newsStore.hotAlertEnabled = false;
+      newsStore.persistHotAlertState();
+    }
+    return;
+  }
+
+  if (newsStore.hotAlertPermission === "default") {
+    await requestHotAlertPermission();
+    return;
+  }
+
+  if (newsStore.hotAlertPermission === "granted") {
+    await setHotAlertEnabled(true);
+  }
+}
+
 onMounted(async () => {
   try {
     await loadAvailableQuotes();
     await loadQuoteMarkets(selectedQuote.value);
     await loadPolicy();
+    await initializeHotAlertState();
+    await newsStore.refreshHotAlertSnapshot();
+    hotAlertPollTimer = window.setInterval(() => {
+      if (newsStore.loading) {
+        return;
+      }
+      void newsStore.refreshHotAlertSnapshot();
+    }, NEWS_HOT_ALERT_POLL_INTERVAL_MS);
   } finally {
     initializingExchange = false;
+  }
+});
+
+onBeforeUnmount(() => {
+  if (hotAlertPollTimer) {
+    window.clearInterval(hotAlertPollTimer);
   }
 });
 
@@ -153,11 +196,35 @@ function closeCoinDetail() {
   isCoinDetailOpen.value = false;
   detailMarket.value = "";
 }
+
+function setHotAlertEnabled(enabled: boolean) {
+  void newsStore.setHotAlertEnabled(enabled);
+}
+
+function requestHotAlertPermission() {
+  void newsStore.requestNotificationPermission();
+}
+
+function markHotAlertsSeen() {
+  newsStore.markHotAlertsSeen();
+}
 </script>
 
 <template>
   <main class="exchange-page">
-    <AppNav class="exchange-nav" />
+    <AppNav class="exchange-nav">
+      <template #actions>
+        <NewsAlertsPopover
+          :hot-alert-enabled="newsStore.hotAlertEnabled"
+          :hot-alert-permission="newsStore.hotAlertPermission"
+          :hot-alert-history="newsStore.hotAlertHistory"
+          :hot-alert-unseen-count="newsStore.hotAlertUnseenCount"
+          @toggle-hot-alert="setHotAlertEnabled"
+          @request-hot-alert-permission="requestHotAlertPermission"
+          @mark-seen="markHotAlertsSeen"
+        />
+      </template>
+    </AppNav>
 
     <ExchangeHero
       :exchange-error="exchangeError"
