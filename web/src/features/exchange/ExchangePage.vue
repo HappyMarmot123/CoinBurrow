@@ -260,7 +260,7 @@ function closeCoinDetail() {
             </option>
           </select>
         </label>
-        <CoinList :selected="market" @select="market = $event" @open-detail="openCoinDetail" />
+        <CoinList :selected="market" :quote="selectedQuote" @select="market = $event" @open-detail="openCoinDetail" />
       </aside>
 
       <CoinMetaDrawer
