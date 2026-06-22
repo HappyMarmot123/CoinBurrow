@@ -115,11 +115,11 @@ function openDetail(event: MouseEvent, marketCode: string) {
           </span>
           <button
             type="button"
-            :aria-label="`Open detail for ${row.market.koreanName}`"
+            :aria-label="`${row.market.koreanName} 상세 열기`"
             class="coin-detail-btn"
             @click="openDetail($event, row.market.market)"
           >
-            Detail
+            상세
           </button>
           <small class="sr-market-code">{{ row.market.market }}</small>
         </li>

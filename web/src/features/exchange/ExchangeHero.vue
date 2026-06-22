@@ -98,10 +98,13 @@ function onCoinLogoError() {
     <div class="market-ticker">
       <div class="market-ticker__primary">
         <div class="market-id">
-          <span class="market-id__icon" :title="resolvedCoinLogo ? `${selectedMarketLabel} logo` : undefined">
+          <span
+            class="market-id__icon"
+            :title="resolvedCoinLogo ? `${selectedMarketLabel} 코인 로고` : `${selectedMarketLabel} 대체 텍스트`"
+          >
             <img
               v-if="resolvedCoinLogo"
-              :alt="`${selectedMarketLabel} logo`"
+              :alt="`${selectedMarketLabel} 코인 로고`"
               :src="resolvedCoinLogo"
               @error="onCoinLogoError"
             />
@@ -114,7 +117,10 @@ function onCoinLogoError() {
 
         <div class="market-price" :class="movementClass">
           <span>현재가</span>
-          <strong>{{ formatPrice(liveTicker?.tradePrice) }}</strong>
+          <strong>
+            {{ formatPrice(liveTicker?.tradePrice) }}
+            <span class="market-price__unit">KRW</span>
+          </strong>
           <em>{{ signedRateLabel }}</em>
         </div>
 
@@ -304,6 +310,14 @@ function onCoinLogoError() {
   line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.market-price__unit {
+  margin-left: 6px;
+  color: var(--text-muted);
+  font-size: 0.44em;
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
 
 .market-price em {

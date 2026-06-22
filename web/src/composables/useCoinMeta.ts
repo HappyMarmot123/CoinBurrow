@@ -151,9 +151,9 @@ export function useCoinMeta(
         return;
       }
 
-      coinMetaError.value = "metadata not found";
+      coinMetaError.value = "메타데이터를 찾지 못했습니다.";
     } catch {
-      coinMetaError.value = "metadata request failed";
+      coinMetaError.value = "메타데이터 요청에 실패했습니다.";
       coinMeta.value = null;
       coinMetaSource.value = "";
     } finally {
