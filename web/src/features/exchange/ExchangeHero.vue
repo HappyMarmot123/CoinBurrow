@@ -13,8 +13,6 @@ const props = defineProps<{
   quote: string;
   selectedMarketStatus?: MarketStatusView;
   selectedMarketSummary?: MarketSummaryView;
-  marketRestriction: string;
-  marketStatusCautions: string[];
   liveTicker?: TickerView;
   spreadRatio?: number;
   usdKrwRate: number | null;
@@ -175,21 +173,6 @@ function onCoinLogoError() {
             <dt>심볼</dt>
             <dd>{{ selectedMarketSummary?.englishName ?? "-" }}</dd>
           </div>
-          <div>
-            <dt>제재</dt>
-            <dd>{{ marketRestriction }}</dd>
-          </div>
-          <div>
-            <dt>주의 항목</dt>
-            <dd v-if="marketStatusCautions.length === 0">-</dd>
-            <dd v-else>
-              <ul class="market-caution-list">
-                <li v-for="caution in marketStatusCautions" :key="caution">
-                  {{ caution }}
-                </li>
-              </ul>
-            </dd>
-          </div>
         </dl>
 
       </div>
@@ -214,7 +197,7 @@ function onCoinLogoError() {
 .market-ticker {
   @include exchange-panel;
   display: grid;
-  grid-template-columns: minmax(0, 6fr) minmax(0, 4fr);
+  grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
   grid-template-areas: "primary details";
   align-items: stretch;
   gap: 14px;
@@ -225,18 +208,15 @@ function onCoinLogoError() {
 .market-ticker__primary {
   grid-area: primary;
   min-width: 0;
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-areas:
-    "id"
-    "price"
-    "chips";
-  align-items: stretch;
-  gap: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
 }
 
 .market-id {
   grid-area: id;
+  flex: 1 1 100%;
   align-self: center;
   min-width: 0;
   display: grid;
@@ -297,6 +277,7 @@ function onCoinLogoError() {
 
 .market-price {
   grid-area: price;
+  flex: 0 1 auto;
   align-self: center;
   min-width: 0;
   display: grid;
@@ -352,13 +333,13 @@ function onCoinLogoError() {
 
 .ticker-chips {
   grid-area: chips;
-  align-self: end;
+  flex: 1 1 260px;
+  align-self: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   min-width: 0;
   display: flex;
   gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 2px;
-  @include thin-scrollbar;
 }
 
 .ticker-chip {
@@ -471,18 +452,6 @@ function onCoinLogoError() {
   overflow-wrap: anywhere;
 }
 
-.market-caution-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 4px;
-}
-
-.market-caution-list li {
-  margin: 0;
-}
-
 .hero-alerts {
   display: grid;
   gap: 6px;
@@ -507,11 +476,6 @@ function onCoinLogoError() {
 }
 
 @media (max-width: 960px) {
-  .ticker-chips {
-    margin-right: -16px;
-    padding-right: 16px;
-  }
-
   .market-details__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -530,14 +494,6 @@ function onCoinLogoError() {
       "details";
     gap: 12px;
     padding: 14px;
-  }
-
-  .market-ticker__primary {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "id"
-      "price"
-      "chips";
   }
 
   .market-id {

@@ -10,6 +10,8 @@ const props = defineProps<{
   policy?: FreeApiProviderPolicy | null;
   selectedMarketSummary?: MarketSummaryView;
   selectedMarketStatus?: MarketStatusView;
+  marketRestriction?: string;
+  marketStatusCautions?: string[];
   liveTicker?: TickerView;
   spreadRatio?: number;
   usdKrwRate: number | null;
@@ -86,6 +88,11 @@ onUnmounted(() => {
             <p>
               <strong>거래 제약</strong>
               {{ props.selectedMarketStatus?.market_warning ?? props.selectedMarketStatus?.market_warning_message ?? "-" }}
+            </p>
+            <p><strong>제재</strong> {{ props.marketRestriction || "-" }}</p>
+            <p class="coin-meta-drawer__grid-wide">
+              <strong>주의 항목</strong>
+              {{ props.marketStatusCautions && props.marketStatusCautions.length ? props.marketStatusCautions.join(", ") : "-" }}
             </p>
           </div>
         </section>
@@ -287,6 +294,10 @@ onUnmounted(() => {
   margin: 0;
   color: var(--text-strong);
   font-size: 13px;
+}
+
+.coin-meta-drawer__grid-wide {
+  grid-column: 1 / -1;
 }
 
 .coin-meta-drawer__grid strong {

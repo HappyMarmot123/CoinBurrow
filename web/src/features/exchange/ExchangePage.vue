@@ -235,8 +235,6 @@ function markHotAlertsSeen() {
       :quote="selectedMarketSummary?.quote ?? 'KRW'"
       :selected-market-status="selectedMarketStatus"
       :selected-market-summary="selectedMarketSummary"
-      :market-restriction="marketRestriction"
-      :market-status-cautions="marketStatusCautions"
       :live-ticker="liveTicker"
       :spread-ratio="selectedOrderbook ? selectedMarketSpread?.ratio : undefined"
       :usd-krw-rate="usdKrwRate"
@@ -281,12 +279,6 @@ function markHotAlertsSeen() {
         </section>
 
         <div class="split-grid">
-          <DerivativesPanel
-            v-if="hasDerivatives || derivativesLoading || derivativesError"
-            :loading="derivativesLoading"
-            :derivatives="derivatives"
-            :error="hasDerivatives ? '' : derivativesError"
-          />
           <section class="panel">
             <div class="panel-head">
               <h3>호가</h3>
@@ -299,6 +291,12 @@ function markHotAlertsSeen() {
             </div>
             <TradeList :market="market" />
           </section>
+          <DerivativesPanel
+            v-if="hasDerivatives || derivativesLoading || derivativesError"
+            :loading="derivativesLoading"
+            :derivatives="derivatives"
+            :error="hasDerivatives ? '' : derivativesError"
+          />
         </div>
 
         <MarketMovementPanel
@@ -330,6 +328,8 @@ function markHotAlertsSeen() {
         :policy="policy"
         :selected-market-summary="selectedMarketSummary"
         :selected-market-status="selectedMarketStatus"
+        :market-restriction="marketRestriction"
+        :market-status-cautions="marketStatusCautions"
         :live-ticker="liveTicker"
         :spread-ratio="selectedOrderbook ? selectedMarketSpread?.ratio : undefined"
         :usd-krw-rate="usdKrwRate"
