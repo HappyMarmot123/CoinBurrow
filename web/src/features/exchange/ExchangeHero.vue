@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import type { MarketStatusView, MarketSummaryView } from "../../api/rest.js";
+import type { CoinMetaView, MarketStatusView, MarketSummaryView } from "../../api/rest.js";
 import type { TickerView } from "../../stores/types.js";
 import { formatCompact, formatPrice, formatRatio } from "../../utils/format.js";
 
@@ -18,6 +18,7 @@ const props = defineProps<{
   liveTicker?: TickerView;
   spreadRatio?: number;
   usdKrwRate: number | null;
+  coinMeta?: CoinMetaView | null;
 }>();
 
 const assetCode = computed(() => props.market.split("-").at(-1) ?? props.market);
@@ -35,6 +36,15 @@ const signedRateLabel = computed(() => {
   return `${sign}${(rate * 100).toFixed(2)}%`;
 });
 const hasError = computed(() => Boolean(props.exchangeError || props.statusError));
+
+const selectedCoinMeta = computed(() => props.coinMeta ?? null);
+const selectedCoinLogo = computed(() => selectedCoinMeta.value?.logo ?? "");
+const selectedCoinIconFallback = computed(() => {
+  const label = props.selectedMarketLabel.trim();
+  const code = assetCode.value.trim();
+  const candidate = label[0] ?? code[0] ?? "M";
+  return candidate.toUpperCase();
+});
 </script>
 
 <template>
@@ -42,6 +52,14 @@ const hasError = computed(() => Boolean(props.exchangeError || props.statusError
     <div class="market-ticker">
       <div class="market-ticker__primary">
         <div class="market-id">
+          <span class="market-id__icon" :title="selectedCoinLogo ? `${selectedMarketLabel} logo` : undefined">
+            <img
+              v-if="selectedCoinLogo"
+              :alt="`${selectedMarketLabel} logo`"
+              :src="selectedCoinLogo"
+            />
+            <span v-else>{{ selectedCoinIconFallback }}</span>
+          </span>
           <span class="market-id__name">{{ selectedMarketLabel }}</span>
           <span class="market-id__code">{{ assetCode }}</span>
           <span class="market-id__quote">{{ quote }}</span>
@@ -108,6 +126,7 @@ const hasError = computed(() => Boolean(props.exchangeError || props.statusError
             </dd>
           </div>
         </dl>
+
       </div>
     </div>
 
@@ -156,9 +175,34 @@ const hasError = computed(() => Boolean(props.exchangeError || props.statusError
   align-self: center;
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 8px;
+}
+
+.market-id__icon {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  background: var(--panel-bg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.market-id__icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.market-id__icon span {
+  color: var(--text-strong);
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .market-id__name {
@@ -396,11 +440,11 @@ const hasError = computed(() => Boolean(props.exchangeError || props.statusError
   }
 
   .market-id {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
   }
 
   .market-id__quote {
-    grid-column: 1 / -1;
+    grid-column: 2 / -1;
     width: fit-content;
   }
 

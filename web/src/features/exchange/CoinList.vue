@@ -7,7 +7,10 @@ import { formatCompact, formatPrice } from "../../utils/format.js";
 
 const props = defineProps<{ selected: string }>();
 
-const emit = defineEmits<{ select: [market: string] }>();
+const emit = defineEmits<{
+  select: [market: string];
+  openDetail: [market: string];
+}>();
 const marketStore = useMarketStore();
 const tickerStore = useTickerStore();
 const query = ref("");
@@ -65,6 +68,11 @@ function formatSignedRate(ticker?: TickerView) {
   const sign = ticker.signedChangeRate > 0 ? "+" : "";
   return `${sign}${(ticker.signedChangeRate * 100).toFixed(2)}%`;
 }
+
+function openDetail(event: MouseEvent, marketCode: string) {
+  event.stopPropagation();
+  emit("openDetail", marketCode);
+}
 </script>
 
 <template>
@@ -102,11 +110,19 @@ function formatSignedRate(ticker?: TickerView) {
           <strong>{{ formatPrice(row.ticker?.tradePrice) }}</strong>
           <small>{{ formatCompact(row.ticker?.accTradePrice24h) }}</small>
         </div>
-        <span class="coin-change">
-          {{ formatSignedRate(row.ticker) }}
-        </span>
-        <small class="sr-market-code">{{ row.market.market }}</small>
-      </li>
+          <span class="coin-change">
+            {{ formatSignedRate(row.ticker) }}
+          </span>
+          <button
+            type="button"
+            :aria-label="`Open detail for ${row.market.koreanName}`"
+            class="coin-detail-btn"
+            @click="openDetail($event, row.market.market)"
+          >
+            Detail
+          </button>
+          <small class="sr-market-code">{{ row.market.market }}</small>
+        </li>
     </ul>
 
     <div v-else class="coin-empty">
@@ -223,7 +239,7 @@ input::placeholder {
 .coin-row {
   cursor: pointer;
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(82px, 0.8fr) minmax(58px, auto);
+  grid-template-columns: minmax(0, 1.25fr) minmax(82px, 0.8fr) minmax(58px, auto) auto;
   align-items: center;
   gap: 10px;
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -291,6 +307,31 @@ input::placeholder {
   white-space: nowrap;
 }
 
+.coin-detail-btn {
+  justify-self: end;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  color: var(--text-muted);
+  background: transparent;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    border-color var(--ease),
+    color var(--ease),
+    background var(--ease);
+}
+
+.coin-detail-btn:hover,
+.coin-detail-btn:focus-visible {
+  border-color: var(--panel-border-hover);
+  color: var(--brand-lime);
+  background: var(--panel-bg-strong);
+  outline: none;
+}
+
 .coin-row.is-up .coin-change {
   color: var(--c-up);
 }
@@ -330,17 +371,24 @@ input::placeholder {
 
 @media (max-width: 640px) {
   .coin-row {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    column-gap: 8px;
   }
 
   .coin-price {
     grid-column: 1 / 2;
+    grid-row: 1 / 2;
     text-align: left;
   }
 
   .coin-change {
     grid-column: 2 / 3;
     grid-row: 1 / 3;
+  }
+
+  .coin-detail-btn {
+    grid-column: 3 / 4;
+    align-self: start;
   }
 }
 </style>

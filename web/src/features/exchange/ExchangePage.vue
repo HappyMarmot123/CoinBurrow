@@ -6,8 +6,11 @@ import ExchangeHero from "./ExchangeHero.vue";
 import MarketMovementPanel from "./MarketMovementPanel.vue";
 import OrderbookPanel from "./OrderbookPanel.vue";
 import TradeList from "./TradeList.vue";
+import CoinMetaDrawer from "./CoinMetaDrawer.vue";
 import { useExchangeData } from "../../composables/useExchangeData.js";
 import { useMarketMeta } from "../../composables/useMarketMeta.js";
+import { useCoinMeta } from "../../composables/useCoinMeta.js";
+import { useFreeApiPolicy } from "../../composables/useFreeApiPolicy.js";
 import { useCandleStore } from "../../stores/candle.js";
 import { CANDLE_COUNT_OPTIONS, TIMEFRAME_OPTIONS } from "../../constants/exchange.js";
 import { DEFAULT_MARKET } from "../../constants/market.js";
@@ -67,6 +70,22 @@ const {
   loadMarketStatus,
 });
 
+const {
+  coinMeta,
+  coinMetaError,
+  coinMetaLoading,
+  coinMetaLookupId,
+  coinMetaSource,
+} = useCoinMeta(market, selectedMarketSummary);
+const {
+  findPolicy,
+  reload: loadPolicy,
+} = useFreeApiPolicy();
+const policy = computed(() => findPolicy(coinMetaSource.value));
+const isCoinDetailOpen = ref(false);
+const detailMarket = ref("");
+
+
 async function loadQuoteMarkets(nextQuote: string) {
   loadingMarketFromQuote = true;
   let nextMarket = market.value;
@@ -85,6 +104,7 @@ onMounted(async () => {
   try {
     await loadAvailableQuotes();
     await loadQuoteMarkets(selectedQuote.value);
+    await loadPolicy();
   } finally {
     initializingExchange = false;
   }
@@ -112,6 +132,17 @@ watch(candleCount, () => {
 function compactTimeframeLabel(label: string) {
   return label.replace(" (기본)", "");
 }
+
+function openCoinDetail(nextMarket: string) {
+  market.value = nextMarket;
+  detailMarket.value = nextMarket;
+  isCoinDetailOpen.value = true;
+}
+
+function closeCoinDetail() {
+  isCoinDetailOpen.value = false;
+  detailMarket.value = "";
+}
 </script>
 
 <template>
@@ -138,6 +169,7 @@ function compactTimeframeLabel(label: string) {
       :live-ticker="liveTicker"
       :spread-ratio="selectedOrderbook ? selectedMarketSpread?.ratio : undefined"
       :usd-krw-rate="usdKrwRate"
+      :coin-meta="coinMeta"
     />
 
     <section class="exchange-layout">
@@ -212,8 +244,25 @@ function compactTimeframeLabel(label: string) {
             </option>
           </select>
         </label>
-        <CoinList :selected="market" @select="market = $event" />
+        <CoinList :selected="market" @select="market = $event" @open-detail="openCoinDetail" />
       </aside>
+
+      <CoinMetaDrawer
+        :open="isCoinDetailOpen"
+        :market="detailMarket || market"
+        :policy="policy"
+        :selected-market-summary="selectedMarketSummary"
+        :selected-market-status="selectedMarketStatus"
+        :live-ticker="liveTicker"
+        :spread-ratio="selectedOrderbook ? selectedMarketSpread?.ratio : undefined"
+        :usd-krw-rate="usdKrwRate"
+        :coin-meta="coinMeta"
+        :coin-meta-loading="coinMetaLoading"
+        :coin-meta-error="coinMetaError"
+        :coin-meta-source="coinMetaSource"
+        :coin-meta-lookup-id="coinMetaLookupId"
+        @close="closeCoinDetail"
+      />
     </section>
   </main>
 </template>

@@ -65,6 +65,21 @@ export interface ExchangeRateView {
   [key: string]: unknown;
 }
 
+export interface CoinMetaView {
+  coinId: string;
+  name: string;
+  symbol: string;
+  logo?: string;
+  category?: string;
+  website?: string;
+  description?: string;
+  tags?: string[];
+  whitepaper?: string;
+  recentEvents?: string[];
+  team?: string[];
+  [key: string]: unknown;
+}
+
 export interface MarketSummaryView extends MarketView {
   quote: string;
   [key: string]: unknown;
@@ -90,6 +105,29 @@ export interface NewsQueryOptions {
   source?: string;
   limit?: number;
   cursor?: string;
+}
+
+export interface CoinMetaQueryOptions {
+  coinId: string;
+}
+
+export interface FreeApiRequestPolicy {
+  timeoutMs: number;
+  maxRetries: number;
+  retryDelaysMs: number[];
+}
+
+export interface FreeApiProviderPolicy {
+  provider: string;
+  capability: "meta";
+  cacheTtlMs: number;
+  staleCacheTtlMs?: number;
+  requestPolicy: FreeApiRequestPolicy;
+}
+
+export interface FreeApiPolicyResponse {
+  generatedAt: number;
+  policies: FreeApiProviderPolicy[];
 }
 
 type QueryValue = string | number | boolean | undefined;
@@ -279,6 +317,38 @@ export const getNewsSources = async (): Promise<CryptoNewsSourceSummary> => {
 
 export const getNewsHealth = async (): Promise<CryptoNewsHealth> => {
   return getJson<CryptoNewsHealth>("/market/news/health");
+};
+
+export const getCoinMetaByProvider = async (
+  provider: "coingecko" | "coinpaprika",
+  options: CoinMetaQueryOptions,
+): Promise<CoinMetaView> => {
+  return getJson<CoinMetaView>(`/market/freeapi/${provider}/meta${buildPath("", {
+    coinId: options.coinId,
+  })}`);
+};
+
+export const getCoinMeta = async (
+  coingeckoCoinId: string,
+  coinpaprikaCoinId?: string,
+): Promise<CoinMetaView | null> => {
+  try {
+    return await getCoinMetaByProvider("coingecko", { coinId: coingeckoCoinId });
+  } catch {
+    if (!coinpaprikaCoinId) {
+      return null;
+    }
+
+    try {
+      return await getCoinMetaByProvider("coinpaprika", { coinId: coinpaprikaCoinId });
+    } catch {
+      return null;
+    }
+  }
+};
+
+export const getFreeApiPolicy = async (): Promise<FreeApiPolicyResponse> => {
+  return getJson<FreeApiPolicyResponse>("/market/freeapi/policy");
 };
 
 export const getCoinListWithFallback = async (): Promise<MarketView[]> => {
