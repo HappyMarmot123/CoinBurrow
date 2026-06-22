@@ -5,14 +5,12 @@
   <nav class="app-nav" aria-label="주요 네비게이션">
     <div class="app-nav__left">
       <router-link to="/" class="app-nav__link app-nav__brand">CoinBurrow</router-link>
-      <div class="app-nav__links" aria-label="주요 네비게이션 메뉴">
-        <router-link to="/exchange" class="app-nav__link">거래소</router-link>
-        <router-link to="/news" class="app-nav__link">뉴스</router-link>
-      </div>
     </div>
 
     <div class="app-nav__right">
-      <div class="app-nav__actions">
+      <div class="app-nav__links" aria-label="주요 네비게이션 메뉴">
+        <router-link to="/exchange" class="app-nav__link">거래소</router-link>
+        <router-link to="/news" class="app-nav__link">뉴스</router-link>
         <slot name="actions" />
       </div>
     </div>
@@ -36,19 +34,40 @@
 .app-nav__links {
   display: flex;
   gap: 8px;
-}
-
-.app-nav__actions {
-  display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
 }
 
 .app-nav__right {
   margin-left: auto;
   display: flex;
   align-items: center;
+}
+
+.app-nav__links :deep(.news-alert-popover__trigger) {
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 10px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 850;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    border-color var(--ease),
+    color var(--ease),
+    background var(--ease);
+}
+
+.app-nav__links :deep(.news-alert-popover__trigger:hover),
+.app-nav__links :deep(.news-alert-popover__trigger:focus-visible) {
+  color: var(--brand-lime);
+  border-color: var(--panel-border-hover);
+  background: var(--panel-bg-strong);
+  outline: none;
 }
 
 .app-nav__link {
@@ -120,7 +139,8 @@
   }
 
   .app-nav__left {
-    flex-wrap: wrap;
+    width: auto;
+    flex-wrap: nowrap;
   }
 
   .app-nav__links a {
@@ -130,10 +150,6 @@
 
   .app-nav__right {
     margin-left: 0;
-  }
-
-  .app-nav__actions {
-    justify-content: flex-end;
   }
 }
 </style>

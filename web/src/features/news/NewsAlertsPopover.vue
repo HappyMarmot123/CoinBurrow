@@ -179,16 +179,20 @@ onBeforeUnmount(() => {
 
 .news-alert-popover__trigger {
   position: relative;
-  border: 1px solid var(--panel-border-soft);
-  border-radius: 999px;
-  width: 34px;
-  height: 34px;
-  display: inline-grid;
-  place-items: center;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 10px;
+  min-width: 34px;
+  min-height: 34px;
   background: rgba(10, 18, 29, 0.9);
   color: var(--text-muted);
-  font-size: 16px;
+  font-size: 13px;
   cursor: pointer;
+  line-height: 1;
+  font-weight: 850;
   transition: border-color var(--ease), color var(--ease), background var(--ease);
 }
 
