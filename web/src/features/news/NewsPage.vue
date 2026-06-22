@@ -124,11 +124,9 @@ function markHotAlertsSeen() {
           :status-text="statusText"
           :source-count="sourceCount"
           :category-count="categoryCount"
-          :refreshing="newsStore.refreshing"
           :disabled="newsStore.loading"
           @update:asset="setAsset"
           @update:source="setSource"
-          @refresh="newsStore.refreshNews"
         />
       </aside>
 

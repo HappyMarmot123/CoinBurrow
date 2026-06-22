@@ -6,7 +6,6 @@ const props = defineProps<{
   source: string;
   query: string;
   articleCount: number;
-  refreshing: boolean;
   statusText: string;
   sourceCount: number;
   categoryCount: number;
@@ -17,7 +16,6 @@ const emit = defineEmits<{
   "update:asset": [value: string];
   "update:source": [value: string];
   "update:query": [value: string];
-  refresh: [];
 }>();
 </script>
 
@@ -37,21 +35,12 @@ const emit = defineEmits<{
           :value="query"
           :disabled="disabled"
           type="search"
+          maxlength="100"
           placeholder="키워드 입력"
           aria-label="뉴스 검색"
           @input="emit('update:query', ($event.target as HTMLInputElement).value)"
         >
       </label>
-
-      <button
-        class="icon-button"
-        type="button"
-        :disabled="disabled || refreshing"
-        aria-label="새로고침"
-        @click="emit('refresh')"
-      >
-        <span aria-hidden="true">↻</span>
-      </button>
     </div>
 
     <div class="filter-section filter-section--asset" role="group" aria-label="자산 필터">
@@ -127,8 +116,7 @@ const emit = defineEmits<{
 }
 
 .filter-group button,
-.filter-group__source-button,
-.icon-button {
+.filter-group__source-button {
   border: 1px solid var(--panel-border);
   border-radius: var(--radius-sm);
   color: var(--text-muted);
@@ -158,23 +146,12 @@ const emit = defineEmits<{
   background: rgba(122, 162, 255, 0.14);
 }
 
-.icon-button {
-  display: inline-grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  font-size: 18px;
-  flex: 0 0 auto;
-}
-
 .filter-group button:hover,
 .filter-group button:focus-visible,
 .filter-group button.active,
 .filter-group__source-button:hover,
 .filter-group__source-button:focus-visible,
-.filter-group__source-button.active,
-.icon-button:hover,
-.icon-button:focus-visible {
+.filter-group__source-button.active {
   border-color: var(--panel-border-hover);
   color: var(--brand-lime);
   background: var(--panel-bg-strong);
@@ -248,10 +225,6 @@ input {
   .filter-row,
   label,
   .filter-group {
-    width: 100%;
-  }
-
-  .icon-button {
     width: 100%;
   }
 }
