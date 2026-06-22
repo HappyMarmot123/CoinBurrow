@@ -3,20 +3,21 @@ import { computed, ref, watch, type Ref } from "vue";
 import type { DerivativesView } from "../api/rest.js";
 import { getDerivativesBySymbol } from "../api/rest.js";
 
-const CATEGORIES: Array<"linear" | "spot"> = ["linear", "spot"];
+// Bybit perpetual derivatives live on the USDT linear contracts.
+const DERIVATIVES_QUOTE = "USDT";
 
-function parseMarketParts(raw: string): [string, string] | null {
-  const [base, quote] = raw.trim().split("-");
-  if (!base || !quote) return null;
-  return [base.toUpperCase(), quote.toUpperCase()];
+// Upbit markets are formatted QUOTE-BASE (e.g. "KRW-BTC" => quote KRW, base BTC).
+function parseBase(raw: string): string | null {
+  const parts = raw.trim().split("-");
+  const base = parts.length >= 2 ? parts[1]?.trim().toUpperCase() : "";
+  return base ? base : null;
 }
 
-function shouldLoadDerivatives(raw: string): boolean {
-  const parsed = parseMarketParts(raw);
-  if (!parsed) return false;
-  const quote = parsed[1];
-  if (quote === "KRW") return false;
-  return true;
+function unsupportedBaseError(base: string): string {
+  if (base === DERIVATIVES_QUOTE) {
+    return "Derivatives data is not available for USDT-based pairs.";
+  }
+  return "Derivatives data is unavailable for this market.";
 }
 
 export function useDerivatives(selectedMarket: Ref<string>) {
@@ -27,46 +28,32 @@ export function useDerivatives(selectedMarket: Ref<string>) {
   const hasDerivatives = computed(() => derivatives.value !== null);
 
   async function loadDerivatives(nextMarket = selectedMarket.value) {
-    if (!shouldLoadDerivatives(nextMarket)) {
+    const base = parseBase(nextMarket);
+    // No tradable base, or the base is the perp quote itself => no derivatives.
+    if (!base || base === DERIVATIVES_QUOTE) {
       derivatives.value = null;
-      error.value = "";
+      error.value = base ? unsupportedBaseError(base) : "Invalid market selection";
       return;
     }
 
     loading.value = true;
     error.value = "";
     derivatives.value = null;
-    const [base] = parseMarketParts(nextMarket) ?? [];
-    if (!base) {
-      error.value = "invalid market";
-      loading.value = false;
-      return;
-    }
 
-    const categories = CATEGORIES;
-
-    for (const category of categories) {
-      try {
-        const payload = await getDerivativesBySymbol(nextMarket, category);
-        if (payload?.openInterest || payload?.fundingRate) {
-          derivatives.value = payload;
-          loading.value = false;
-          return;
-        }
-      } catch (cause) {
-        if (cause instanceof Error) {
-          error.value = cause.message;
-        } else {
-          error.value = "failed to load derivatives";
-        }
+    // Query the coin's USDT linear perpetual regardless of the Upbit quote (KRW/BTC/USDT).
+    const symbol = `${base}/${DERIVATIVES_QUOTE}`;
+    try {
+      const payload = await getDerivativesBySymbol(symbol, "linear");
+      if (payload?.openInterest || payload?.fundingRate) {
+        derivatives.value = payload;
+        return;
       }
+      error.value = unsupportedBaseError(base);
+    } catch (cause) {
+      error.value = cause instanceof Error ? cause.message : "failed to load derivatives";
+    } finally {
+      loading.value = false;
     }
-
-    if (!derivatives.value) {
-      error.value = "derivatives data is unavailable for this market";
-    }
-
-    loading.value = false;
   }
 
   watch(() => selectedMarket.value, (nextMarket) => {

@@ -33,6 +33,8 @@ function normalizeSymbol(raw: string): string {
   return trimmed.replace("-", "/")
 }
 
+const BYBIT_OPEN_INTEREST_INTERVAL = "5min"
+
 function extractRows(payload: z.output<typeof BYBIT_RESPONSE_SCHEMA>): unknown[] {
   const result = payload.result as Record<string, unknown>
   const list = result?.list
@@ -102,6 +104,8 @@ async function fetchBybitDerivatives(
   const params = new URLSearchParams({
     category,
     symbol: target,
+    intervalTime: BYBIT_OPEN_INTEREST_INTERVAL,
+    limit: "1",
   })
   const fundingParams = new URLSearchParams({
     category,
@@ -117,8 +121,12 @@ async function fetchBybitDerivatives(
     ),
   ])
 
-  assertSuccessfulResponse(openInterestPayload)
-  assertSuccessfulResponse(fundingPayload)
+  // Non-zero retCode = illegal category / unknown symbol / no perp for this coin.
+  // Treat as "no derivatives" (null), not a 502. Real outages (HTTP 5xx/429/timeout)
+  // already throw at the HTTP layer before reaching here.
+  if (openInterestPayload.retCode !== 0 || fundingPayload.retCode !== 0) {
+    return null
+  }
 
   const openInterest = parseOpenInterestPayload(openInterestPayload)
   const fundingRate = parseFundingPayload(fundingPayload)
@@ -146,17 +154,6 @@ function parseNumberOrStringFromAny(value: unknown): number | undefined {
     if (Number.isFinite(parsed)) return parsed
   }
   return undefined
-}
-
-function assertSuccessfulResponse(payload: z.output<typeof BYBIT_RESPONSE_SCHEMA>): void {
-  if (payload.retCode === 0) return
-
-  const code = payload.retCode
-  const message = payload.retMsg ?? "upstream error"
-  throw new FreeApiError(`Bybit API error: ${message}`, "UPSTREAM_ERROR", {
-    status: code,
-    retryable: code !== 10001,
-  })
 }
 
 export const bybitAdapter: IExchangeApiAdapter = {

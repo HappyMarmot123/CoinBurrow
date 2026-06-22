@@ -43,19 +43,37 @@ const updatedAtLabel = computed(() => {
     <dl v-else class="derivatives-grid">
       <div>
         <dt>Funding</dt>
-        <dd>{{ fundingRateLabel }}</dd>
+        <dd>
+          <span class="derivatives-value">{{ fundingRateLabel }}</span>
+          <p class="derivatives-note">
+            8시간마다 정산되는 무기한 선물 펀딩비율입니다. 양수면 롱 포지션이 비용을, 음수면 숏 포지션이 비용을 부담합니다.
+          </p>
+        </dd>
       </div>
       <div>
         <dt>Open Interest</dt>
-        <dd>{{ openInterestLabel }}</dd>
+        <dd>
+          <span class="derivatives-value">{{ openInterestLabel }}</span>
+          <p class="derivatives-note">
+            현재 미결제 상태로 남아 있는 파생상품 계약의 총 개/명목가치입니다.
+          </p>
+        </dd>
       </div>
       <div>
         <dt>Source</dt>
-        <dd>{{ derivatives?.source ?? "-" }}</dd>
+        <dd>
+          <span class="derivatives-value">{{ derivatives?.source ?? "-" }}</span>
+          <p class="derivatives-note">
+            Bybit 선물/파생상품 데이터(Linear/Inverse) API로 조회했습니다.
+          </p>
+        </dd>
       </div>
       <div>
         <dt>Last Update</dt>
-        <dd>{{ updatedAtLabel }}</dd>
+        <dd>
+          <span class="derivatives-value">{{ updatedAtLabel }}</span>
+          <p class="derivatives-note">해당 지표가 마지막으로 갱신된 시각입니다.</p>
+        </dd>
       </div>
     </dl>
   </section>
@@ -92,5 +110,19 @@ const updatedAtLabel = computed(() => {
   margin: 2px 0 0;
   color: var(--text-strong);
   font-size: 13px;
+}
+
+.derivatives-value {
+  display: inline-block;
+  margin-bottom: 4px;
+  color: var(--text-strong);
+  font-size: 14px;
+}
+
+.derivatives-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.35;
 }
 </style>
