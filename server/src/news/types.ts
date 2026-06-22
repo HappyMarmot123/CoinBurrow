@@ -35,6 +35,7 @@ export interface CryptoNewsQuery {
   asset: string
   category?: string
   language: 'all' | 'ko' | 'en'
+  source?: string
   limit: number
   cursor?: string
 }

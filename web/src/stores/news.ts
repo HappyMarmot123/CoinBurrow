@@ -8,6 +8,7 @@ export interface NewsStoreQuery {
   asset: string;
   category: string;
   language: "all" | "ko" | "en";
+  source: string;
 }
 
 interface NewsState {
@@ -32,6 +33,7 @@ function toRequestOptions(
     asset: query.asset,
     category: query.category.trim() || undefined,
     language: query.language,
+    source: query.source && query.source !== "ALL" ? query.source : undefined,
     limit: NEWS_PAGE_SIZE,
     ...overrides,
   };
@@ -50,6 +52,7 @@ export const useNewsStore = defineStore("news", {
       asset: "ALL",
       category: "",
       language: "all",
+      source: "ALL",
     },
     loading: false,
     refreshing: false,
@@ -117,6 +120,7 @@ export const useNewsStore = defineStore("news", {
         asset: "ALL",
         category: "",
         language: "all",
+        source: "ALL",
       };
       this.nextCursor = undefined;
       await this.loadNews();

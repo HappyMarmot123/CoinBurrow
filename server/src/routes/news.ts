@@ -23,6 +23,7 @@ const newsQuerySchema = z.object({
     .default('ALL'),
   category: z.string().trim().max(40).optional(),
   language: z.enum(['all', 'ko', 'en']).default('all'),
+  source: z.string().trim().max(40).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
   cursor: z.string().trim().max(200).optional(),
 })
@@ -66,6 +67,7 @@ function stableQueryKey(query: CryptoNewsQuery): string {
     query.language,
     query.asset,
     query.category ?? '',
+    query.source ?? '',
     query.q ?? '',
     String(query.limit),
     query.cursor ?? '',

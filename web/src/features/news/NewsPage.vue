@@ -13,8 +13,8 @@ let searchTimer: number | undefined;
 
 const statusText = computed(() => {
   if (newsStore.refreshing) return "갱신 중";
-  if (newsStore.stale) return "캐시 표시 중";
-  if (!newsStore.lastFetchedAt) return "대기 중";
+  if (newsStore.stale) return "캐시 데이터";
+  if (!newsStore.lastFetchedAt) return "로딩 중";
   return new Intl.DateTimeFormat("ko-KR", {
     hour: "2-digit",
     minute: "2-digit",
@@ -44,6 +44,10 @@ function setAsset(asset: string) {
   void newsStore.setQuery({ asset });
 }
 
+function setSource(source: string) {
+  void newsStore.setQuery({ source });
+}
+
 function resetFilters() {
   searchInput.value = "";
   void newsStore.resetFilters();
@@ -54,7 +58,7 @@ function resetFilters() {
   <main class="news-page">
     <section class="news-layout">
       <aside class="panel news-filter-panel">
-        <nav class="news-nav" aria-label="주요 메뉴">
+        <nav class="news-nav" aria-label="뉴스 내비게이션">
           <router-link to="/" class="brand">CoinBurrow</router-link>
           <div>
             <router-link to="/exchange">마켓</router-link>
@@ -62,31 +66,17 @@ function resetFilters() {
           </div>
         </nav>
 
-        <section class="news-title">
-          <p>Crypto News</p>
-          <h1>크립토 뉴스</h1>
-          <dl>
-            <div>
-              <dt>상태</dt>
-              <dd>{{ statusText }}</dd>
-            </div>
-            <div>
-              <dt>소스</dt>
-              <dd>{{ sourceCount.toLocaleString() }}</dd>
-            </div>
-            <div>
-              <dt>카테고리</dt>
-              <dd>{{ categoryCount.toLocaleString() }}</dd>
-            </div>
-          </dl>
-        </section>
-
         <NewsFilters
           v-model:query="searchInput"
           :asset="newsStore.query.asset"
+          :source="newsStore.query.source"
+          :status-text="statusText"
+          :source-count="sourceCount"
+          :category-count="categoryCount"
           :refreshing="newsStore.refreshing"
           :disabled="newsStore.loading"
           @update:asset="setAsset"
+          @update:source="setSource"
           @refresh="newsStore.refreshNews"
           @reset="resetFilters"
         />
@@ -119,7 +109,7 @@ function resetFilters() {
           :disabled="newsStore.loadingMore"
           @click="newsStore.loadMore"
         >
-          {{ newsStore.loadingMore ? "불러오는 중" : "더 보기" }}
+          {{ newsStore.loadingMore ? "로딩 중..." : "더 보기" }}
         </button>
       </section>
     </section>
@@ -182,52 +172,6 @@ function resetFilters() {
   padding-left: 0;
   color: var(--text-strong);
   font-size: 17px;
-}
-
-.news-title {
-  display: grid;
-  gap: 12px;
-  border-bottom: 1px solid var(--panel-line);
-  padding-bottom: 16px;
-}
-
-.news-title p {
-  @include muted-label;
-  margin: 0 0 6px;
-  color: var(--brand-lime);
-}
-
-.news-title h1 {
-  margin: 0;
-  color: var(--text-strong);
-  font-size: clamp(28px, 3vw, 42px);
-  line-height: 1;
-  letter-spacing: 0;
-}
-
-.news-title dl {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-  margin: 0;
-}
-
-.news-title dl div {
-  border: 1px solid var(--panel-border-soft);
-  border-radius: var(--radius-sm);
-  padding: 10px;
-  background: var(--panel-bg);
-}
-
-.news-title dt {
-  @include muted-label;
-}
-
-.news-title dd {
-  margin: 4px 0 0;
-  color: var(--text-strong);
-  font-size: 14px;
-  font-weight: 900;
 }
 
 .news-layout {

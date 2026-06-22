@@ -116,11 +116,11 @@ function compactTimeframeLabel(label: string) {
 
 <template>
   <main class="exchange-page">
-    <nav class="exchange-nav" aria-label="?? ??">
+    <nav class="exchange-nav" aria-label="주요 메뉴">
       <router-link to="/" class="exchange-nav__brand">CoinBurrow</router-link>
       <div>
-        <router-link to="/exchange" aria-current="page">??</router-link>
-        <router-link to="/news">??</router-link>
+        <router-link to="/exchange" aria-current="page">마켓</router-link>
+        <router-link to="/news">뉴스</router-link>
       </div>
     </nav>
 
@@ -259,14 +259,12 @@ function compactTimeframeLabel(label: string) {
 .exchange-nav a:hover,
 .exchange-nav a:focus-visible,
 .exchange-nav a[aria-current="page"] {
-  border-color: var(--panel-border-hover);
   color: var(--brand-lime);
   outline: none;
 }
 
 .exchange-nav .exchange-nav__brand {
   border-color: transparent;
-  padding-left: 0;
   color: var(--text-strong);
   font-size: 17px;
 }
@@ -410,19 +408,21 @@ function compactTimeframeLabel(label: string) {
   position: sticky;
   top: 14px;
   align-self: start;
-  display: grid;
-  grid-template-columns: minmax(96px, 0.42fr) minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 10px;
-  max-height: calc(100svh - 28px);
+  max-height: calc(100dvh - 56px);
+  height: calc(100dvh - 56px);
   overflow: hidden;
 }
 
-.panel-sidebar > .panel-head {
-  grid-column: 1 / -1;
-}
-
 .panel-sidebar :deep(.coin-list) {
-  display: contents;
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .panel-sidebar :deep(.coin-search),
@@ -432,17 +432,6 @@ function compactTimeframeLabel(label: string) {
   min-width: 0;
 }
 
-.panel-sidebar :deep(.coin-search) {
-  grid-column: 2;
-  align-self: end;
-}
-
-.panel-sidebar :deep(.coin-tools),
-.panel-sidebar :deep(.coin-list__rows),
-.panel-sidebar :deep(.coin-empty) {
-  grid-column: 1 / -1;
-}
-
 .panel-sidebar :deep(input) {
   color: var(--text);
   border-color: var(--input-border);
@@ -450,11 +439,11 @@ function compactTimeframeLabel(label: string) {
 }
 
 .quote-selector {
-  grid-column: 1;
-  align-self: end;
+  align-self: stretch;
   display: grid;
   gap: 8px;
   margin: 0;
+  width: 100%;
 }
 
 .quote-selector span {
@@ -470,7 +459,13 @@ function compactTimeframeLabel(label: string) {
 }
 
 .panel-sidebar :deep(ul) {
-  max-height: min(70vh, 560px);
+  max-height: none;
+}
+
+.panel-sidebar :deep(.coin-list__rows),
+.panel-sidebar :deep(.coin-empty) {
+  min-height: 0;
+  flex: 1 1 auto;
   overflow: auto;
 }
 
@@ -560,6 +555,7 @@ function compactTimeframeLabel(label: string) {
   .panel-sidebar {
     position: relative;
     top: auto;
+    height: auto;
     max-height: none;
     overflow: visible;
   }
@@ -589,15 +585,6 @@ function compactTimeframeLabel(label: string) {
   .exchange-hero,
   .exchange-layout {
     width: min(640px, calc(100% - 20px));
-  }
-
-  .panel-sidebar {
-    grid-template-columns: 1fr;
-  }
-
-  .quote-selector,
-  .panel-sidebar :deep(.coin-search) {
-    grid-column: 1;
   }
 
   .split-grid,

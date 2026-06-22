@@ -190,6 +190,43 @@ describe('news routes', () => {
     ])
   })
 
+  it('filters articles by selected source', async () => {
+    mockCryptoNews('/api/news/international?language=ko&limit=50', 200, {
+      articles: [
+        {
+          title: 'Regulation update',
+          description: 'A policy proposal moved markets.',
+          link: 'https://example.com/regulation',
+          source: 'CoinDesk',
+          language: 'ko',
+          pubDate: '2026-06-19T07:00:00.000Z',
+          category: 'general',
+        },
+        {
+          title: 'Network progress',
+          description: 'A protocol upgrade was shipped.',
+          link: 'https://example.com/protocol',
+          source: 'TokenPost',
+          language: 'ko',
+          pubDate: '2026-06-19T06:30:00.000Z',
+          category: 'general',
+        },
+      ],
+    })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/market/news/articles?source=tokenpost&language=ko',
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json().articles).toEqual([
+      expect.objectContaining({
+        title: 'Network progress',
+      }),
+    ])
+  })
+
   it('returns a degraded empty article response on a cold upstream transport failure', async () => {
     const response = await app.inject({
       method: 'GET',

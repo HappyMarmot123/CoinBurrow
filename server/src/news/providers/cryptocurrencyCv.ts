@@ -3,6 +3,7 @@ import type { z } from 'zod'
 
 import { normalizeNewsFeed, parseFeedFetchedAt } from '../normalize.js'
 import { rawNewsFeedSchema, rawNewsHealthSchema } from '../schemas.js'
+import { NEWS_SOURCE_LABELS, resolveSourceFeed } from '../sources.js'
 import type {
   CryptoNewsHealth,
   CryptoNewsQuery,
@@ -17,16 +18,6 @@ const REQUEST_TIMEOUT_MS = 3_000
 const DEFAULT_CACHE_TTL_MS = 300_000
 const DEFAULT_STALE_TTL_MS = 1_800_000
 const ARTICLE_FETCH_WINDOW_LIMIT = 50
-const DEFAULT_NEWS_SOURCES = [
-  'TokenPost',
-  'Block Media',
-  'CoinDesk',
-  'The Block',
-  'Decrypt',
-  'CoinTelegraph',
-  'Bitcoin Magazine',
-  'Blockworks',
-] as const
 const DEFAULT_NEWS_CATEGORIES = [
   'general',
   'bitcoin',
@@ -142,7 +133,10 @@ function buildPath(path: string, query: Record<string, string | number | undefin
 }
 
 async function fetchRawFeed(query: CryptoNewsQuery): Promise<RawNewsFeed> {
-  const language = query.language === 'en' ? 'en' : 'ko'
+  // A selected source decides the feed language (en outlets live in the en feed);
+  // otherwise fall back to the language filter (default ko).
+  const sourceFeed = resolveSourceFeed(query.source)
+  const language = sourceFeed ?? (query.language === 'en' ? 'en' : 'ko')
 
   return requestJson(
     buildPath('/api/news/international', {
@@ -177,7 +171,7 @@ export async function fetchCryptoCurrencyCvArticles(
 export async function fetchCryptoCurrencyCvSources(): Promise<CryptoNewsSourceSummary> {
   return {
     provider: PROVIDER,
-    sources: [...DEFAULT_NEWS_SOURCES],
+    sources: [...NEWS_SOURCE_LABELS],
     categories: [...DEFAULT_NEWS_CATEGORIES],
     languages: [...DEFAULT_NEWS_LANGUAGES],
     fetchedAt: Date.now(),

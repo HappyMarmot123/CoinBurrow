@@ -98,5 +98,20 @@ describe("news store", () => {
     expect(url).toContain("q=ethereum");
     expect(url).toContain("asset=ETH");
     expect(url).toContain("language=ko");
+    expect(url).not.toContain("source=ALL");
+
+    fetchMock.mockClear();
+    const fetchMockBySource = vi.fn(async (_input: RequestInfo | URL) => jsonResponse({
+      articles: [],
+      fetchedAt: 123,
+      cacheTtlMs: 300000,
+      provider: "cryptocurrency.cv",
+      stale: false,
+    }));
+    vi.stubGlobal("fetch", fetchMockBySource);
+
+    const second = useNewsStore();
+    await second.setQuery({ source: "tokenpost" });
+    expect(String(fetchMockBySource.mock.calls[0]?.[0])).toContain("source=tokenpost");
   });
 });

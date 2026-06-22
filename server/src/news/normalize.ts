@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 
+import { matchSource } from './sources.js'
 import type {
   CryptoNewsArticle,
   CryptoNewsQuery,
@@ -36,6 +37,22 @@ function getString(record: Record<string, unknown>, keys: string[]): string | un
     }
   }
   return undefined
+}
+
+function getStringFromObject(value: unknown, keys: string[]): string | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined
+  }
+  return getString(value as Record<string, unknown>, keys)
+}
+
+function readSource(record: Record<string, unknown>): string | undefined {
+  return (
+    getString(record, ['source', 'sourceName', 'publisher'])
+    ?? getStringFromObject(record.source, ['name', 'title', 'label'])
+    ?? getStringFromObject(record.publisher, ['name', 'title', 'label'])
+    ?? getStringFromObject(record.media, ['name', 'title', 'label'])
+  )
 }
 
 function getNumberOrDate(record: Record<string, unknown>, keys: string[]): number | undefined {
@@ -164,7 +181,7 @@ function normalizeArticle(record: Record<string, unknown>): CryptoNewsArticle | 
   if (!title || !url || !publishedAt) return null
 
   const summary = cleanText(getString(record, ['summary', 'description', 'excerpt', 'contentSnippet', 'content']), 220)
-  const source = getString(record, ['source', 'sourceName', 'publisher']) ?? 'Unknown'
+  const source = readSource(record) ?? 'Unknown'
   const language = getString(record, ['language', 'lang'])
   const categories = normalizeCategories(record)
   const searchableText = `${title} ${summary ?? ''} ${categories.join(' ')}`
@@ -196,6 +213,10 @@ function matchesQuery(article: CryptoNewsArticle, query: CryptoNewsQuery): boole
   }
 
   if (query.category && !article.categories.includes(query.category.toLowerCase())) {
+    return false
+  }
+
+  if (!matchSource(article.source, query.source)) {
     return false
   }
 

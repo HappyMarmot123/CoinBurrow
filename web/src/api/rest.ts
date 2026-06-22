@@ -87,6 +87,7 @@ export interface NewsQueryOptions {
   asset?: string;
   category?: string;
   language?: "all" | "ko" | "en";
+  source?: string;
   limit?: number;
   cursor?: string;
 }
@@ -266,6 +267,7 @@ export const getNewsArticles = async (
     asset: options.asset,
     category: options.category,
     language: options.language,
+    source: options.source,
     limit: options.limit,
     cursor: options.cursor,
   }));
