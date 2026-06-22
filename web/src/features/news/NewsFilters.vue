@@ -61,7 +61,6 @@ function formatHistoryDate(timestamp: number): string {
 <template>
   <section class="news-filters" aria-label="News filters">
     <section class="news-title">
-      <p>Crypto News</p>
       <h1>Crypto News</h1>
       <p class="news-title__stats">
         Status: {{ statusText }} | Sources: {{ sourceCount.toLocaleString() }} | Categories: {{ categoryCount.toLocaleString() }} | Articles: {{ articleCount.toLocaleString() }}
@@ -148,7 +147,8 @@ function formatHistoryDate(timestamp: number): string {
 
       <TooltipButton
         button-class="icon-button"
-        tooltip="Refresh news"
+        kind="icon"
+        tooltip="뉴스를 새로고침"
         type="button"
         :disabled="disabled || refreshing"
         @click="emit('refresh')"
