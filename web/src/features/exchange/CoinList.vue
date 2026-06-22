@@ -9,7 +9,6 @@ const props = defineProps<{ selected: string; quote?: string }>();
 
 const emit = defineEmits<{
   select: [market: string];
-  openDetail: [market: string];
 }>();
 const marketStore = useMarketStore();
 const tickerStore = useTickerStore();
@@ -69,10 +68,6 @@ function formatSignedRate(ticker?: TickerView) {
   return `${sign}${(ticker.signedChangeRate * 100).toFixed(2)}%`;
 }
 
-function openDetail(event: MouseEvent, marketCode: string) {
-  event.stopPropagation();
-  emit("openDetail", marketCode);
-}
 </script>
 
 <template>
@@ -113,14 +108,6 @@ function openDetail(event: MouseEvent, marketCode: string) {
           <span class="coin-change">
             {{ formatSignedRate(row.ticker) }}
           </span>
-          <button
-            type="button"
-            :aria-label="`${row.market.koreanName} 상세 열기`"
-            class="coin-detail-btn"
-            @click="openDetail($event, row.market.market)"
-          >
-            상세
-          </button>
           <small class="sr-market-code">{{ row.market.market }}</small>
         </li>
     </ul>
@@ -240,7 +227,7 @@ input::placeholder {
 .coin-row {
   cursor: pointer;
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(82px, 0.8fr) minmax(58px, auto) auto;
+  grid-template-columns: minmax(0, 1.25fr) minmax(82px, 0.8fr) minmax(58px, auto);
   align-items: center;
   gap: 10px;
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -307,31 +294,6 @@ input::placeholder {
   white-space: nowrap;
 }
 
-.coin-detail-btn {
-  justify-self: end;
-  border: 1px solid var(--panel-border);
-  border-radius: var(--radius-sm);
-  padding: 4px 8px;
-  color: var(--text-muted);
-  background: transparent;
-  font: inherit;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  transition:
-    border-color var(--ease),
-    color var(--ease),
-    background var(--ease);
-}
-
-.coin-detail-btn:hover,
-.coin-detail-btn:focus-visible {
-  border-color: var(--panel-border-hover);
-  color: var(--brand-lime);
-  background: var(--panel-bg-strong);
-  outline: none;
-}
-
 .coin-row.is-up .coin-change {
   color: var(--c-up);
 }
@@ -371,7 +333,7 @@ input::placeholder {
 
 @media (max-width: 640px) {
   .coin-row {
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     column-gap: 8px;
   }
 
@@ -384,11 +346,6 @@ input::placeholder {
   .coin-change {
     grid-column: 2 / 3;
     grid-row: 1 / 3;
-  }
-
-  .coin-detail-btn {
-    grid-column: 3 / 4;
-    align-self: start;
   }
 }
 </style>

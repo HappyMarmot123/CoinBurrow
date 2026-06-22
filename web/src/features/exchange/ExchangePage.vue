@@ -241,6 +241,7 @@ function markHotAlertsSeen() {
       :spread-ratio="selectedOrderbook ? selectedMarketSpread?.ratio : undefined"
       :usd-krw-rate="usdKrwRate"
       :coin-meta="coinMeta"
+      @open-detail="openCoinDetail"
     />
 
     <section class="exchange-layout">
@@ -320,7 +321,7 @@ function markHotAlertsSeen() {
             </option>
           </select>
         </label>
-        <CoinList :selected="market" :quote="selectedQuote" @select="market = $event" @open-detail="openCoinDetail" />
+        <CoinList :selected="market" :quote="selectedQuote" @select="market = $event" />
       </aside>
 
       <CoinMetaDrawer

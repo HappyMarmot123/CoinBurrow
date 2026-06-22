@@ -21,6 +21,10 @@ const props = defineProps<{
   coinMeta?: CoinMetaView | null;
 }>();
 
+const emit = defineEmits<{
+  openDetail: [market: string];
+}>();
+
 const assetCode = computed(() => props.market.split("-").at(-1) ?? props.market);
 const signedChangeRate = computed(() => props.liveTicker?.signedChangeRate);
 const movementClass = computed(() => {
@@ -148,6 +152,14 @@ function onCoinLogoError() {
         <div class="market-details__meta">
           <div class="market-details__head">
             <h2>선택 마켓 상세</h2>
+            <button
+              type="button"
+              class="market-details__detail-btn"
+              :aria-label="`${selectedMarketLabel} 상세 열기`"
+              @click="emit('openDetail', market)"
+            >
+              상세
+            </button>
           </div>
           <p class="market-details__state">
             {{ selectedMarketStatus ? marketState : "선택 마켓 메타정보 대기중입니다." }}
@@ -400,6 +412,32 @@ function onCoinLogoError() {
 
 .market-details__head h2 {
   @include panel-title(15px);
+}
+
+.market-details__detail-btn {
+  align-self: center;
+  flex: 0 0 auto;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  color: var(--text-muted);
+  background: transparent;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    border-color var(--ease),
+    color var(--ease),
+    background var(--ease);
+}
+
+.market-details__detail-btn:hover,
+.market-details__detail-btn:focus-visible {
+  border-color: var(--panel-border-hover);
+  color: var(--brand-lime);
+  background: var(--panel-bg-strong);
+  outline: none;
 }
 
 .market-details dt {
