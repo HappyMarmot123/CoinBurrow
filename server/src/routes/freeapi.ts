@@ -12,11 +12,6 @@ const marketQuerySchema = z.object({
   excludeUpbitOverlap: z.coerce.boolean().optional().default(true),
 })
 
-const optionalMarketQuerySchema = z.object({
-  symbols: z.string().trim().optional(),
-  excludeUpbitOverlap: z.coerce.boolean().optional().default(true),
-})
-
 const symbolQuerySchema = z.object({
   symbol: z.string().trim().min(1),
 })
@@ -157,53 +152,6 @@ export function registerFreeApiRoutes(app: FastifyInstance): void {
       "invalid free API derivatives query",
       ({ symbol, category }) =>
         freeApiProviders[toProviderOrThrow("bybit")].fetchDerivatives(symbol, category),
-    ),
-  )
-
-  app.get("/market/freeapi/bithumb/markets", (request, reply) =>
-    withParsedQuery(
-      reply,
-      request.query,
-      optionalMarketQuerySchema,
-      "invalid free API market query",
-      async ({ symbols, excludeUpbitOverlap }) => {
-        const adapter = freeApiProviders[toProviderOrThrow("bithumb")]
-        const parsed = symbols ? normalizeSymbols(symbols) : undefined
-        const requested = parsed && parsed.length > 0
-          ? validateNoUpbitOverlap(parsed)
-          : undefined
-        const markets = await adapter.fetchMarketSnapshot(requested)
-
-        if (!excludeUpbitOverlap) {
-          return markets
-        }
-
-        return markets.filter((market) => validateNoUpbitOverlap([market.symbol]).length > 0)
-      },
-    ),
-  )
-
-  app.get("/market/freeapi/bithumb/orderbook", (request, reply) =>
-    withParsedQuery(
-      reply,
-      request.query,
-      symbolQuerySchema,
-      "invalid free API orderbook query",
-      ({ symbol }) => {
-        const adapter = freeApiProviders[toProviderOrThrow("bithumb")]
-        return adapter.fetchOrderBook(symbol, 15)
-      },
-    ),
-  )
-
-  app.get("/market/freeapi/bithumb/klines", (request, reply) =>
-    withParsedQuery(
-      reply,
-      request.query,
-      klineQuerySchema,
-      "invalid free API kline query",
-      ({ symbol, interval, from, to, limit }) =>
-        freeApiProviders[toProviderOrThrow("bithumb")].fetchKlines(symbol, interval, from, to, limit),
     ),
   )
 

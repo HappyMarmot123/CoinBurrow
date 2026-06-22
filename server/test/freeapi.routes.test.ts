@@ -249,48 +249,6 @@ describe('free API routes', () => {
     })
   })
 
-  it('returns Bithumb market snapshot list when symbols are not provided', async () => {
-    mockIntercept(
-      mockAgent,
-      'https://api.bithumb.com',
-      '/public/ticker/ALL_TICKER',
-      200,
-      {
-        status: '0000',
-        data: {
-          BNB: {
-            trade_price: '1000000',
-            units_traded_24H: '12',
-            acc_trade_value_24H: '12000000',
-          },
-          DOGE: {
-            trade_price: '1500',
-            units_traded_24H: '1000',
-            acc_trade_value_24H: '1500000',
-          },
-        },
-      },
-    )
-
-    const response = await app.inject({
-      method: 'GET',
-      url: '/market/freeapi/bithumb/markets',
-    })
-
-    expect(response.statusCode).toBe(200)
-    expect(response.json()).toEqual([
-      {
-        symbol: 'BNB/KRW',
-        source: 'bithumb',
-        lastPrice: '1000000',
-        changeRate: '0',
-        volume: '12',
-        quoteVolume: '12000000',
-        ts: expect.any(Number),
-      },
-    ])
-  })
-
   it('returns 400 with validation error for invalid free API queries', async () => {
     const response = await app.inject({
       method: 'GET',

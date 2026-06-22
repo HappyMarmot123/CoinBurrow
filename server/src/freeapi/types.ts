@@ -1,4 +1,4 @@
-export type ExternalApiProvider = "binance" | "bybit" | "bithumb" | "coingecko" | "coinpaprika"
+export type ExternalApiProvider = "binance" | "bybit" | "coingecko" | "coinpaprika"
 
 export type ProviderCapability = "market" | "orderbook" | "kline" | "derivatives" | "meta"
 

@@ -119,37 +119,6 @@ export interface DerivativesView {
   ts: number;
 }
 
-export interface BithumbMarketView {
-  symbol: string;
-  source: string;
-  lastPrice: string;
-  changeRate: string;
-  volume: string;
-  quoteVolume: string;
-  ts: number;
-}
-
-export interface BithumbOrderbookView {
-  symbol: string;
-  source: string;
-  bids: Array<[string, string]>;
-  asks: Array<[string, string]>;
-  ts?: number;
-  lastUpdateTs?: number;
-}
-
-export interface BithumbKlineView {
-  symbol: string;
-  source: string;
-  open: string;
-  high: string;
-  low: string;
-  close: string;
-  volume: string;
-  interval: string;
-  ts: number;
-}
-
 export interface FreeApiRequestPolicy {
   timeoutMs: number;
   maxRetries: number;
@@ -374,34 +343,6 @@ export const getDerivativesBySymbol = async (
   return getJson<DerivativesView>(`/market/freeapi/bybit/derivatives${buildPath("", {
     symbol,
     category,
-  })}`);
-};
-
-export const getBithumbMarkets = async (
-  symbols: string[] = [],
-): Promise<BithumbMarketView[]> => {
-  return getJson<BithumbMarketView[]>(`/market/freeapi/bithumb/markets${buildPath("", {
-    symbols: symbols.join(","),
-  })}`);
-};
-
-export const getBithumbOrderbook = async (
-  symbol: string,
-): Promise<BithumbOrderbookView> => {
-  return getJson<BithumbOrderbookView>(`/market/freeapi/bithumb/orderbook${buildPath("", {
-    symbol,
-  })}`);
-};
-
-export const getBithumbKlines = async (
-  symbol: string,
-  interval = "1h",
-  limit = 30,
-): Promise<BithumbKlineView[]> => {
-  return getJson<BithumbKlineView[]>(`/market/freeapi/bithumb/klines${buildPath("", {
-    symbol,
-    interval,
-    limit,
   })}`);
 };
 

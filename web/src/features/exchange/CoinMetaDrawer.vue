@@ -23,11 +23,7 @@ const props = defineProps<{
 const emit = defineEmits<{ close: [] }>();
 
 const selectedCoinMeta = computed(() => props.coinMeta ?? null);
-const selectedCoinMetaDescription = computed(() => {
-  const raw = selectedCoinMeta.value?.description;
-  if (!raw) return "";
-  return raw.length > 240 ? `${raw.slice(0, 240)}...` : raw;
-});
+const selectedCoinMetaDescription = computed(() => selectedCoinMeta.value?.description ?? "");
 const selectedCoinMetaTags = computed(() =>
   [...new Set((selectedCoinMeta.value?.tags ?? []).slice(0, 8))],
 );

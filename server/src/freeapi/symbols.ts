@@ -65,11 +65,6 @@ export function toBybitSymbol(raw: string): string {
   return toBinanceSymbol(raw)
 }
 
-export function toBithumbCurrency(raw: string): string {
-  const parsed = parseCanonicalSymbol(raw)
-  return parsed.base
-}
-
 export function validateNoUpbitOverlap(symbols: string[]): string[] {
   const upbitBases = new Set(
     TARGET_COINS
