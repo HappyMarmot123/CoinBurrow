@@ -12,10 +12,10 @@ const searchInput = ref(newsStore.query.q);
 let searchTimer: number | undefined;
 
 const statusText = computed(() => {
-  if (newsStore.refreshing) return "갱신 중";
-  if (newsStore.stale) return "캐시 데이터";
-  if (!newsStore.lastFetchedAt) return "로딩 중";
-  return new Intl.DateTimeFormat("ko-KR", {
+  if (newsStore.refreshing) return "refreshing";
+  if (newsStore.stale) return "cached";
+  if (!newsStore.lastFetchedAt) return "loading";
+  return new Intl.DateTimeFormat("en-US", {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(newsStore.lastFetchedAt));
@@ -58,16 +58,17 @@ function resetFilters() {
   <main class="news-page">
     <section class="news-layout">
       <aside class="panel news-filter-panel">
-        <nav class="news-nav" aria-label="뉴스 내비게이션">
+        <nav class="news-nav" aria-label="News navigation">
           <router-link to="/" class="brand">CoinBurrow</router-link>
           <div>
-            <router-link to="/exchange">마켓</router-link>
-            <router-link to="/news" aria-current="page">뉴스</router-link>
+            <router-link to="/exchange">Market</router-link>
+            <router-link to="/news" aria-current="page">News</router-link>
           </div>
         </nav>
 
         <NewsFilters
           v-model:query="searchInput"
+          :article-count="newsStore.articles.length"
           :asset="newsStore.query.asset"
           :source="newsStore.query.source"
           :status-text="statusText"
@@ -83,11 +84,6 @@ function resetFilters() {
       </aside>
 
       <section class="panel news-feed" aria-live="polite">
-        <div class="feed-head">
-          <h2>최신 뉴스</h2>
-          <span>{{ newsStore.articles.length.toLocaleString() }}개</span>
-        </div>
-
         <p v-if="newsStore.error" class="news-error">
           {{ newsStore.error }}
         </p>
@@ -109,7 +105,7 @@ function resetFilters() {
           :disabled="newsStore.loadingMore"
           @click="newsStore.loadMore"
         >
-          {{ newsStore.loadingMore ? "로딩 중..." : "더 보기" }}
+          {{ newsStore.loadingMore ? "Loading..." : "Load more" }}
         </button>
       </section>
     </section>
@@ -195,21 +191,6 @@ function resetFilters() {
 .news-feed {
   display: grid;
   gap: 14px;
-}
-
-.feed-head {
-  @include panel-head;
-  margin-bottom: 0;
-}
-
-.feed-head h2 {
-  @include panel-title(20px);
-}
-
-.feed-head span {
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 800;
 }
 
 .news-error {

@@ -25,7 +25,8 @@ export const NEWS_SOURCE_LABELS = NEWS_SOURCES.map((source) => source.label)
 
 export function getNewsSource(id: string | undefined): NewsSourceDef | undefined {
   if (!id) return undefined
-  return byId.get(id.trim().toLowerCase())
+  const normalizedId = id.trim().toLowerCase()
+  return byId.get(normalizedId)
 }
 
 function normalizeSourceFilter(value: string | undefined): string {
@@ -33,7 +34,35 @@ function normalizeSourceFilter(value: string | undefined): string {
 }
 
 export function resolveSourceFeed(id: string | undefined): 'ko' | 'en' | undefined {
-  return getNewsSource(id)?.feed
+  return resolveSourceSource(id)?.feed
+}
+
+export function resolveSourceSource(id: string | undefined): NewsSourceDef | undefined {
+  if (!id) return undefined
+  const normalized = id.trim().toLowerCase()
+
+  const byIdSource = byId.get(normalized)
+  if (byIdSource) return byIdSource
+
+  return NEWS_SOURCES.find((source) =>
+    source.aliases.some((alias) => {
+      if (alias === normalized) return true
+      if (alias.includes(" ")) {
+        return (
+          normalized === alias
+          || normalized.startsWith(`${alias} `)
+          || normalized.endsWith(` ${alias}`)
+          || normalized.includes(` ${alias} `)
+        )
+      }
+
+      return alias.length > 1 && (
+        normalized.startsWith(`${alias} `)
+        || normalized.endsWith(` ${alias}`)
+        || normalized.includes(` ${alias} `)
+      )
+    }),
+  )
 }
 
 // Returns true when no (or unknown/ALL) source filter is set, so it is a safe no-op.
@@ -41,11 +70,12 @@ export function matchSource(articleSource: string, id: string | undefined): bool
   const normalizedId = normalizeSourceFilter(id)
   if (!normalizedId || normalizedId === 'all') return true
 
-  const def = getNewsSource(normalizedId)
+  const def = resolveSourceSource(normalizedId)
   const normalizedSource = articleSource.trim().toLowerCase()
   if (def) {
     return def.aliases.some((alias) => normalizedSource.includes(alias))
   }
 
-  return normalizedSource.includes(normalizedId)
+  // Unknown source filters are treated as no-op to avoid over-filtering unknown input.
+  return true
 }

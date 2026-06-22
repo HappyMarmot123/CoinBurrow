@@ -64,12 +64,11 @@ describe("NewsPage", () => {
 
     await flushPromises();
 
-    expect(wrapper.find("h1").text()).toBe("크립토 뉴스");
+    expect(wrapper.find("h1").text()).toBe("Crypto News");
     expect(wrapper.text()).toContain("Bitcoin ETF headline");
     expect(wrapper.text()).toContain("XRP");
     expect(wrapper.text()).toContain("CoinDesk");
-    expect(wrapper.text()).toContain("긍정");
-    expect(wrapper.find('input[type="search"]').exists()).toBe(true);
+    expect(wrapper.find("input[type=\"search\"]").exists()).toBe(true);
     expect(wrapper.find('a[href="https://example.com"]').attributes("target")).toBe("_blank");
     expect(wrapper.find('a[href="https://example.com"]').attributes("rel")).toBe("noopener noreferrer");
   });

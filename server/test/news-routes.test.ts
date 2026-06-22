@@ -227,6 +227,76 @@ describe('news routes', () => {
     ])
   })
 
+  it('matches source by alias with spaces and case-insensitive', async () => {
+    mockCryptoNews('/api/news/international?language=en&limit=50', 200, {
+      articles: [
+        {
+          title: 'Market report',
+          description: 'Korean crypto media update.',
+          link: 'https://example.com/korean',
+          source: 'The Block',
+          language: 'ko',
+          pubDate: '2026-06-19T06:45:00.000Z',
+          category: 'general',
+        },
+        {
+          title: 'Chain updates',
+          description: 'English report.',
+          source: 'TokenPost',
+          language: 'en',
+          pubDate: '2026-06-19T06:40:00.000Z',
+          category: 'general',
+          link: 'https://example.com/en',
+        },
+      ],
+    })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/market/news/articles?source=the%20block',
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json().articles).toEqual([
+      expect.objectContaining({
+        source: 'The Block',
+      }),
+    ])
+  })
+
+  it('treats unknown source as no-op filter', async () => {
+    mockCryptoNews('/api/news/international?language=ko&limit=50', 200, {
+      articles: [
+        {
+          title: 'Ethereum update',
+          description: 'Update description',
+          link: 'https://example.com/eth',
+          source: 'TokenPost',
+          language: 'ko',
+          pubDate: '2026-06-19T06:00:00.000Z',
+          category: 'ethereum',
+        },
+        {
+          title: 'Market summary',
+          description: 'Summary text.',
+          link: 'https://example.com/market',
+          source: 'CoinDesk',
+          language: 'ko',
+          pubDate: '2026-06-19T05:00:00.000Z',
+          category: 'general',
+        },
+      ],
+    })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/market/news/articles?source=does-not-exist',
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json().articles).toHaveLength(2)
+  })
+
   it('returns a degraded empty article response on a cold upstream transport failure', async () => {
     const response = await app.inject({
       method: 'GET',

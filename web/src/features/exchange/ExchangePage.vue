@@ -203,6 +203,7 @@ function compactTimeframeLabel(label: string) {
         <div class="panel-head">
           <h2>코인 리스트</h2>
         </div>
+        <router-link class="quick-link" to="/news">Go to News</router-link>
         <label class="quote-selector">
           <span>기준통화</span>
           <select v-model="selectedQuote" :disabled="availableQuotes.length === 0">
@@ -414,6 +415,25 @@ function compactTimeframeLabel(label: string) {
   max-height: calc(100dvh - 56px);
   height: calc(100dvh - 56px);
   overflow: hidden;
+}
+
+.quick-link {
+  display: inline-block;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  color: var(--text-muted);
+  text-decoration: none;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.quick-link:hover,
+.quick-link:focus-visible {
+  border-color: var(--panel-border-hover);
+  color: var(--brand-lime);
+  outline: none;
 }
 
 .panel-sidebar :deep(.coin-list) {

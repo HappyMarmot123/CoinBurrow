@@ -5,6 +5,7 @@ defineProps<{
   asset: string;
   source: string;
   query: string;
+  articleCount: number;
   refreshing: boolean;
   statusText: string;
   sourceCount: number;
@@ -22,22 +23,17 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <section class="news-filters" aria-label="뉴스 필터">
+  <section class="news-filters" aria-label="News filters">
     <section class="news-title">
       <p>Crypto News</p>
-      <h1>크립토 뉴스</h1>
-      <dl class="news-title__stats">
-        <dt>상태</dt>
-        <dd>{{ statusText }}</dd>
-        <dt>매체</dt>
-        <dd>{{ sourceCount.toLocaleString() }}</dd>
-        <dt>카테고리</dt>
-        <dd>{{ categoryCount.toLocaleString() }}</dd>
-      </dl>
+      <h1>Crypto News</h1>
+      <p class="news-title__stats">
+        Status: {{ statusText }} · Sources: {{ sourceCount.toLocaleString() }} · Categories: {{ categoryCount.toLocaleString() }} · Articles: {{ articleCount.toLocaleString() }}
+      </p>
     </section>
 
-    <div class="filter-section filter-section--asset" role="group" aria-label="자산 필터">
-      <p class="filter-section__title">자산 필터</p>
+    <div class="filter-section filter-section--asset" role="group" aria-label="Asset filter">
+      <p class="filter-section__title">Asset</p>
       <div class="filter-group">
         <button
           v-for="option in NEWS_ASSET_FILTERS"
@@ -52,8 +48,8 @@ const emit = defineEmits<{
       </div>
     </div>
 
-    <div class="filter-section filter-section--source" role="group" aria-label="매체 필터">
-      <p class="filter-section__title">매체 필터</p>
+    <div class="filter-section filter-section--source" role="group" aria-label="Source filter">
+      <p class="filter-section__title">Source</p>
       <div class="filter-group source-group">
         <button
           v-for="option in NEWS_SOURCE_FILTERS"
@@ -72,24 +68,24 @@ const emit = defineEmits<{
 
     <div class="filter-row">
       <label class="search-field">
-        <span>검색</span>
+        <span>Search</span>
         <input
           :value="query"
           :disabled="disabled"
           type="search"
-          placeholder="검색어 입력"
-          aria-label="뉴스 검색"
+          placeholder="Search text"
+          aria-label="News search"
           @input="emit('update:query', ($event.target as HTMLInputElement).value)"
         >
       </label>
 
       <button class="icon-button" type="button" :disabled="disabled || refreshing" @click="emit('refresh')">
         <span aria-hidden="true">↻</span>
-        <span class="sr-only">새로고침</span>
+        <span class="sr-only">Refresh</span>
       </button>
 
       <button class="text-button" type="button" :disabled="disabled" @click="emit('reset')">
-        초기화
+        Reset
       </button>
     </div>
   </section>
@@ -167,6 +163,11 @@ const emit = defineEmits<{
   border-color: rgba(122, 162, 255, 0.45);
 }
 
+.filter-section--source button.active {
+  color: #d2dcff;
+  background: rgba(122, 162, 255, 0.14);
+}
+
 .icon-button {
   display: inline-grid;
   place-items: center;
@@ -216,32 +217,13 @@ const emit = defineEmits<{
 }
 
 .news-title__stats {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 6px;
   margin: 0;
-  padding: 0;
-  list-style: none;
-  align-items: baseline;
-  font-size: 13px;
-}
-
-.news-title__stats dt,
-.news-title__stats dd {
-  display: inline;
-  margin: 0;
-}
-
-.news-title__stats dt {
-  @include muted-label;
-  margin-right: 2px;
-}
-
-.news-title__stats dd {
-  margin-right: 12px;
-  color: var(--text-strong);
-  font-size: 14px;
-  font-weight: 900;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.35;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 label {
@@ -278,7 +260,8 @@ input {
 
 @media (max-width: 640px) {
   .news-title__stats {
-    flex-wrap: wrap;
+    white-space: normal;
+    font-size: 11px;
   }
 
   .filter-row {
