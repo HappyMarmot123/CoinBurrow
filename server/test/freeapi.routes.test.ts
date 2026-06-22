@@ -64,48 +64,20 @@ describe('free API routes', () => {
     })
   })
 
-  it('returns Binance market snapshots without Upbit overlap by default', async () => {
-    mockIntercept(
-      mockAgent,
-      'https://api.binance.com',
-      '/api/v3/ticker/24hr?symbols=%5B%22DOGEUSDT%22%5D',
-      200,
-      [
-        {
-          symbol: 'DOGEUSDT',
-          lastPrice: '200',
-          priceChangePercent: '1.5',
-          volume: '100',
-          quoteVolume: '20000',
-          closeTime: 1_700_000_000_000,
-        },
-      ],
-    )
-
+  it('does not expose removed Binance market endpoint', async () => {
     const response = await app.inject({
       method: 'GET',
       url: '/market/freeapi/binance/markets?symbols=BTC/KRW,DOGE/USDT',
     })
 
-    expect(response.statusCode).toBe(200)
-    expect(response.json()).toEqual([
-      {
-        symbol: 'DOGE/USDT',
-        source: 'binance',
-        lastPrice: '200',
-        changeRate: '1.5',
-        volume: '100',
-        quoteVolume: '20000',
-        ts: 1_700_000_000_000,
-      },
-    ])
+    expect(response.statusCode).toBe(404)
   })
 
   it('returns Bybit derivatives', async () => {
     mockIntercept(
       mockAgent,
       'https://api.bybit.com',
-      '/v5/market/open-interest?category=linear&symbol=BTCUSDT',
+      '/v5/market/open-interest?category=linear&symbol=BTCUSDT&intervalTime=5min&limit=1',
       200,
       {
         retCode: 0,
@@ -310,17 +282,29 @@ describe('free API routes', () => {
     })
   })
 
-  it('returns 400 with validation error for invalid free API queries', async () => {
+  it('returns 400 with validation error for invalid derivatives query', async () => {
     const response = await app.inject({
       method: 'GET',
-      url: '/market/freeapi/binance/klines?symbol=BTC/USDT',
+      url: '/market/freeapi/bybit/derivatives?category=linear',
     })
 
     expect(response.statusCode).toBe(400)
     expect(response.json()).toMatchObject({
       success: false,
       code: 'VALIDATION_ERROR',
-      message: 'invalid free API kline query',
+      message: 'invalid free API derivatives query',
     })
+  })
+
+  it('does not expose removed Binance endpoint variants', async () => {
+    const routes = [
+      '/market/freeapi/binance/orderbook?symbol=BTC/KRW',
+      '/market/freeapi/binance/klines?symbol=BTC/USDT&interval=1m',
+    ]
+
+    for (const url of routes) {
+      const response = await app.inject({ method: 'GET', url })
+      expect(response.statusCode).toBe(404)
+    }
   })
 })

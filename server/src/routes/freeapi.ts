@@ -3,30 +3,8 @@ import { z } from "zod"
 
 import { freeApiProviders } from "../freeapi/index.js"
 import { FreeApiError } from "../freeapi/errors.js"
-import { normalizeCanonicalSymbol, toSymbolsFromList, validateNoUpbitOverlap } from "../freeapi/symbols.js"
 import type { ExternalApiProvider } from "../freeapi/types.js"
 import { getFreeApiPolicy } from "../freeapi/policy.js"
-
-const marketQuerySchema = z.object({
-  symbols: z.string().trim().min(1),
-  excludeUpbitOverlap: z.coerce.boolean().optional().default(true),
-})
-
-const symbolQuerySchema = z.object({
-  symbol: z.string().trim().min(1),
-})
-
-const symbolWithDepthQuerySchema = symbolQuerySchema.extend({
-  depth: z.coerce.number().int().min(1).max(1000).optional(),
-})
-
-const klineQuerySchema = z.object({
-  symbol: z.string().trim().min(1),
-  interval: z.string().trim().min(1),
-  from: z.coerce.number().optional(),
-  to: z.coerce.number().optional(),
-  limit: z.coerce.number().int().min(1).max(300).optional(),
-})
 
 const bybitDerivativesQuerySchema = z.object({
   symbol: z.string().trim().min(1),
@@ -44,10 +22,6 @@ function toProviderOrThrow(providerName: string): ExternalApiProvider {
     throw new FreeApiError(`unsupported provider: ${providerName}`, "INVALID_SYMBOL", { retryable: false })
   }
   return providerName as ExternalApiProvider
-}
-
-function normalizeSymbols(raw: string): string[] {
-  return toSymbolsFromList(raw).map(normalizeCanonicalSymbol)
 }
 
 function replyError(
@@ -119,53 +93,21 @@ function shouldDegradeMetaError(error: unknown): error is FreeApiError {
 export function registerFreeApiRoutes(app: FastifyInstance): void {
   app.get("/market/freeapi/policy", (_request, reply) => reply.send(getFreeApiPolicy()))
 
-  app.get("/market/freeapi/binance/markets", (request, reply) =>
-    withParsedQuery(
-      reply,
-      request.query,
-      marketQuerySchema,
-      "invalid free API market query",
-      ({ symbols, excludeUpbitOverlap }) => {
-        const adapter = freeApiProviders[toProviderOrThrow("binance")]
-        const normalized = normalizeSymbols(symbols)
-        const requested = excludeUpbitOverlap ? validateNoUpbitOverlap(normalized) : normalized
-        return adapter.fetchMarketSnapshot(requested)
-      },
-    ),
-  )
-
-  app.get("/market/freeapi/binance/orderbook", (request, reply) =>
-    withParsedQuery(
-      reply,
-      request.query,
-      symbolWithDepthQuerySchema,
-      "invalid free API orderbook query",
-      ({ symbol, depth }) => {
-        const adapter = freeApiProviders[toProviderOrThrow("binance")]
-        return adapter.fetchOrderBook(symbol, depth ?? 15)
-      },
-    ),
-  )
-
-  app.get("/market/freeapi/binance/klines", (request, reply) =>
-    withParsedQuery(
-      reply,
-      request.query,
-      klineQuerySchema,
-      "invalid free API kline query",
-      ({ symbol, interval, from, to, limit }) =>
-        freeApiProviders[toProviderOrThrow("binance")].fetchKlines(symbol, interval, from, to, limit),
-    ),
-  )
-
   app.get("/market/freeapi/bybit/derivatives", (request, reply) =>
     withParsedQuery(
       reply,
       request.query,
       bybitDerivativesQuerySchema,
       "invalid free API derivatives query",
-      ({ symbol, category }) =>
-        freeApiProviders[toProviderOrThrow("bybit")].fetchDerivatives(symbol, category),
+      ({ symbol, category }) => {
+        const adapter = freeApiProviders[toProviderOrThrow("bybit")]
+        return adapter.fetchDerivatives(symbol, category).catch((error) => {
+          if (shouldDegradeMetaError(error)) {
+            return null
+          }
+          throw error
+        })
+      },
     ),
   )
 
@@ -193,7 +135,15 @@ export function registerFreeApiRoutes(app: FastifyInstance): void {
       request.query,
       metaQuerySchema,
       "invalid free API meta query",
-      ({ coinId }) => freeApiProviders[toProviderOrThrow("coinpaprika")].fetchMeta(coinId),
+      ({ coinId }) => {
+        const adapter = freeApiProviders[toProviderOrThrow("coinpaprika")]
+        return adapter.fetchMeta(coinId).catch((error) => {
+          if (shouldDegradeMetaError(error)) {
+            return null
+          }
+          throw error
+        })
+      },
     ),
   )
 }
