@@ -32,23 +32,35 @@ const updatedAtLabel = computed(() => {
 </script>
 
 <template>
-  <section class="panel derivatives-panel" aria-label="Derivatives data">
+  <section class="panel derivatives-panel" aria-label="파생상품 데이터">
     <div class="panel-head">
-      <h3>Derivatives</h3>
+      <div class="panel-head-title">
+        <h3>파생상품</h3>
+        <TooltipButton
+          button-class="derivatives-tooltip-button"
+          kind="icon"
+          aria-label="파생 데이터 출처"
+          tooltip="파생 데이터 출처: Bybit 무기한 선물"
+          type="button"
+        >
+          <span aria-hidden="true">?</span>
+        </TooltipButton>
+      </div>
     </div>
-    <div v-if="loading" class="derivatives-state">loading derivatives...</div>
+    <div v-if="loading" class="derivatives-state">파생 데이터 불러오는 중...</div>
     <div v-else-if="error" class="derivatives-state derivatives-state--error">
       {{ error }}
     </div>
-    <div v-else-if="!hasData" class="derivatives-state">No derivatives data</div>
+    <div v-else-if="!hasData" class="derivatives-state">파생 데이터 없음</div>
     <dl v-else class="derivatives-grid">
       <div>
         <dt class="derivatives-term">
-          <span>Funding</span>
+          <span>펀딩비</span>
           <TooltipButton
             button-class="derivatives-tooltip-button"
-            aria-label="Funding definition"
-            tooltip="Funding is the periodic fee paid between long and short positions for futures contracts."
+            kind="icon"
+            aria-label="펀딩비 안내"
+            tooltip="펀딩비는 선물 시장에서 롱/숏 간 증거금 비용을 정산하는 비율입니다."
             type="button"
           >
             <span aria-hidden="true">?</span>
@@ -60,11 +72,12 @@ const updatedAtLabel = computed(() => {
       </div>
       <div>
         <dt class="derivatives-term">
-          <span>Open Interest</span>
+          <span>미결제약정</span>
           <TooltipButton
             button-class="derivatives-tooltip-button"
-            aria-label="Open interest definition"
-            tooltip="Open interest is the total size of outstanding futures positions currently open in the market."
+            kind="icon"
+            aria-label="미결제약정 안내"
+            tooltip="미결제약정은 현재 시장에 열려 있는 선물 포지션의 총 규모입니다."
             type="button"
           >
             <span aria-hidden="true">?</span>
@@ -76,27 +89,12 @@ const updatedAtLabel = computed(() => {
       </div>
       <div>
         <dt class="derivatives-term">
-          <span>Source</span>
+          <span>마지막 갱신</span>
           <TooltipButton
             button-class="derivatives-tooltip-button"
-            aria-label="Source definition"
-            tooltip="Shows the exchange source of derivative data. This panel currently uses Bybit Linear/Inverse data."
-            type="button"
-          >
-            <span aria-hidden="true">?</span>
-          </TooltipButton>
-        </dt>
-        <dd>
-          <span class="derivatives-value">{{ derivatives?.source ?? "-" }}</span>
-        </dd>
-      </div>
-      <div>
-        <dt class="derivatives-term">
-          <span>Last Update</span>
-          <TooltipButton
-            button-class="derivatives-tooltip-button"
-            aria-label="Last update definition"
-            tooltip="Time when this derivatives snapshot was last refreshed."
+            kind="icon"
+            aria-label="마지막 갱신 시간 안내"
+            tooltip="해당 파생상품 스냅샷이 마지막으로 갱신된 시각입니다."
             type="button"
           >
             <span aria-hidden="true">?</span>
@@ -116,6 +114,12 @@ const updatedAtLabel = computed(() => {
   gap: 10px;
 }
 
+.panel-head-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .derivatives-state {
   margin: 0;
   color: var(--text-muted);
@@ -130,7 +134,7 @@ const updatedAtLabel = computed(() => {
   margin: 0;
   display: grid;
   gap: 8px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .derivatives-grid dt {
@@ -154,9 +158,10 @@ const updatedAtLabel = computed(() => {
 }
 
 .derivatives-term {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 6px;
+  justify-content: flex-start;
 }
 
 .derivatives-tooltip-button {

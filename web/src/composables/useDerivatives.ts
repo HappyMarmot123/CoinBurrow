@@ -15,9 +15,9 @@ function parseBase(raw: string): string | null {
 
 function unsupportedBaseError(base: string): string {
   if (base === DERIVATIVES_QUOTE) {
-    return "Derivatives data is not available for USDT-based pairs.";
+    return "USDT 마켓은 파생 데이터를 제공하지 않습니다.";
   }
-  return "Derivatives data is unavailable for this market.";
+  return "이 마켓의 파생 데이터를 제공하지 않습니다.";
 }
 
 export function useDerivatives(selectedMarket: Ref<string>) {
@@ -32,7 +32,7 @@ export function useDerivatives(selectedMarket: Ref<string>) {
     // No tradable base, or the base is the perp quote itself => no derivatives.
     if (!base || base === DERIVATIVES_QUOTE) {
       derivatives.value = null;
-      error.value = base ? unsupportedBaseError(base) : "Invalid market selection";
+      error.value = base ? unsupportedBaseError(base) : "잘못된 마켓 선택입니다.";
       return;
     }
 
@@ -49,8 +49,8 @@ export function useDerivatives(selectedMarket: Ref<string>) {
         return;
       }
       error.value = unsupportedBaseError(base);
-    } catch (cause) {
-      error.value = cause instanceof Error ? cause.message : "failed to load derivatives";
+    } catch {
+      error.value = "파생 데이터를 불러오지 못했습니다.";
     } finally {
       loading.value = false;
     }
