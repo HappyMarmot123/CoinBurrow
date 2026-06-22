@@ -1,0 +1,131 @@
+[
+  {
+    "title": "[CBR-API-1001] Binance Adapter(Upbit 미지원 커버리지)",
+    "labels": [
+      "api",
+      "backend",
+      "provider-binance",
+      "priority-P0",
+      "phase-1"
+    ],
+    "body": "## 개요\n- 목적: Binance spot market/orderbook/kline 수집 및 canonical 정규화\n- 기한: 2026-07-01\n\n## 범위\n- Provider: binance\n- Capability: market, orderbook, kline\n- Endpoint:\n  - /api/v3/ticker/24hr\n  - /api/v3/depth\n  - /api/v3/klines\n- 변경 파일:\n  - `server/src/news/` 또는 `server/src/integration/` 내 신규 adapter\n\n## 핵심 DoD\n- Upbit overlap symbol 제외 처리\n- symbol/시간/수치 정규화 통과\n- 중복 row 0건\n- 실패 시 stale/cache fallback 동작\n\n## 수용 조건\n- [ ] 1분 실패율 1% 이하\n- [ ] p95 latency 2초 이내\n- [ ] 중복 symbol 0건\n- [ ] fallback/로그 보장\n\n## 체크포인트\n- 공개 API만 사용\n- 키/주문/잔고 경로 제외\n- 서버리스 1차: REST only + 캐시 TTL"
+  },
+  {
+    "title": "[CBR-API-1002] Bybit Derivatives",
+    "labels": [
+      "api",
+      "backend",
+      "provider-bybit",
+      "priority-P0",
+      "phase-1"
+    ],
+    "body": "## 개요\n- 목적: 파생 funding / open interest 데이터 수집\n- 기한: 2026-07-03\n\n## 범위\n- Provider: bybit\n- Capability: derivatives\n- Endpoint:\n  - /v5/market/open-interest\n  - /v5/market/funding/history\n  - /v5/market/tickers\n- 변경 파일:\n  - `server` 내 bybit adapter 및 DTO\n\n## 핵심 DoD\n- category 매핑 실패 처리가 분기됨\n- 10초 주기 수집 또는 클라이언트 폴링 대체\n- primary 실패 시 백업 전환\n\n## 수용 조건\n- [ ] 1분 누락률 1개 이하\n- [ ] 5xx/429 시 retry + fallback 동작\n- [ ] category mismatch 로그 수집\n\n## 체크포인트\n- 공개 API만 사용\n- 서버리스 1차: WS 제외, REST polling"
+  },
+  {
+    "title": "[CBR-API-1003] Bithumb KRW 보강",
+    "labels": [
+      "api",
+      "backend",
+      "provider-bithumb",
+      "priority-P0",
+      "phase-1"
+    ],
+    "body": "## 개요\n- 목적: KRW 마켓 가격/호가/캔들 보강\n- 기한: 2026-07-04\n\n## 범위\n- Provider: bithumb\n- Capability: market, orderbook, kline\n- Endpoint:\n  - /public/ticker/ALL_TICKER\n  - /public/ticker/{currency}\n  - /public/orderbook/{currency}\n  - /public/candlestick/{currency}\n- 변경 파일:\n  - `server` KRW 정규화/파이프라인\n\n## 핵심 DoD\n- KRW 심볼 매핑 테이블 확정\n- string -> 숫자 파싱 안전 처리\n- 업비트 중복 심볼 재노출 금지\n\n## 수용 조건\n- [ ] KRW 조회 성공률 95% 이상\n- [ ] string numeric parsing 누락율 0\n- [ ] overlap 심볼 중복 노출 0\n\n## 체크포인트\n- 공개 API만 사용\n- 서버리스 1차: 동시성 상한 + 부분 성공 허용"
+  },
+  {
+    "title": "[CBR-API-1004] CoinGecko Meta",
+    "labels": [
+      "api",
+      "backend",
+      "provider-coingecko",
+      "priority-P1",
+      "phase-1"
+    ],
+    "body": "## 개요\n- 목적: 코인 메타/카테고리/가격 속성 수집\n- 기한: 2026-07-06\n\n## 범위\n- Provider: coingecko\n- Capability: meta\n- Endpoint:\n  - /api/v3/simple/price\n  - /api/v3/coins/{id}\n  - /api/v3/coins/markets\n- 변경 파일:\n  - `server` meta adapter\n\n## 핵심 DoD\n- coin id 매핑 테이블 구성\n- keyless 실패 시 CoinPaprika fallback\n- TTL 캐시 정책 적용\n\n## 수용 조건\n- [ ] meta 동기화가 core 흐름 블로킹 없음\n- [ ] 캐시 miss ratio 모니터링\n- [ ] 실패율 임계치 경보\n\n## 체크포인트\n- 공개 API만 사용\n- 서버리스 1차: 캐시 TTL/재요청 정책 명시"
+  },
+  {
+    "title": "[CBR-API-1005] CoinPaprika 이벤트/메타",
+    "labels": [
+      "api",
+      "backend",
+      "provider-coinpaprika",
+      "priority-P1",
+      "phase-1"
+    ],
+    "body": "## 개요\n- 목적: 이벤트, 팀, 백서 메타 수집\n- 기한: 2026-07-07\n\n## 범위\n- Provider: coinpaprika\n- Capability: meta\n- Endpoint:\n  - /v1/coins\n  - /v1/coins/{coin_id}\n  - /v1/coins/{coin_id}/events\n- 변경 파일:\n  - `server` meta adapter\n\n## 핵심 DoD\n- 월간 한도에 맞는 배치 정책\n- 이벤트/소개/팀 정보 정합 병합\n\n## 수용 조건\n- [ ] 이벤트/소개 노출 누락률 감소\n- [ ] 30분 배치 성공률 95%\n- [ ] 한도 초과 대응 fallback 동작\n\n## 체크포인트\n- 공개 API만 사용\n- 서버리스 1차: 월간 배치/정렬은 Cron 고려"
+  },
+  {
+    "title": "[CBR-API-1006] 공통 Adapter/DTO 정착",
+    "labels": [
+      "api",
+      "backend",
+      "core",
+      "priority-P1",
+      "phase-1"
+    ],
+    "body": "## 개요\n- 목적: 다중 provider adapter 공통화 및 정규화 유틸 정착\n- 기한: 2026-07-08\n\n## 범위\n- Capability: all\n- 변경 파일:\n  - `server/src/*/adapters`\n  - `server/src/shared/normalizer`\n  - `server/src/shared/types`\n\n## 핵심 DoD\n- 공통 인터페이스 구현\n- 정규화 규칙 통합\n- provider 우선순위 적용\n\n## 수용 조건\n- [ ] adapter 5개 이상 인터페이스 준수\n- [ ] 정규화 실패율 0.5% 이하\n- [ ] duplicate 합산 0\n\n## 체크포인트\n- 서버리스 1차: in-memory 상태 공유 최소화"
+  },
+  {
+    "title": "[CBR-API-1007] 복구 체계(REST polling + TTL 캐시)",
+    "labels": [
+      "api",
+      "backend",
+      "reliability",
+      "priority-P1",
+      "phase-1"
+    ],
+    "body": "## 개요\n- 목적: REST polling 기반 장애 복구/폴백 체계 확립\n- 기한: 2026-07-09\n\n## 범위\n- Capability: reliability\n- 변경 파일:\n  - 공통 fetch wrapper\n  - market/derivatives/meta 호출 경로\n\n## 핵심 DoD\n- 타임아웃/재시도/백오프 정의\n- stale 반환 정책(전체 500 금지)\n- circuit breaker는 1차 best-effort\n\n## 수용 조건\n- [ ] 실패 provider 시 fallback 동작\n- [ ] stale 노출 정책 검증\n- [ ] 500 연쇄 방지 검증\n\n## 체크포인트\n- 서버리스 1차 기준: WS/상시 job 미사용"
+  },
+  {
+    "title": "[CBR-API-1008] 모니터링/알람",
+    "labels": [
+      "api",
+      "observability",
+      "priority-P1",
+      "phase-1"
+    ],
+    "body": "## 개요\n- 목적: provider별 실패/지연/staleness 지표 수집\n- 기한: 2026-07-10\n\n## 범위\n- Capability: metrics\n- 변경 파일:\n  - observability 또는 metrics 모듈\n\n## 핵심 DoD\n- 지표 수집 3종 이상\n- 임계치 경보 3건 이상\n- source tag 기반 분해능 확보\n\n## 수용 조건\n- [ ] p95 지연/실패율 경보 동작\n- [ ] 임계치 초과 알림 송신\n- [ ] provider별 집계 확인\n\n## 체크포인트\n- 서버리스 1차: 상태 저장은 외부 저장소 또는 통계 only"
+  },
+  {
+    "title": "[CBR-API-1009] 운영 문서 완성",
+    "labels": [
+      "docs",
+      "backend",
+      "priority-P2",
+      "phase-2"
+    ],
+    "body": "## 개요\n- 목적: runbook, release checklist, 정책검토 루틴 정리\n- 기한: 2026-07-11\n\n## 범위\n- Capability: docs\n- 변경 파일:\n  - `docs/incident-runbook.md`\n  - `docs/release-checklist.md`\n  - `docs/provider-policy-diff.md`\n\n## 핵심 DoD\n- policy diff 템플릿 적용\n- 롤백/긴급중단 지침 정리\n\n## 수용 조건\n- [ ] 문서 감사 체크리스트 통과\n- [ ] 운영자 책임자 승인\n\n## 체크포인트\n- 서버리스 제약(15절) 기준을 문서에 항상 노출"
+  },
+  {
+    "title": "[CBR-API-1010] 정책 동기화 자동 체크",
+    "labels": [
+      "api",
+      "backend",
+      "governance",
+      "priority-P2",
+      "phase-2"
+    ],
+    "body": "## 개요\n- 목적: 월간 API 정책 변경 추적 자동화\n- 기한: 2026-07-12\n\n## 범위\n- Capability: governance\n- 변경 파일:\n  - policy-diff script\n  - release-check script\n\n## 핵심 DoD\n- 문서 URL/제약 변경 감시\n- 배포 전 회귀 항목 연동\n\n## 수용 조건\n- [ ] 월 1회 정책 점검 리포트 생성\n- [ ] 변경 감지 시 릴리스 게이트 동작\n\n## 체크포인트\n- 서버리스 1차: 배치 주기(Cron) 또는 수동 승인"
+  },
+  {
+    "title": "[CBR-UI-1401] DerivativesPanel + derivatives store",
+    "labels": [
+      "frontend",
+      "exchange",
+      "provider-bybit",
+      "priority-P1",
+      "phase-2"
+    ],
+    "body": "## 개요\n- 목적: 파생 데이터(펀딩/OI/mark) 표시 패널 구현\n- 기한: 2026-07-15\n\n## 범위\n- Capability: ui, derivatives\n- 변경 파일:\n  - `web/src/features/exchange/`\n  - `web/src/stores/derivatives.ts`\n\n## 핵심 DoD\n- 파생 데이터 존재 시만 노출\n- 실패 시 해당 패널 비활성\n- KRW 마켓/스팟 구분 표시\n\n## 수용 조건\n- [ ] 주요 심볼에서 표시 테스트 통과\n- [ ] 실패 시 UX 깨짐 없음\n- [ ] 1분 실패율 대시보드 연동\n\n## 체크포인트\n- 서버리스 1차: REST polling + 캐시 TTL 기준 반영"
+  },
+  {
+    "title": "[CBR-UI-1402] 코인 상세 drawer/route",
+    "labels": [
+      "frontend",
+      "exchange",
+      "priority-P1",
+      "phase-2"
+    ],
+    "body": "## 개요\n- 목적: 코인 상세(메타/이벤트/팀) 진입점 추가\n- drawer/route 선택 가능\n- 기한: 2026-07-17\n\n## 범위\n- Capability: ui, meta\n- 변경 파일:\n  - `web/src/router/index.ts`\n  - `web/src/features/exchange/`\n  - `web/src/stores/meta.ts`\n\n## 핵심 DoD\n- 로고/카테고리/시총 표시\n- 이벤트/팀/백서 링크 노출\n- 데이터 누락 시 graceful fallback\n\n## 수용 조건\n- [ ] coin row에서 상세 진입\n- [ ] 실패 시 빈 상태 처리\n- [ ] 반응형 접근성 검증\n\n## 체크포인트\n- 서버리스 1차: 데이터는 REST poll + TTL"
+  }
+]
