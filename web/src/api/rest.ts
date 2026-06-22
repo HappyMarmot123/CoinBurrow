@@ -287,6 +287,32 @@ export const getTradeSnapshot = async (
   }));
 };
 
+export type SentimentLabel = "positive" | "negative" | "neutral";
+
+export interface SentimentHistoryPoint {
+  t: number;
+  value: number;
+}
+
+export interface SentimentView {
+  provider: string;
+  value: number | null;
+  classification?: string;
+  label: SentimentLabel | null;
+  updatedAt?: number;
+  nextUpdateInSec?: number | null;
+  history?: SentimentHistoryPoint[];
+  fetchedAt: number;
+  cacheTtlMs: number;
+  stale: boolean;
+  degraded?: boolean;
+  degradedReason?: string;
+}
+
+export const getMarketSentiment = async (days = 30): Promise<SentimentView> => {
+  return getJson<SentimentView>(buildPath("/market/sentiment", { days }));
+};
+
 export const getMarketStatus = async (
   markets?: string[],
 ): Promise<MarketStatusView[]> => {
