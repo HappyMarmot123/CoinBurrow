@@ -46,7 +46,14 @@ docs/     설계 및 migration plan
 ## REST 엔드포인트
 
 - `GET /market/coin-list`
+- `GET /market/exchange/quotes`
 - `GET /market/exchange/ticker`
-- `GET /market/exchange/candle?market=KRW-BTC`
+- `GET /market/exchange/tickers?markets=KRW-BTC,KRW-ETH`
+- `GET /market/exchange/markets?quote=KRW`
+- `GET /market/exchange/market-overview?markets=KRW-BTC`
+- `GET /market/exchange/candle?market=KRW-BTC&timeframe=1m&count=200`
+  - timeframe: `1s,1m,3m,5m,10m,15m,30m,60m,240m,1h,4h,1d,1w,1M,1mo,1y`
 - `GET /market/exchange/orderbook?market=KRW-BTC`
 - `GET /market/exchange/trade-ticks?market=KRW-BTC`
+- `GET /market/exchange/market-status?markets=KRW-BTC`
+- `GET /market/exchange/exchange-rates`

@@ -1,8 +1,18 @@
 {
-  "buildCommand": "npm run build --workspace web",
+  "buildCommand": "npm run build --workspaces --if-present",
   "outputDirectory": "web/dist",
   "rewrites": [
-    { "source": "/market/(.*)", "destination": "/api/market/$1" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    {
+      "source": "/market/:path*",
+      "destination": "/api/market?__coinburrow_path=market/:path*"
+    },
+    {
+      "source": "/api/market/:path*",
+      "destination": "/api/market?__coinburrow_path=market/:path*"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
   ]
 }

@@ -1,0 +1,104 @@
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin panel-surface {
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  background: var(--panel-bg);
+  box-shadow: var(--shadow);
+}
+
+@mixin exchange-panel {
+  @include panel-surface;
+  min-width: 0;
+  padding: 16px;
+}
+
+@mixin panel-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+@mixin panel-title($size: 18px) {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: $size;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+@mixin muted-label {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@mixin field-control {
+  width: 100%;
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  color: var(--text);
+  background: var(--input-bg);
+}
+
+@mixin select-control {
+  @include field-control;
+  appearance: none;
+  padding-right: 36px;
+  background-color: var(--input-bg);
+  background-image: url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23d9ff66' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px 14px;
+
+  &::-ms-expand {
+    display: none;
+  }
+
+  option {
+    color: #111827;
+    background-color: #f4f6f8;
+  }
+
+  option:checked {
+    color: #111827;
+    background-color: var(--brand-lime);
+  }
+}
+
+@mixin ticker-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@mixin summary-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+@mixin summary-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  border-bottom: 1px solid var(--panel-line);
+  padding-bottom: 8px;
+}
+
+@mixin thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--panel-border-hover) transparent;
+}

@@ -22,7 +22,7 @@ onUnmounted(() => app?.dispose());
   <canvas ref="canvas" class="spline-canvas" />
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .spline-canvas {
   position: absolute;
   inset: 0;
