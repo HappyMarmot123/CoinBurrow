@@ -5,9 +5,11 @@ import { useTickerStore } from "../../stores/ticker.js";
 import type { MarketView, TickerView } from "../../stores/types.js";
 import { formatCompact, formatPrice } from "../../utils/format.js";
 
-const props = defineProps<{ selected: string }>();
+const props = defineProps<{ selected: string; quote?: string }>();
 
-const emit = defineEmits<{ select: [market: string] }>();
+const emit = defineEmits<{
+  select: [market: string];
+}>();
 const marketStore = useMarketStore();
 const tickerStore = useTickerStore();
 const query = ref("");
@@ -65,6 +67,7 @@ function formatSignedRate(ticker?: TickerView) {
   const sign = ticker.signedChangeRate > 0 ? "+" : "";
   return `${sign}${(ticker.signedChangeRate * 100).toFixed(2)}%`;
 }
+
 </script>
 
 <template>
@@ -102,11 +105,11 @@ function formatSignedRate(ticker?: TickerView) {
           <strong>{{ formatPrice(row.ticker?.tradePrice) }}</strong>
           <small>{{ formatCompact(row.ticker?.accTradePrice24h) }}</small>
         </div>
-        <span class="coin-change">
-          {{ formatSignedRate(row.ticker) }}
-        </span>
-        <small class="sr-market-code">{{ row.market.market }}</small>
-      </li>
+          <span class="coin-change">
+            {{ formatSignedRate(row.ticker) }}
+          </span>
+          <small class="sr-market-code">{{ row.market.market }}</small>
+        </li>
     </ul>
 
     <div v-else class="coin-empty">
@@ -179,13 +182,14 @@ input::placeholder {
 }
 
 .sort-tabs {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
 .sort-tabs button {
   min-width: 0;
+  flex: 1 1 0;
   border: 1px solid var(--panel-border);
   border-radius: var(--radius-sm);
   padding: 7px 6px;
@@ -256,7 +260,6 @@ input::placeholder {
   min-width: 0;
   gap: 2px;
 }
-
 .coin-main__name {
   overflow: hidden;
   color: #f5f8ff;
@@ -331,10 +334,12 @@ input::placeholder {
 @media (max-width: 640px) {
   .coin-row {
     grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 8px;
   }
 
   .coin-price {
     grid-column: 1 / 2;
+    grid-row: 1 / 2;
     text-align: left;
   }
 

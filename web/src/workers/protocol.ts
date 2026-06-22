@@ -1,3 +1,5 @@
+import type { NormalizedError } from "../shared/validation/error/normalized-error.js";
+
 export type Channel = "ticker" | "orderbook" | "candle" | `candle.${string}` | "trade";
 
 export interface WorkerCommand {
@@ -8,7 +10,8 @@ export interface WorkerCommand {
 
 export type WorkerResponse =
   | { type: Channel; data: unknown[] }
-  | { type: "status"; connected: boolean };
+  | { type: "status"; connected: boolean }
+  | { type: "validation-error"; error: NormalizedError };
 
 function normalizeCandleChannel(channel: Channel): string {
   if (channel === "candle") return "candle.1m";

@@ -4,6 +4,7 @@ import { useTickerStore } from "../stores/ticker.js";
 import { useOrderbookStore } from "../stores/orderbook.js";
 import { useCandleStore } from "../stores/candle.js";
 import { useTradeStore } from "../stores/trade.js";
+import { useValidationHealthStore } from "../stores/validation-health.js";
 import type { TickerView, OrderbookView, CandleView, TradeView } from "../stores/types.js";
 
 export function useMarketSocket() {
@@ -12,10 +13,18 @@ export function useMarketSocket() {
   const orderbook = useOrderbookStore();
   const candle = useCandleStore();
   const trade = useTradeStore();
+  const validationHealth = useValidationHealthStore();
 
   worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
     const message = event.data;
-    if (message.type === "status") return;
+    if (message.type === "status") {
+      validationHealth.recordConnectionStatus(message.connected);
+      return;
+    }
+    if (message.type === "validation-error") {
+      validationHealth.recordError(message.error);
+      return;
+    }
     if (message.type === "ticker") {
       ticker.applyTicker(message.data as TickerView[]);
     } else if (message.type === "orderbook") {

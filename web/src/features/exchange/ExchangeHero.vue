@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import type { MarketStatusView, MarketSummaryView } from "../../api/rest.js";
+import { computed, ref, watch } from "vue";
+import type { CoinMetaView, MarketStatusView, MarketSummaryView } from "../../api/rest.js";
 import type { TickerView } from "../../stores/types.js";
 import { formatCompact, formatPrice, formatRatio } from "../../utils/format.js";
 
@@ -13,11 +13,14 @@ const props = defineProps<{
   quote: string;
   selectedMarketStatus?: MarketStatusView;
   selectedMarketSummary?: MarketSummaryView;
-  marketRestriction: string;
-  marketStatusCautions: string[];
   liveTicker?: TickerView;
   spreadRatio?: number;
   usdKrwRate: number | null;
+  coinMeta?: CoinMetaView | null;
+}>();
+
+const emit = defineEmits<{
+  openDetail: [market: string];
 }>();
 
 const assetCode = computed(() => props.market.split("-").at(-1) ?? props.market);
@@ -35,6 +38,61 @@ const signedRateLabel = computed(() => {
   return `${sign}${(rate * 100).toFixed(2)}%`;
 });
 const hasError = computed(() => Boolean(props.exchangeError || props.statusError));
+
+const selectedCoinMeta = computed(() => props.coinMeta ?? null);
+const selectedCoinIconFallback = computed(() => {
+  const label = props.selectedMarketLabel.trim();
+  const code = assetCode.value.trim();
+  const candidate = label[0] ?? code[0] ?? "M";
+  return candidate.toUpperCase();
+});
+
+const selectedCoinLogoCandidates = computed(() => {
+  const candidates: string[] = [];
+  const seen = new Set<string>();
+  const primaryLogo = selectedCoinMeta.value?.logo?.trim();
+
+  const normalizeSymbol = (value: string): string => {
+    const normalized = value.trim().toLowerCase();
+    const withDash = normalized.includes("-") ? normalized.split("-").at(-1) : normalized;
+    return withDash?.replace(/[^a-z0-9]/g, "") ?? "";
+  };
+
+  const pushUnique = (value: string) => {
+    if (!value || seen.has(value)) return;
+    seen.add(value);
+    candidates.push(value);
+  };
+
+  if (primaryLogo) {
+    pushUnique(primaryLogo);
+  }
+
+  for (const symbol of [selectedCoinMeta.value?.symbol, assetCode.value, props.market]) {
+    const normalized = normalizeSymbol(symbol ?? "");
+    if (!normalized) continue;
+    pushUnique(`https://raw.githubusercontent.com/atomiclabs/cryptocurrency-icons/master/128/color/${normalized}.png`);
+  }
+
+  return candidates;
+});
+
+const coinLogoIndex = ref(0);
+const resolvedCoinLogo = computed(() => selectedCoinLogoCandidates.value[coinLogoIndex.value] ?? "");
+
+watch(selectedCoinLogoCandidates, () => {
+  coinLogoIndex.value = 0;
+});
+
+function onCoinLogoError() {
+  const next = coinLogoIndex.value + 1;
+  if (next < selectedCoinLogoCandidates.value.length) {
+    coinLogoIndex.value = next;
+    return;
+  }
+
+  coinLogoIndex.value = selectedCoinLogoCandidates.value.length;
+}
 </script>
 
 <template>
@@ -42,6 +100,18 @@ const hasError = computed(() => Boolean(props.exchangeError || props.statusError
     <div class="market-ticker">
       <div class="market-ticker__primary">
         <div class="market-id">
+          <span
+            class="market-id__icon"
+            :title="resolvedCoinLogo ? `${selectedMarketLabel} 코인 로고` : `${selectedMarketLabel} 대체 텍스트`"
+          >
+            <img
+              v-if="resolvedCoinLogo"
+              :alt="`${selectedMarketLabel} 코인 로고`"
+              :src="resolvedCoinLogo"
+              @error="onCoinLogoError"
+            />
+            <span v-else>{{ selectedCoinIconFallback }}</span>
+          </span>
           <span class="market-id__name">{{ selectedMarketLabel }}</span>
           <span class="market-id__code">{{ assetCode }}</span>
           <span class="market-id__quote">{{ quote }}</span>
@@ -49,7 +119,10 @@ const hasError = computed(() => Boolean(props.exchangeError || props.statusError
 
         <div class="market-price" :class="movementClass">
           <span>현재가</span>
-          <strong>{{ formatPrice(liveTicker?.tradePrice) }}</strong>
+          <strong>
+            {{ formatPrice(liveTicker?.tradePrice) }}
+            <span class="market-price__unit">KRW</span>
+          </strong>
           <em>{{ signedRateLabel }}</em>
         </div>
 
@@ -77,6 +150,14 @@ const hasError = computed(() => Boolean(props.exchangeError || props.statusError
         <div class="market-details__meta">
           <div class="market-details__head">
             <h2>선택 마켓 상세</h2>
+            <button
+              type="button"
+              class="market-details__detail-btn"
+              :aria-label="`${selectedMarketLabel} 상세 열기`"
+              @click="emit('openDetail', market)"
+            >
+              상세
+            </button>
           </div>
           <p class="market-details__state">
             {{ selectedMarketStatus ? marketState : "선택 마켓 메타정보 대기중입니다." }}
@@ -92,22 +173,8 @@ const hasError = computed(() => Boolean(props.exchangeError || props.statusError
             <dt>심볼</dt>
             <dd>{{ selectedMarketSummary?.englishName ?? "-" }}</dd>
           </div>
-          <div>
-            <dt>제재</dt>
-            <dd>{{ marketRestriction }}</dd>
-          </div>
-          <div>
-            <dt>주의 항목</dt>
-            <dd v-if="marketStatusCautions.length === 0">-</dd>
-            <dd v-else>
-              <ul class="market-caution-list">
-                <li v-for="caution in marketStatusCautions" :key="caution">
-                  {{ caution }}
-                </li>
-              </ul>
-            </dd>
-          </div>
         </dl>
+
       </div>
     </div>
 
@@ -130,7 +197,7 @@ const hasError = computed(() => Boolean(props.exchangeError || props.statusError
 .market-ticker {
   @include exchange-panel;
   display: grid;
-  grid-template-columns: minmax(0, 6fr) minmax(0, 4fr);
+  grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
   grid-template-areas: "primary details";
   align-items: stretch;
   gap: 14px;
@@ -141,24 +208,46 @@ const hasError = computed(() => Boolean(props.exchangeError || props.statusError
 .market-ticker__primary {
   grid-area: primary;
   min-width: 0;
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-areas:
-    "id"
-    "price"
-    "chips";
-  align-items: stretch;
-  gap: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
 }
 
 .market-id {
   grid-area: id;
+  flex: 1 1 100%;
   align-self: center;
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 8px;
+}
+
+.market-id__icon {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  background: var(--panel-bg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.market-id__icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.market-id__icon span {
+  color: var(--text-strong);
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .market-id__name {
@@ -188,10 +277,11 @@ const hasError = computed(() => Boolean(props.exchangeError || props.statusError
 
 .market-price {
   grid-area: price;
+  flex: 0 1 auto;
   align-self: center;
   min-width: 0;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto max-content auto;
   align-items: baseline;
   justify-content: start;
   gap: 10px;
@@ -206,11 +296,21 @@ const hasError = computed(() => Boolean(props.exchangeError || props.statusError
 
 .market-price strong {
   overflow: hidden;
+  width: fit-content;
   color: var(--text-strong);
   font-size: clamp(26px, 3vw, 36px);
   font-weight: 850;
   line-height: 1;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.market-price__unit {
+  margin-left: 6px;
+  color: var(--text-muted);
+  font-size: 0.44em;
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
 
 .market-price em {
@@ -233,13 +333,13 @@ const hasError = computed(() => Boolean(props.exchangeError || props.statusError
 
 .ticker-chips {
   grid-area: chips;
-  align-self: end;
+  flex: 1 1 260px;
+  align-self: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   min-width: 0;
   display: flex;
   gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 2px;
-  @include thin-scrollbar;
 }
 
 .ticker-chip {
@@ -295,6 +395,32 @@ const hasError = computed(() => Boolean(props.exchangeError || props.statusError
   @include panel-title(15px);
 }
 
+.market-details__detail-btn {
+  align-self: center;
+  flex: 0 0 auto;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  color: var(--text-muted);
+  background: transparent;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    border-color var(--ease),
+    color var(--ease),
+    background var(--ease);
+}
+
+.market-details__detail-btn:hover,
+.market-details__detail-btn:focus-visible {
+  border-color: var(--panel-border-hover);
+  color: var(--brand-lime);
+  background: var(--panel-bg-strong);
+  outline: none;
+}
+
 .market-details dt {
   @include muted-label;
 }
@@ -326,18 +452,6 @@ const hasError = computed(() => Boolean(props.exchangeError || props.statusError
   overflow-wrap: anywhere;
 }
 
-.market-caution-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 4px;
-}
-
-.market-caution-list li {
-  margin: 0;
-}
-
 .hero-alerts {
   display: grid;
   gap: 6px;
@@ -362,11 +476,6 @@ const hasError = computed(() => Boolean(props.exchangeError || props.statusError
 }
 
 @media (max-width: 960px) {
-  .ticker-chips {
-    margin-right: -16px;
-    padding-right: 16px;
-  }
-
   .market-details__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -387,20 +496,12 @@ const hasError = computed(() => Boolean(props.exchangeError || props.statusError
     padding: 14px;
   }
 
-  .market-ticker__primary {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "id"
-      "price"
-      "chips";
-  }
-
   .market-id {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
   }
 
   .market-id__quote {
-    grid-column: 1 / -1;
+    grid-column: 2 / -1;
     width: fit-content;
   }
 

@@ -1,4 +1,13 @@
-import type { MarketView, CandleView, TickerView, OrderbookView, TradeView } from "../stores/types.js";
+import type {
+  CryptoNewsHealth,
+  CryptoNewsResponse,
+  CryptoNewsSourceSummary,
+  MarketView,
+  CandleView,
+  TickerView,
+  OrderbookView,
+  TradeView,
+} from "../stores/types.js";
 import { TIMEFRAME_LABELS } from "../constants/candle.js";
 
 export type CandleTimeframe =
@@ -56,6 +65,21 @@ export interface ExchangeRateView {
   [key: string]: unknown;
 }
 
+export interface CoinMetaView {
+  coinId: string;
+  name: string;
+  symbol: string;
+  logo?: string;
+  category?: string;
+  website?: string;
+  description?: string;
+  tags?: string[];
+  whitepaper?: string;
+  recentEvents?: string[];
+  team?: string[];
+  [key: string]: unknown;
+}
+
 export interface MarketSummaryView extends MarketView {
   quote: string;
   [key: string]: unknown;
@@ -71,6 +95,47 @@ export interface MarketOverviewItem {
   ticker: TickerView | null;
   orderbook: OrderbookView | null;
   status: MarketStatusView | null;
+}
+
+export interface NewsQueryOptions {
+  q?: string;
+  asset?: string;
+  category?: string;
+  language?: "all" | "ko" | "en";
+  source?: string;
+  limit?: number;
+  cursor?: string;
+}
+
+export interface CoinMetaQueryOptions {
+  coinId: string;
+}
+
+export interface DerivativesView {
+  symbol: string;
+  source: string;
+  openInterest?: string;
+  fundingRate?: string;
+  ts: number;
+}
+
+export interface FreeApiRequestPolicy {
+  timeoutMs: number;
+  maxRetries: number;
+  retryDelaysMs: number[];
+}
+
+export interface FreeApiProviderPolicy {
+  provider: string;
+  capability: "meta";
+  cacheTtlMs: number;
+  staleCacheTtlMs?: number;
+  requestPolicy: FreeApiRequestPolicy;
+}
+
+export interface FreeApiPolicyResponse {
+  generatedAt: number;
+  policies: FreeApiProviderPolicy[];
 }
 
 type QueryValue = string | number | boolean | undefined;
@@ -222,6 +287,32 @@ export const getTradeSnapshot = async (
   }));
 };
 
+export type SentimentLabel = "positive" | "negative" | "neutral";
+
+export interface SentimentHistoryPoint {
+  t: number;
+  value: number;
+}
+
+export interface SentimentView {
+  provider: string;
+  value: number | null;
+  classification?: string;
+  label: SentimentLabel | null;
+  updatedAt?: number;
+  nextUpdateInSec?: number | null;
+  history?: SentimentHistoryPoint[];
+  fetchedAt: number;
+  cacheTtlMs: number;
+  stale: boolean;
+  degraded?: boolean;
+  degradedReason?: string;
+}
+
+export const getMarketSentiment = async (days = 30): Promise<SentimentView> => {
+  return getJson<SentimentView>(buildPath("/market/sentiment", { days }));
+};
+
 export const getMarketStatus = async (
   markets?: string[],
 ): Promise<MarketStatusView[]> => {
@@ -238,6 +329,70 @@ export const getExchangeRates = async (): Promise<ExchangeRateView[]> => {
   } catch {
     return [];
   }
+};
+
+export const getNewsArticles = async (
+  options: NewsQueryOptions = {},
+): Promise<CryptoNewsResponse> => {
+  return getJson<CryptoNewsResponse>(buildPath("/market/news/articles", {
+    q: options.q,
+    asset: options.asset,
+    category: options.category,
+    language: options.language,
+    source: options.source,
+    limit: options.limit,
+    cursor: options.cursor,
+  }));
+};
+
+export const getNewsSources = async (): Promise<CryptoNewsSourceSummary> => {
+  return getJson<CryptoNewsSourceSummary>("/market/news/sources");
+};
+
+export const getNewsHealth = async (): Promise<CryptoNewsHealth> => {
+  return getJson<CryptoNewsHealth>("/market/news/health");
+};
+
+export const getCoinMetaByProvider = async (
+  provider: "coingecko" | "coinpaprika",
+  options: CoinMetaQueryOptions,
+): Promise<CoinMetaView | null> => {
+  return getJson<CoinMetaView>(`/market/freeapi/${provider}/meta${buildPath("", {
+    coinId: options.coinId,
+  })}`);
+};
+
+export const getDerivativesBySymbol = async (
+  symbol: string,
+  category: "spot" | "linear" | "inverse" = "linear",
+): Promise<DerivativesView> => {
+  return getJson<DerivativesView>(`/market/freeapi/bybit/derivatives${buildPath("", {
+    symbol,
+    category,
+  })}`);
+};
+
+export const getCoinMeta = async (
+  coingeckoCoinId: string,
+  coinpaprikaCoinId?: string,
+): Promise<CoinMetaView | null> => {
+  try {
+    return await getCoinMetaByProvider("coingecko", { coinId: coingeckoCoinId });
+  } catch {
+    if (!coinpaprikaCoinId) {
+      return null;
+    }
+
+    try {
+      return await getCoinMetaByProvider("coinpaprika", { coinId: coinpaprikaCoinId });
+    } catch {
+      return null;
+    }
+  }
+};
+
+export const getFreeApiPolicy = async (): Promise<FreeApiPolicyResponse> => {
+  return getJson<FreeApiPolicyResponse>("/market/freeapi/policy");
 };
 
 export const getCoinListWithFallback = async (): Promise<MarketView[]> => {

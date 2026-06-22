@@ -1,16 +1,25 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import AppNav from "../../components/AppNav.vue";
 import CandleChart from "./CandleChart.vue";
 import CoinList from "./CoinList.vue";
 import ExchangeHero from "./ExchangeHero.vue";
 import MarketMovementPanel from "./MarketMovementPanel.vue";
 import OrderbookPanel from "./OrderbookPanel.vue";
+import DerivativesPanel from "./DerivativesPanel.vue";
 import TradeList from "./TradeList.vue";
+import NewsAlertsPopover from "../news/NewsAlertsPopover.vue";
+import CoinMetaDrawer from "./CoinMetaDrawer.vue";
+import { useDerivatives } from "../../composables/useDerivatives.js";
 import { useExchangeData } from "../../composables/useExchangeData.js";
 import { useMarketMeta } from "../../composables/useMarketMeta.js";
+import { useCoinMeta } from "../../composables/useCoinMeta.js";
+import { useFreeApiPolicy } from "../../composables/useFreeApiPolicy.js";
 import { useCandleStore } from "../../stores/candle.js";
+import { useNewsStore } from "../../stores/news.js";
 import { CANDLE_COUNT_OPTIONS, TIMEFRAME_OPTIONS } from "../../constants/exchange.js";
 import { DEFAULT_MARKET } from "../../constants/market.js";
+import { NEWS_HOT_ALERT_POLL_INTERVAL_MS } from "../../constants/news.js";
 import type { CandleTimeframe } from "../../api/rest.js";
 
 const market = ref(DEFAULT_MARKET);
@@ -18,6 +27,7 @@ const selectedQuote = ref("KRW");
 const candleTimeframe = ref<CandleTimeframe>("1m");
 const candleCount = ref(200);
 const candleStore = useCandleStore();
+const newsStore = useNewsStore();
 
 const timeframeOptions = TIMEFRAME_OPTIONS;
 const countOptions = CANDLE_COUNT_OPTIONS;
@@ -32,6 +42,7 @@ const primaryTimeframeOptions = timeframeOptions.filter(({ value }) =>
 );
 let initializingExchange = true;
 let loadingMarketFromQuote = false;
+let hotAlertPollTimer: number | undefined;
 
 const {
   availableQuotes,
@@ -67,6 +78,29 @@ const {
   loadMarketStatus,
 });
 
+const {
+  derivatives,
+  loading: derivativesLoading,
+  error: derivativesError,
+  hasDerivatives,
+} = useDerivatives(market);
+
+const {
+  coinMeta,
+  coinMetaError,
+  coinMetaLoading,
+  coinMetaLookupId,
+  coinMetaSource,
+} = useCoinMeta(market, selectedMarketSummary);
+const {
+  findPolicy,
+  reload: loadPolicy,
+} = useFreeApiPolicy();
+const policy = computed(() => findPolicy(coinMetaSource.value));
+const isCoinDetailOpen = ref(false);
+const detailMarket = ref("");
+
+
 async function loadQuoteMarkets(nextQuote: string) {
   loadingMarketFromQuote = true;
   let nextMarket = market.value;
@@ -81,12 +115,51 @@ async function loadQuoteMarkets(nextQuote: string) {
   void loadMeta();
 }
 
+async function initializeHotAlertState() {
+  await newsStore.loadHotAlertState();
+
+  if (newsStore.hotAlertHasUserPreference) {
+    if (!newsStore.hotAlertEnabled) {
+      return;
+    }
+    if (newsStore.hotAlertPermission !== "granted") {
+      newsStore.hotAlertEnabled = false;
+      newsStore.persistHotAlertState();
+    }
+    return;
+  }
+
+  if (newsStore.hotAlertPermission === "default") {
+    await requestHotAlertPermission();
+    return;
+  }
+
+  if (newsStore.hotAlertPermission === "granted") {
+    await setHotAlertEnabled(true);
+  }
+}
+
 onMounted(async () => {
   try {
     await loadAvailableQuotes();
     await loadQuoteMarkets(selectedQuote.value);
+    await loadPolicy();
+    await initializeHotAlertState();
+    await newsStore.refreshHotAlertSnapshot();
+    hotAlertPollTimer = window.setInterval(() => {
+      if (newsStore.loading) {
+        return;
+      }
+      void newsStore.refreshHotAlertSnapshot();
+    }, NEWS_HOT_ALERT_POLL_INTERVAL_MS);
   } finally {
     initializingExchange = false;
+  }
+});
+
+onBeforeUnmount(() => {
+  if (hotAlertPollTimer) {
+    window.clearInterval(hotAlertPollTimer);
   }
 });
 
@@ -112,10 +185,47 @@ watch(candleCount, () => {
 function compactTimeframeLabel(label: string) {
   return label.replace(" (기본)", "");
 }
+
+function openCoinDetail(nextMarket: string) {
+  market.value = nextMarket;
+  detailMarket.value = nextMarket;
+  isCoinDetailOpen.value = true;
+}
+
+function closeCoinDetail() {
+  isCoinDetailOpen.value = false;
+  detailMarket.value = "";
+}
+
+function setHotAlertEnabled(enabled: boolean) {
+  void newsStore.setHotAlertEnabled(enabled);
+}
+
+function requestHotAlertPermission() {
+  void newsStore.requestNotificationPermission();
+}
+
+function markHotAlertsSeen() {
+  newsStore.markHotAlertsSeen();
+}
 </script>
 
 <template>
   <main class="exchange-page">
+    <AppNav class="exchange-nav">
+      <template #actions>
+        <NewsAlertsPopover
+          :hot-alert-enabled="newsStore.hotAlertEnabled"
+          :hot-alert-permission="newsStore.hotAlertPermission"
+          :hot-alert-history="newsStore.hotAlertHistory"
+          :hot-alert-unseen-count="newsStore.hotAlertUnseenCount"
+          @toggle-hot-alert="setHotAlertEnabled"
+          @request-hot-alert-permission="requestHotAlertPermission"
+          @mark-seen="markHotAlertsSeen"
+        />
+      </template>
+    </AppNav>
+
     <ExchangeHero
       :exchange-error="exchangeError"
       :status-error="statusError"
@@ -125,11 +235,11 @@ function compactTimeframeLabel(label: string) {
       :quote="selectedMarketSummary?.quote ?? 'KRW'"
       :selected-market-status="selectedMarketStatus"
       :selected-market-summary="selectedMarketSummary"
-      :market-restriction="marketRestriction"
-      :market-status-cautions="marketStatusCautions"
       :live-ticker="liveTicker"
       :spread-ratio="selectedOrderbook ? selectedMarketSpread?.ratio : undefined"
       :usd-krw-rate="usdKrwRate"
+      :coin-meta="coinMeta"
+      @open-detail="openCoinDetail"
     />
 
     <section class="exchange-layout">
@@ -181,6 +291,12 @@ function compactTimeframeLabel(label: string) {
             </div>
             <TradeList :market="market" />
           </section>
+          <DerivativesPanel
+            v-if="hasDerivatives || derivativesLoading || derivativesError"
+            :loading="derivativesLoading"
+            :derivatives="derivatives"
+            :error="hasDerivatives ? '' : derivativesError"
+          />
         </div>
 
         <MarketMovementPanel
@@ -203,8 +319,27 @@ function compactTimeframeLabel(label: string) {
             </option>
           </select>
         </label>
-        <CoinList :selected="market" @select="market = $event" />
+        <CoinList :selected="market" :quote="selectedQuote" @select="market = $event" />
       </aside>
+
+      <CoinMetaDrawer
+        :open="isCoinDetailOpen"
+        :market="detailMarket || market"
+        :policy="policy"
+        :selected-market-summary="selectedMarketSummary"
+        :selected-market-status="selectedMarketStatus"
+        :market-restriction="marketRestriction"
+        :market-status-cautions="marketStatusCautions"
+        :live-ticker="liveTicker"
+        :spread-ratio="selectedOrderbook ? selectedMarketSpread?.ratio : undefined"
+        :usd-krw-rate="usdKrwRate"
+        :coin-meta="coinMeta"
+        :coin-meta-loading="coinMetaLoading"
+        :coin-meta-error="coinMetaError"
+        :coin-meta-source="coinMetaSource"
+        :coin-meta-lookup-id="coinMetaLookupId"
+        @close="closeCoinDetail"
+      />
     </section>
   </main>
 </template>
@@ -216,12 +351,17 @@ function compactTimeframeLabel(label: string) {
 
 .exchange-page {
   min-height: 100vh;
-  padding: 0 0 36px;
+  padding: 14px 0 36px;
   color: var(--text);
   font-family: $font-sans;
   background:
     radial-gradient(1100px 500px at 50% -120px, var(--bg-glow), transparent 65%),
     linear-gradient(to bottom right, var(--bg-page), var(--bg-page-mid) 38%, var(--bg-page-soft) 72%);
+}
+
+.exchange-nav {
+  width: min(1500px, calc(100% - 40px));
+  margin: 0 auto 12px;
 }
 
 .exchange-hero,
@@ -363,19 +503,21 @@ function compactTimeframeLabel(label: string) {
   position: sticky;
   top: 14px;
   align-self: start;
-  display: grid;
-  grid-template-columns: minmax(96px, 0.42fr) minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 10px;
-  max-height: calc(100svh - 28px);
+  max-height: calc(100dvh - 56px);
+  height: calc(100dvh - 56px);
   overflow: hidden;
 }
 
-.panel-sidebar > .panel-head {
-  grid-column: 1 / -1;
-}
-
 .panel-sidebar :deep(.coin-list) {
-  display: contents;
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .panel-sidebar :deep(.coin-search),
@@ -385,17 +527,6 @@ function compactTimeframeLabel(label: string) {
   min-width: 0;
 }
 
-.panel-sidebar :deep(.coin-search) {
-  grid-column: 2;
-  align-self: end;
-}
-
-.panel-sidebar :deep(.coin-tools),
-.panel-sidebar :deep(.coin-list__rows),
-.panel-sidebar :deep(.coin-empty) {
-  grid-column: 1 / -1;
-}
-
 .panel-sidebar :deep(input) {
   color: var(--text);
   border-color: var(--input-border);
@@ -403,11 +534,11 @@ function compactTimeframeLabel(label: string) {
 }
 
 .quote-selector {
-  grid-column: 1;
-  align-self: end;
+  align-self: stretch;
   display: grid;
   gap: 8px;
   margin: 0;
+  width: 100%;
 }
 
 .quote-selector span {
@@ -423,7 +554,13 @@ function compactTimeframeLabel(label: string) {
 }
 
 .panel-sidebar :deep(ul) {
-  max-height: min(70vh, 560px);
+  max-height: none;
+}
+
+.panel-sidebar :deep(.coin-list__rows),
+.panel-sidebar :deep(.coin-empty) {
+  min-height: 0;
+  flex: 1 1 auto;
   overflow: auto;
 }
 
@@ -482,9 +619,10 @@ function compactTimeframeLabel(label: string) {
 
 @media (max-width: 1200px) {
   .exchange-page {
-    padding-top: 0;
+    padding-top: 14px;
   }
 
+  .exchange-nav,
   .exchange-hero,
   .exchange-layout {
     width: min(1300px, calc(100% - 28px));
@@ -512,6 +650,7 @@ function compactTimeframeLabel(label: string) {
   .panel-sidebar {
     position: relative;
     top: auto;
+    height: auto;
     max-height: none;
     overflow: visible;
   }
@@ -523,18 +662,10 @@ function compactTimeframeLabel(label: string) {
 }
 
 @media (max-width: 640px) {
+  .exchange-nav,
   .exchange-hero,
   .exchange-layout {
     width: min(640px, calc(100% - 20px));
-  }
-
-  .panel-sidebar {
-    grid-template-columns: 1fr;
-  }
-
-  .quote-selector,
-  .panel-sidebar :deep(.coin-search) {
-    grid-column: 1;
   }
 
   .split-grid,
