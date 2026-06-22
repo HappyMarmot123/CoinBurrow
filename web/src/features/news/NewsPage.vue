@@ -5,6 +5,7 @@ import NewsCard from "./NewsCard.vue";
 import NewsEmptyState from "./NewsEmptyState.vue";
 import NewsFilters from "./NewsFilters.vue";
 import NewsSkeleton from "./NewsSkeleton.vue";
+import NewsAlertsPopover from "./NewsAlertsPopover.vue";
 import { useNewsStore } from "../../stores/news.js";
 import { NEWS_HOT_ALERT_POLL_INTERVAL_MS } from "../../constants/news.js";
 
@@ -15,10 +16,10 @@ let searchTimer: number | undefined;
 let pollTimer: number | undefined;
 
 const statusText = computed(() => {
-  if (newsStore.refreshing) return "refreshing";
-  if (newsStore.stale) return "cached";
-  if (!newsStore.lastFetchedAt) return "loading";
-  return new Intl.DateTimeFormat("en-US", {
+  if (newsStore.refreshing) return "갱신 중";
+  if (newsStore.stale) return "캐시";
+  if (!newsStore.lastFetchedAt) return "로딩 중";
+  return new Intl.DateTimeFormat("ko-KR", {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(newsStore.lastFetchedAt));
@@ -27,10 +28,34 @@ const statusText = computed(() => {
 const sourceCount = computed(() => newsStore.sources?.sources.length ?? 0);
 const categoryCount = computed(() => newsStore.sources?.categories.length ?? 0);
 
+async function initializeHotAlertState() {
+  await newsStore.loadHotAlertState();
+
+  if (newsStore.hotAlertHasUserPreference) {
+    if (!newsStore.hotAlertEnabled) {
+      return;
+    }
+    if (newsStore.hotAlertPermission !== "granted") {
+      newsStore.hotAlertEnabled = false;
+      newsStore.persistHotAlertState();
+    }
+    return;
+  }
+
+  if (newsStore.hotAlertPermission === "default") {
+    await requestHotAlertPermission();
+    return;
+  }
+
+  if (newsStore.hotAlertPermission === "granted") {
+    await setHotAlertEnabled(true);
+  }
+}
+
 onMounted(() => {
   void newsStore.loadSources();
   void (async () => {
-    await newsStore.loadHotAlertState();
+    await initializeHotAlertState();
     await newsStore.loadNews();
     await newsStore.refreshHotAlertSnapshot();
   })();
@@ -60,11 +85,6 @@ function setSource(source: string) {
   void newsStore.setQuery({ source });
 }
 
-function resetFilters() {
-  searchInput.value = "";
-  void newsStore.resetFilters();
-}
-
 function setHotAlertEnabled(enabled: boolean) {
   void newsStore.setHotAlertEnabled(enabled);
 }
@@ -72,11 +92,27 @@ function setHotAlertEnabled(enabled: boolean) {
 function requestHotAlertPermission() {
   void newsStore.requestNotificationPermission();
 }
+
+function markHotAlertsSeen() {
+  newsStore.markHotAlertsSeen();
+}
 </script>
 
 <template>
   <main class="news-page">
-    <AppNav class="news-nav" />
+    <AppNav class="news-nav">
+      <template #actions>
+        <NewsAlertsPopover
+          :hot-alert-enabled="newsStore.hotAlertEnabled"
+          :hot-alert-permission="newsStore.hotAlertPermission"
+          :hot-alert-history="newsStore.hotAlertHistory"
+          :hot-alert-unseen-count="newsStore.hotAlertUnseenCount"
+          @toggle-hot-alert="setHotAlertEnabled"
+          @request-hot-alert-permission="requestHotAlertPermission"
+          @mark-seen="markHotAlertsSeen"
+        />
+      </template>
+    </AppNav>
 
     <section class="news-layout">
       <aside class="panel news-filter-panel">
@@ -88,18 +124,11 @@ function requestHotAlertPermission() {
           :status-text="statusText"
           :source-count="sourceCount"
           :category-count="categoryCount"
-          :hot-alert-enabled="newsStore.hotAlertEnabled"
-          :hot-alert-permission="newsStore.hotAlertPermission"
-          :hot-alert-top-issues="newsStore.hotAlertTopIssues"
-          :hot-alert-history="newsStore.hotAlertHistory"
           :refreshing="newsStore.refreshing"
           :disabled="newsStore.loading"
           @update:asset="setAsset"
           @update:source="setSource"
           @refresh="newsStore.refreshNews"
-          @reset="resetFilters"
-          @toggle-hot-alert="setHotAlertEnabled"
-          @request-hot-alert-permission="requestHotAlertPermission"
         />
       </aside>
 

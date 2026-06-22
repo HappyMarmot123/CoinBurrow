@@ -37,6 +37,7 @@ interface HotAlertStorage {
   history: NewsHotAlertHistoryItem[];
   cooldown: Record<string, number>;
   updatedAt: number;
+  lastSeenAt: number;
 }
 
 interface NewsState {
@@ -51,14 +52,23 @@ interface NewsState {
   lastFetchedAt: number | null;
   nextCursor?: string;
   hotAlertEnabled: boolean;
+  hotAlertHasUserPreference: boolean;
   hotAlertPermission: NotificationPermission;
   hotAlertTopIssues: NewsHotIssue[];
   hotAlertHistory: NewsHotAlertHistoryItem[];
   hotAlertCooldown: Record<string, number>;
   hotAlertUpdatedAt: number | null;
+  hotAlertLastSeenAt: number;
 }
 
 const HOT_ALERT_STORAGE_KEY = "coinburrow.news.hotAlerts";
+const EMPTY_HOT_ALERT_STORAGE: HotAlertStorage = {
+  enabled: false,
+  history: [],
+  cooldown: {},
+  updatedAt: 0,
+  lastSeenAt: 0,
+};
 
 interface TopicAggregate {
   topic: string;
@@ -118,23 +128,24 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function loadHotAlertStateFromStorage(): HotAlertStorage {
+interface HotAlertStorageLoadResult {
+  hasStoredState: boolean;
+  state: HotAlertStorage;
+}
+
+function loadHotAlertStateFromStorage(): HotAlertStorageLoadResult {
   if (typeof localStorage === "undefined") {
     return {
-      enabled: false,
-      history: [],
-      cooldown: {},
-      updatedAt: 0,
+      hasStoredState: false,
+      state: EMPTY_HOT_ALERT_STORAGE,
     };
   }
 
   const raw = localStorage.getItem(HOT_ALERT_STORAGE_KEY);
   if (!raw) {
     return {
-      enabled: false,
-      history: [],
-      cooldown: {},
-      updatedAt: 0,
+      hasStoredState: false,
+      state: EMPTY_HOT_ALERT_STORAGE,
     };
   }
 
@@ -176,17 +187,19 @@ function loadHotAlertStateFromStorage(): HotAlertStorage {
     ) as Record<string, number>;
 
     return {
-      enabled: parsed.enabled === true,
-      history,
-      cooldown,
-      updatedAt: parseIntSafe(parsed.updatedAt, 0),
+      hasStoredState: true,
+      state: {
+        enabled: parsed.enabled === true,
+        history,
+        cooldown,
+        updatedAt: parseIntSafe(parsed.updatedAt, 0),
+        lastSeenAt: parseIntSafe(parsed.lastSeenAt, 0),
+      },
     };
   } catch {
     return {
-      enabled: false,
-      history: [],
-      cooldown: {},
-      updatedAt: 0,
+      hasStoredState: false,
+      state: EMPTY_HOT_ALERT_STORAGE,
     };
   }
 }
@@ -328,19 +341,27 @@ export const useNewsStore = defineStore("news", {
     lastFetchedAt: null,
     nextCursor: undefined,
     hotAlertEnabled: false,
+    hotAlertHasUserPreference: false,
     hotAlertPermission: getNotificationPermission(),
     hotAlertTopIssues: [],
     hotAlertHistory: [],
     hotAlertCooldown: {},
     hotAlertUpdatedAt: null,
+    hotAlertLastSeenAt: 0,
   }),
+  getters: {
+    hotAlertUnseenCount: (state) =>
+      state.hotAlertHistory.filter((issue) => issue.seenAt > (state.hotAlertLastSeenAt || 0)).length,
+  },
   actions: {
     async loadHotAlertState() {
       const saved = loadHotAlertStateFromStorage();
-      this.hotAlertEnabled = saved.enabled;
-      this.hotAlertHistory = saved.history;
-      this.hotAlertCooldown = saved.cooldown;
-      this.hotAlertUpdatedAt = saved.updatedAt || null;
+      this.hotAlertHasUserPreference = saved.hasStoredState;
+      this.hotAlertEnabled = saved.state.enabled;
+      this.hotAlertHistory = saved.state.history;
+      this.hotAlertCooldown = saved.state.cooldown;
+      this.hotAlertUpdatedAt = saved.state.updatedAt || null;
+      this.hotAlertLastSeenAt = saved.state.lastSeenAt || 0;
       this.hotAlertPermission = getNotificationPermission();
     },
 
@@ -354,6 +375,7 @@ export const useNewsStore = defineStore("news", {
       const permission = await Notification.requestPermission();
       this.hotAlertPermission = permission;
       this.hotAlertEnabled = permission === "granted";
+      this.hotAlertHasUserPreference = true;
       this.persistHotAlertState();
 
       if (permission === "granted") {
@@ -363,11 +385,17 @@ export const useNewsStore = defineStore("news", {
 
     setHotAlertEnabled(enabled: boolean) {
       this.hotAlertEnabled = enabled;
+      this.hotAlertHasUserPreference = true;
       this.persistHotAlertState();
 
       if (enabled) {
         this.evaluateAndNotifyHotAlerts();
       }
+    },
+
+    markHotAlertsSeen() {
+      this.hotAlertLastSeenAt = Date.now();
+      this.persistHotAlertState();
     },
 
     async loadNews(options: Partial<NewsQueryOptions> = {}) {
@@ -464,6 +492,7 @@ export const useNewsStore = defineStore("news", {
         enabled: this.hotAlertEnabled,
         history: this.hotAlertHistory,
         cooldown: this.hotAlertCooldown,
+        lastSeenAt: this.hotAlertLastSeenAt,
         updatedAt: Date.now(),
       });
       this.hotAlertUpdatedAt = Date.now();

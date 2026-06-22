@@ -1,15 +1,18 @@
 <script setup lang="ts">
-// 앱 공통 상단 헤더 — 로고(워드마크) + 마켓/뉴스 라우터 버튼.
-// 활성 표시는 RouterLink가 현재 경로에 aria-current="page"를 자동 부여한다.
-// 페이지별 폭/여백은 부모가 클래스로 지정한다(예: .exchange-nav, .news-nav).
 </script>
 
 <template>
-  <nav class="app-nav" aria-label="주요 메뉴">
-    <router-link to="/" class="app-nav__brand">CoinBurrow</router-link>
-    <div class="app-nav__links">
-      <router-link to="/exchange">마켓</router-link>
-      <router-link to="/news">뉴스</router-link>
+  <nav class="app-nav" aria-label="주요 네비게이션">
+    <div class="app-nav__left">
+      <router-link to="/" class="app-nav__brand">CoinBurrow</router-link>
+      <div class="app-nav__links">
+        <router-link to="/exchange">거래소</router-link>
+        <router-link to="/news">뉴스</router-link>
+      </div>
+    </div>
+
+    <div class="app-nav__right">
+      <slot name="actions" />
     </div>
   </nav>
 </template>
@@ -22,9 +25,21 @@
   gap: 14px;
 }
 
+.app-nav__left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
 .app-nav__links {
   display: flex;
   gap: 8px;
+}
+
+.app-nav__right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
 }
 
 .app-nav a:not(.app-nav__brand) {
@@ -68,8 +83,14 @@
 
 @media (max-width: 640px) {
   .app-nav {
-    align-items: stretch;
     flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .app-nav__left {
+    width: 100%;
+    flex-wrap: wrap;
   }
 
   .app-nav__links {
@@ -79,6 +100,11 @@
   .app-nav__links a {
     flex: 1 1 0;
     text-align: center;
+  }
+
+  .app-nav__right {
+    margin-left: 0;
+    width: 100%;
   }
 }
 </style>
