@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 import type { CoinMetaView, MarketStatusView, MarketSummaryView } from "../../api/rest.js";
 import type { TickerView } from "../../stores/types.js";
 import { formatCompact, formatPrice, formatRatio } from "../../utils/format.js";
@@ -38,13 +38,59 @@ const signedRateLabel = computed(() => {
 const hasError = computed(() => Boolean(props.exchangeError || props.statusError));
 
 const selectedCoinMeta = computed(() => props.coinMeta ?? null);
-const selectedCoinLogo = computed(() => selectedCoinMeta.value?.logo ?? "");
 const selectedCoinIconFallback = computed(() => {
   const label = props.selectedMarketLabel.trim();
   const code = assetCode.value.trim();
   const candidate = label[0] ?? code[0] ?? "M";
   return candidate.toUpperCase();
 });
+
+const selectedCoinLogoCandidates = computed(() => {
+  const candidates: string[] = [];
+  const seen = new Set<string>();
+  const primaryLogo = selectedCoinMeta.value?.logo?.trim();
+
+  const normalizeSymbol = (value: string): string => {
+    const normalized = value.trim().toLowerCase();
+    const withDash = normalized.includes("-") ? normalized.split("-").at(-1) : normalized;
+    return withDash?.replace(/[^a-z0-9]/g, "") ?? "";
+  };
+
+  const pushUnique = (value: string) => {
+    if (!value || seen.has(value)) return;
+    seen.add(value);
+    candidates.push(value);
+  };
+
+  if (primaryLogo) {
+    pushUnique(primaryLogo);
+  }
+
+  for (const symbol of [selectedCoinMeta.value?.symbol, assetCode.value, props.market]) {
+    const normalized = normalizeSymbol(symbol ?? "");
+    if (!normalized) continue;
+    pushUnique(`https://raw.githubusercontent.com/atomiclabs/cryptocurrency-icons/master/128/color/${normalized}.png`);
+  }
+
+  return candidates;
+});
+
+const coinLogoIndex = ref(0);
+const resolvedCoinLogo = computed(() => selectedCoinLogoCandidates.value[coinLogoIndex.value] ?? "");
+
+watch(selectedCoinLogoCandidates, () => {
+  coinLogoIndex.value = 0;
+});
+
+function onCoinLogoError() {
+  const next = coinLogoIndex.value + 1;
+  if (next < selectedCoinLogoCandidates.value.length) {
+    coinLogoIndex.value = next;
+    return;
+  }
+
+  coinLogoIndex.value = selectedCoinLogoCandidates.value.length;
+}
 </script>
 
 <template>
@@ -52,11 +98,12 @@ const selectedCoinIconFallback = computed(() => {
     <div class="market-ticker">
       <div class="market-ticker__primary">
         <div class="market-id">
-          <span class="market-id__icon" :title="selectedCoinLogo ? `${selectedMarketLabel} logo` : undefined">
+          <span class="market-id__icon" :title="resolvedCoinLogo ? `${selectedMarketLabel} logo` : undefined">
             <img
-              v-if="selectedCoinLogo"
+              v-if="resolvedCoinLogo"
               :alt="`${selectedMarketLabel} logo`"
-              :src="selectedCoinLogo"
+              :src="resolvedCoinLogo"
+              @error="onCoinLogoError"
             />
             <span v-else>{{ selectedCoinIconFallback }}</span>
           </span>
