@@ -138,6 +138,18 @@ export interface BithumbOrderbookView {
   lastUpdateTs?: number;
 }
 
+export interface BithumbKlineView {
+  symbol: string;
+  source: string;
+  open: string;
+  high: string;
+  low: string;
+  close: string;
+  volume: string;
+  interval: string;
+  ts: number;
+}
+
 export interface FreeApiRequestPolicy {
   timeoutMs: number;
   maxRetries: number;
@@ -378,6 +390,18 @@ export const getBithumbOrderbook = async (
 ): Promise<BithumbOrderbookView> => {
   return getJson<BithumbOrderbookView>(`/market/freeapi/bithumb/orderbook${buildPath("", {
     symbol,
+  })}`);
+};
+
+export const getBithumbKlines = async (
+  symbol: string,
+  interval = "1h",
+  limit = 30,
+): Promise<BithumbKlineView[]> => {
+  return getJson<BithumbKlineView[]>(`/market/freeapi/bithumb/klines${buildPath("", {
+    symbol,
+    interval,
+    limit,
   })}`);
 };
 

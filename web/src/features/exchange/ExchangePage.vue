@@ -9,6 +9,7 @@ import OrderbookPanel from "./OrderbookPanel.vue";
 import DerivativesPanel from "./DerivativesPanel.vue";
 import BithumbMarketPanel from "./BithumbMarketPanel.vue";
 import BithumbOrderbookPanel from "./BithumbOrderbookPanel.vue";
+import BithumbKlinePanel from "./BithumbKlinePanel.vue";
 import TradeList from "./TradeList.vue";
 import CoinMetaDrawer from "./CoinMetaDrawer.vue";
 import { useDerivatives } from "../../composables/useDerivatives.js";
@@ -18,6 +19,7 @@ import { useCoinMeta } from "../../composables/useCoinMeta.js";
 import { useFreeApiPolicy } from "../../composables/useFreeApiPolicy.js";
 import { useBithumbMarket } from "../../composables/useBithumbMarket.js";
 import { useBithumbOrderbook } from "../../composables/useBithumbOrderbook.js";
+import { useBithumbKlines } from "../../composables/useBithumbKlines.js";
 import { useCandleStore } from "../../stores/candle.js";
 import { CANDLE_COUNT_OPTIONS, TIMEFRAME_OPTIONS } from "../../constants/exchange.js";
 import { DEFAULT_MARKET } from "../../constants/market.js";
@@ -99,6 +101,14 @@ const {
   isApplicable: bithumbOrderbookApplicable,
   hasOrderbook: bithumbOrderbookHasData,
 } = useBithumbOrderbook(market);
+
+const {
+  kline: bithumbKline,
+  loading: bithumbKlineLoading,
+  error: bithumbKlineError,
+  isApplicable: bithumbKlineApplicable,
+  hasKline: bithumbKlineHasData,
+} = useBithumbKlines(market);
 
 const {
   coinMeta,
@@ -254,6 +264,13 @@ function closeCoinDetail() {
             :error="bithumbOrderbookError"
             :is-applicable="bithumbOrderbookApplicable"
           />
+          <BithumbKlinePanel
+            v-if="bithumbKlineApplicable || bithumbKlineLoading || bithumbKlineError || bithumbKlineHasData"
+            :loading="bithumbKlineLoading"
+            :kline="bithumbKline"
+            :error="bithumbKlineError"
+            :is-applicable="bithumbKlineApplicable"
+          />
 
           <section class="panel">
             <div class="panel-head">
@@ -281,7 +298,6 @@ function closeCoinDetail() {
         <div class="panel-head">
           <h2>코인 리스트</h2>
         </div>
-        <router-link class="quick-link" to="/news">Go to News</router-link>
         <label class="quote-selector">
           <span>기준통화</span>
           <select v-model="selectedQuote" :disabled="availableQuotes.length === 0">
@@ -478,25 +494,6 @@ function closeCoinDetail() {
   max-height: calc(100dvh - 56px);
   height: calc(100dvh - 56px);
   overflow: hidden;
-}
-
-.quick-link {
-  display: inline-block;
-  border: 1px solid var(--panel-border);
-  border-radius: var(--radius-sm);
-  padding: 8px 10px;
-  color: var(--text-muted);
-  text-decoration: none;
-  text-align: center;
-  font-size: 12px;
-  font-weight: 850;
-}
-
-.quick-link:hover,
-.quick-link:focus-visible {
-  border-color: var(--panel-border-hover);
-  color: var(--brand-lime);
-  outline: none;
 }
 
 .panel-sidebar :deep(.coin-list) {
