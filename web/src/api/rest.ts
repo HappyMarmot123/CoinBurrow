@@ -330,7 +330,7 @@ export const getNewsHealth = async (): Promise<CryptoNewsHealth> => {
 export const getCoinMetaByProvider = async (
   provider: "coingecko" | "coinpaprika",
   options: CoinMetaQueryOptions,
-): Promise<CoinMetaView> => {
+): Promise<CoinMetaView | null> => {
   return getJson<CoinMetaView>(`/market/freeapi/${provider}/meta${buildPath("", {
     coinId: options.coinId,
   })}`);

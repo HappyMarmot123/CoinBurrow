@@ -102,6 +102,20 @@ function withParsedQuery<TSchema extends z.ZodTypeAny>(
   }) as Promise<unknown>
 }
 
+function shouldDegradeMetaError(error: unknown): error is FreeApiError {
+  if (!(error instanceof FreeApiError)) {
+    return false
+  }
+
+  return (
+    error.code === "RATE_LIMIT"
+    || error.code === "NETWORK_ERROR"
+    || error.code === "TIMEOUT"
+    || error.code === "UPSTREAM_ERROR"
+    || error.code === "SCHEMA_MISMATCH"
+  )
+}
+
 export function registerFreeApiRoutes(app: FastifyInstance): void {
   app.get("/market/freeapi/policy", (_request, reply) => reply.send(getFreeApiPolicy()))
 
@@ -161,7 +175,15 @@ export function registerFreeApiRoutes(app: FastifyInstance): void {
       request.query,
       metaQuerySchema,
       "invalid free API meta query",
-      ({ coinId }) => freeApiProviders[toProviderOrThrow("coingecko")].fetchMeta(coinId),
+      ({ coinId }) => {
+        const adapter = freeApiProviders[toProviderOrThrow("coingecko")]
+        return adapter.fetchMeta(coinId).catch((error) => {
+          if (shouldDegradeMetaError(error)) {
+            return null
+          }
+          throw error
+        })
+      },
     ),
   )
 

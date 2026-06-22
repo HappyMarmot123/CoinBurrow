@@ -197,6 +197,67 @@ describe('free API routes', () => {
     })
   })
 
+  it('maps coingecko coin symbol aliases to coin id', async () => {
+    mockIntercept(
+      mockAgent,
+      'https://api.coingecko.com',
+      '/api/v3/coins/bitcoin?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false&sparkline=false',
+      200,
+      {
+        id: 'bitcoin',
+        symbol: 'btc',
+        name: 'Bitcoin',
+        categories: ['Store of Value'],
+        links: {
+          homepage: ['https://bitcoin.org'],
+          whitepaper: 'https://bitcoin.org/bitcoin.pdf',
+        },
+        image: {
+          small: 'https://assets.coingecko.com/small.png',
+          large: 'https://assets.coingecko.com/large.png',
+        },
+        description: {
+          en: 'Bitcoin is a digital currency.',
+        },
+      },
+    )
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/market/freeapi/coingecko/meta?coinId=btc',
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toMatchObject({
+      coinId: 'bitcoin',
+      symbol: 'BTC',
+      name: 'Bitcoin',
+    })
+  })
+
+  it('degrades CoinGecko meta failures to null response', async () => {
+    mockIntercept(
+      mockAgent,
+      'https://api.coingecko.com',
+      '/api/v3/coins/bitcoin?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false&sparkline=false',
+      429,
+      {
+        status: {
+          error_code: 429,
+          error_message: 'too many requests',
+        },
+      },
+    )
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/market/freeapi/coingecko/meta?coinId=bitcoin',
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toBeNull()
+  })
+
   it('returns CoinPaprika meta including events and teams', async () => {
     mockIntercept(
       mockAgent,
