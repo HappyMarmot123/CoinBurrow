@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import AppNav from "../../components/AppNav.vue";
-import CandleChart from "./CandleChart.vue";
+import CandleChart from "./CandleChartV2.vue";
 import CoinList from "./CoinList.vue";
 import ExchangeHero from "./ExchangeHero.vue";
 import MarketMovementPanel from "./MarketMovementPanel.vue";
@@ -21,6 +21,7 @@ import { CANDLE_COUNT_OPTIONS, TIMEFRAME_OPTIONS } from "../../constants/exchang
 import { DEFAULT_MARKET } from "../../constants/market.js";
 import { NEWS_HOT_ALERT_POLL_INTERVAL_MS } from "../../constants/news.js";
 import type { CandleTimeframe } from "../../api/rest.js";
+import { toTradingViewChartUrl } from "./tradingViewSymbol.js";
 
 const market = ref(DEFAULT_MARKET);
 const selectedQuote = ref("KRW");
@@ -32,6 +33,7 @@ const newsStore = useNewsStore();
 const timeframeOptions = TIMEFRAME_OPTIONS;
 const countOptions = CANDLE_COUNT_OPTIONS;
 const visibleCandleCount = computed(() => candleStore.candles.length);
+const tradingViewChartUrl = computed(() => toTradingViewChartUrl(market.value));
 const chartSubLabel = computed(() =>
   visibleCandleCount.value > 0
     ? `${candleTimeframe.value} · ${visibleCandleCount.value.toLocaleString()}개 캔들`
@@ -245,9 +247,20 @@ function markHotAlertsSeen() {
     <section class="exchange-layout">
       <section class="panel-stack">
         <section class="panel panel-chart">
-          <div class="panel-head">
-            <h2>캔들 차트</h2>
-            <span class="chart-sub">{{ chartSubLabel }}</span>
+          <div class="panel-head chart-panel-head">
+            <div class="chart-panel-head__main">
+              <h2>캔들 차트</h2>
+              <span class="chart-sub">{{ chartSubLabel }}</span>
+            </div>
+            <a
+              class="chart-tradingview-link"
+              :href="tradingViewChartUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="TradingView 차트에서 새 창으로 열기"
+            >
+              TradingView 열기
+            </a>
           </div>
           <div class="chart-controls">
             <div class="chart-control chart-control--timeframe" data-row>
@@ -275,7 +288,7 @@ function markHotAlertsSeen() {
               </label>
             </div>
           </div>
-          <CandleChart :timeframe="candleTimeframe" />
+          <CandleChart :timeframe="candleTimeframe" :market="market" />
         </section>
 
         <div class="split-grid">
@@ -405,8 +418,43 @@ function markHotAlertsSeen() {
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 700;
-  text-align: right;
   white-space: nowrap;
+}
+
+.chart-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chart-panel-head__main {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.chart-tradingview-link {
+  color: var(--c-up);
+  border: 1px solid color-mix(in srgb, var(--panel-border-hover) 48%, var(--panel-border));
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    border-color var(--ease),
+    color var(--ease),
+    background-color var(--ease);
+}
+
+.chart-tradingview-link:hover,
+.chart-tradingview-link:focus-visible {
+  border-color: var(--panel-border-hover);
+  color: var(--brand-lime);
+  background: color-mix(in srgb, var(--c-up-bg) 58%, transparent);
+  outline: none;
 }
 
 .chart-controls {

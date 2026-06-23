@@ -13,6 +13,7 @@
     "gsap": "^3.12.5",
     "highcharts": "^11.4.6",
     "highcharts-vue": "^2.0.1",
+    "lightweight-charts": "^5.0.7",
     "pinia": "^2.2.6",
     "rxjs": "^7.8.1",
     "vue": "^3.5.13",
