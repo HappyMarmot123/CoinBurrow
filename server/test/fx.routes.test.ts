@@ -7,8 +7,10 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { FreeApiError } from '../src/freeapi/errors.js'
+import { clearFreeApiCacheForTest } from '../src/freeapi/cache.js'
 import { fetchUsdKrw } from '../src/fx/provider.js'
 import { clearUpbitCacheForTest } from '../src/upbit/upbitRest.js'
+import { buildApp } from '../src/app.js'
 
 describe('fetchUsdKrw provider', () => {
   let mockAgent: MockAgent
@@ -92,5 +94,74 @@ describe('fetchUsdKrw provider', () => {
     }
 
     vi.useRealTimers()
+  })
+})
+
+describe('GET /market/fx', () => {
+  let app: ReturnType<typeof buildApp>
+  let mockAgent: MockAgent
+  let originalDispatcher: Dispatcher
+
+  beforeEach(() => {
+    clearUpbitCacheForTest()
+    clearFreeApiCacheForTest()
+    originalDispatcher = getGlobalDispatcher()
+    mockAgent = new MockAgent()
+    mockAgent.disableNetConnect()
+    setGlobalDispatcher(mockAgent)
+    app = buildApp()
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+  })
+
+  afterEach(async () => {
+    await app.close()
+    setGlobalDispatcher(originalDispatcher)
+    await mockAgent.close()
+    vi.restoreAllMocks()
+  })
+
+  it('returns USD/KRW rate', async () => {
+    mockAgent
+      .get('https://open.er-api.com')
+      .intercept({ method: 'GET', path: '/v6/latest/USD' })
+      .reply(200, {
+        result: 'success',
+        rates: { KRW: 1380.5 },
+        time_next_update_unix: 1_782_260_141,
+      })
+
+    const response = await app.inject({ method: 'GET', url: '/market/fx' })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toMatchObject({
+      base: 'USD',
+      krw: 1380.5,
+      source: 'exchangerate-api',
+      stale: false,
+    })
+  })
+
+  it('returns degraded when both sources fail', async () => {
+    mockAgent
+      .get('https://open.er-api.com')
+      .intercept({ method: 'GET', path: '/v6/latest/USD' })
+      .reply(500, { result: 'error' })
+    mockAgent
+      .get('https://api.upbit.com')
+      .intercept({ method: 'GET', path: '/v1/exchange-rates' })
+      .reply(200, [])
+    mockAgent
+      .get('https://api.upbit.com')
+      .intercept({ method: 'GET', path: '/v1/exchange-rate' })
+      .reply(200, [])
+
+    const response = await app.inject({ method: 'GET', url: '/market/fx' })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toMatchObject({
+      base: 'USD',
+      krw: null,
+      degraded: true,
+    })
   })
 })
