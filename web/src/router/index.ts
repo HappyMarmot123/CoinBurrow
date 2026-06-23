@@ -3,6 +3,7 @@ import LandingPage from "../features/landing/LandingPage.vue";
 import ExchangePage from "../features/exchange/ExchangePage.vue";
 import NewsPage from "../features/news/NewsPage.vue";
 import SentimentPage from "../features/sentiment/SentimentPage.vue";
+import KimchiPage from "../features/kimchi/KimchiPage.vue";
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -11,5 +12,6 @@ export const router = createRouter({
     { path: "/exchange", name: "exchange", component: ExchangePage },
     { path: "/news", name: "news", component: NewsPage },
     { path: "/sentiment", name: "sentiment", component: SentimentPage },
+    { path: "/kimchi", name: "kimchi", component: KimchiPage },
   ],
 });
