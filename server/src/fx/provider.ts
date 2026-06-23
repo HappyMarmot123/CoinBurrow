@@ -56,10 +56,14 @@ export async function fetchUsdKrw(): Promise<FxResult> {
   } catch (primaryError) {
     try {
       return await fetchFromUpbit()
-    } catch {
-      throw primaryError instanceof FreeApiError
-        ? primaryError
-        : new FreeApiError('fx unavailable', 'UPSTREAM_ERROR', { retryable: false })
+    } catch (fallbackError) {
+      const primaryMsg = primaryError instanceof Error ? primaryError.message : String(primaryError)
+      const fallbackMsg = fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
+      throw new FreeApiError(
+        `fx unavailable: primary=${primaryMsg}, fallback=${fallbackMsg}`,
+        'UPSTREAM_ERROR',
+        { retryable: false },
+      )
     }
   }
 }
