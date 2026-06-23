@@ -7,6 +7,11 @@ import { useTradeStore } from "../stores/trade.js";
 import { useValidationHealthStore } from "../stores/validation-health.js";
 import type { TickerView, OrderbookView, CandleView, TradeView } from "../stores/types.js";
 
+//* 메인 스레드 내에서 단일 Web Worker 인스턴스를 유지 및 관리하며 스토어와 워커 사이의 가교 역할을 합니다.
+//* worker.onmessage 이벤트 핸들러를 통해 워커에서 전달받은 WorkerResponse 타입을 처리합니다
+//* subscribe 및 unsubscribe 함수를 통해 워커의 postMessage로 명령(WorkerCommand)을 전송합니다.
+//* Next Step is marketSocket.worker.ts
+
 export function useMarketSocket() {
   const worker = new Worker(new URL("../workers/marketSocket.worker.ts", import.meta.url), { type: "module" });
   const ticker = useTickerStore();
