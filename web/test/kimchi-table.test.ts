@@ -23,4 +23,17 @@ describe("KimchiTable", () => {
     });
     expect(wrapper.find("tbody tr").text()).toContain("—");
   });
+
+  it("toggleSort: clicking 24h 거래대금 header sorts desc then asc", async () => {
+    const wrapper = mount(KimchiTable, { props: { rows } });
+    const th = wrapper.findAll("th").find((h) => h.text().includes("24h 거래대금"))!;
+    // First click: sort accTradePrice24h descending → ETH (300) first
+    await th.trigger("click");
+    await wrapper.vm.$nextTick();
+    expect(wrapper.findAll("tbody tr")[0].text()).toContain("이더리움");
+    // Second click: toggle to ascending → BTC (100) first
+    await th.trigger("click");
+    await wrapper.vm.$nextTick();
+    expect(wrapper.findAll("tbody tr")[0].text()).toContain("비트코인");
+  });
 });
