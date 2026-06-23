@@ -21,6 +21,9 @@ export interface TickerDto {
   tradePrice: number
   signedChangeRate: number
   accTradePrice24h: number
+  openingPrice?: number
+  highPrice?: number
+  lowPrice?: number
 }
 
 export interface CandleDto {

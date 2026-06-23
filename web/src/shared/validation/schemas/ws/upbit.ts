@@ -11,6 +11,9 @@ export const upbitTickerMessageSchema = z
     trade_price: z.number(),
     signed_change_rate: z.number(),
     acc_trade_price_24h: z.number(),
+    opening_price: z.number().optional(),
+    high_price: z.number().optional(),
+    low_price: z.number().optional(),
   })
   .passthrough()
   .and(marketCodeSchema);

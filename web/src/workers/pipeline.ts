@@ -65,6 +65,9 @@ function parseUpbitMessage(raw: any): ParsedUpbitMessage {
         tradePrice: raw.trade_price,
         signedChangeRate: raw.signed_change_rate,
         accTradePrice24h: raw.acc_trade_price_24h,
+        openingPrice: raw.opening_price,
+        highPrice: raw.high_price,
+        lowPrice: raw.low_price,
       },
     };
   }
