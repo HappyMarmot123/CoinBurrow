@@ -313,6 +313,43 @@ export const getMarketSentiment = async (days = 30): Promise<SentimentView> => {
   return getJson<SentimentView>(buildPath("/market/sentiment", { days }));
 };
 
+export interface FxView {
+  base: string;
+  krw: number | null;
+  source: string | null;
+  fetchedAt: number;
+  cacheTtlMs: number;
+  next?: number;
+  stale: boolean;
+  degraded?: boolean;
+  degradedReason?: string;
+}
+
+export interface KimchiUniverseItemView {
+  upbitMarket: string;
+  binanceSymbol: string;
+  base: string;
+  koreanName: string;
+  accTradePrice24h: number;
+}
+
+export interface KimchiUniverseView {
+  items: KimchiUniverseItemView[];
+  fetchedAt: number;
+  cacheTtlMs: number;
+  stale: boolean;
+  degraded?: boolean;
+  degradedReason?: string;
+}
+
+export const getFx = async (): Promise<FxView> => {
+  return getJson<FxView>("/market/fx");
+};
+
+export const getKimchiUniverse = async (): Promise<KimchiUniverseView> => {
+  return getJson<KimchiUniverseView>("/market/kimchi/universe");
+};
+
 export const getMarketStatus = async (
   markets?: string[],
 ): Promise<MarketStatusView[]> => {

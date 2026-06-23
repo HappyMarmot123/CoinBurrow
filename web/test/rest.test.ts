@@ -11,6 +11,8 @@ import {
   getOrderbookSnapshot,
   getTickersByMarkets,
   getTradeSnapshot,
+  getFx,
+  getKimchiUniverse,
 } from "../src/api/rest";
 
 afterEach(() => vi.restoreAllMocks());
@@ -136,5 +138,28 @@ describe("rest client", () => {
     expect(fetch).toHaveBeenCalledWith(
       "/market/exchange/trade-ticks?market=KRW-BTC&count=10&daysAgo=3",
     );
+  });
+
+  it("getFx calls /market/fx", async () => {
+    const data = { base: "USD", krw: 1380.5, source: "exchangerate-api", fetchedAt: 1, cacheTtlMs: 1, stale: false };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => data }));
+
+    const fx = await getFx();
+
+    expect(fetch).toHaveBeenCalledWith("/market/fx");
+    expect(fx.krw).toBe(1380.5);
+  });
+
+  it("getKimchiUniverse calls /market/kimchi/universe", async () => {
+    const data = {
+      items: [{ upbitMarket: "KRW-BTC", binanceSymbol: "BTCUSDT", base: "BTC", koreanName: "비트코인", accTradePrice24h: 100 }],
+      fetchedAt: 1, cacheTtlMs: 1, stale: false,
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => data }));
+
+    const view = await getKimchiUniverse();
+
+    expect(fetch).toHaveBeenCalledWith("/market/kimchi/universe");
+    expect(view.items[0].binanceSymbol).toBe("BTCUSDT");
   });
 });
