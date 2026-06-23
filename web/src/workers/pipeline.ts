@@ -10,6 +10,32 @@ type ParsedUpbitMessage =
   | { kind: "error"; error: NormalizedError }
   | null;
 
+const CANDLE_INTERVALS_MS: Record<string, number> = {
+  "1s": 1_000,
+  "1m": 60_000,
+  "3m": 180_000,
+  "5m": 300_000,
+  "10m": 600_000,
+  "15m": 900_000,
+  "30m": 1_800_000,
+  "60m": 3_600_000,
+  "240m": 14_400_000,
+  "1h": 3_600_000,
+  "4h": 14_400_000,
+  "1d": 86_400_000,
+  "1w": 604_800_000,
+  "1M": 2_419_200_000,
+  "1mo": 2_419_200_000,
+};
+
+function normalizeCandleTimestamp(type: string, timestamp: number): number {
+  const interval = CANDLE_INTERVALS_MS[type.replace("candle.", "")] || CANDLE_INTERVALS_MS[type];
+  if (!Number.isFinite(interval) || interval <= 0) {
+    return timestamp;
+  }
+  return Math.floor(timestamp / interval) * interval;
+}
+
 export function normalizeUpbit(raw: any): { channel: Channel; item: any } | null {
   const parsed = parseUpbitMessage(raw);
   return parsed?.kind === "item" ? { channel: parsed.channel, item: parsed.item } : null;
@@ -39,6 +65,9 @@ function parseUpbitMessage(raw: any): ParsedUpbitMessage {
         tradePrice: raw.trade_price,
         signedChangeRate: raw.signed_change_rate,
         accTradePrice24h: raw.acc_trade_price_24h,
+        openingPrice: raw.opening_price,
+        highPrice: raw.high_price,
+        lowPrice: raw.low_price,
       },
     };
   }
@@ -66,7 +95,9 @@ function parseUpbitMessage(raw: any): ParsedUpbitMessage {
       channel: "candle",
       item: {
         market,
-        timestamp: raw.timestamp,
+        // Normalize to candle bucket start to avoid duplicate bars on realtime updates
+        // that arrive with moving timestamps in the same candle interval.
+        timestamp: normalizeCandleTimestamp(type, raw.timestamp),
         open: raw.opening_price,
         high: raw.high_price,
         low: raw.low_price,

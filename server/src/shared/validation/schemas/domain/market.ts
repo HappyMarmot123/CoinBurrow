@@ -14,6 +14,9 @@ export const tickerDtoSchema = z
     tradePrice: z.number(),
     signedChangeRate: z.number(),
     accTradePrice24h: z.number(),
+    openingPrice: z.number().optional(),
+    highPrice: z.number().optional(),
+    lowPrice: z.number().optional(),
   })
   .strict()
 

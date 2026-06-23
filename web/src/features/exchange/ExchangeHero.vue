@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import type { CoinMetaView, MarketStatusView, MarketSummaryView } from "../../api/rest.js";
+import type { CoinMetaView } from "../../api/rest.js";
 import type { TickerView } from "../../stores/types.js";
 import { formatCompact, formatPrice, formatRatio } from "../../utils/format.js";
 
@@ -11,16 +11,10 @@ const props = defineProps<{
   selectedMarketLabel: string;
   marketState: string;
   quote: string;
-  selectedMarketStatus?: MarketStatusView;
-  selectedMarketSummary?: MarketSummaryView;
   liveTicker?: TickerView;
   spreadRatio?: number;
   usdKrwRate: number | null;
   coinMeta?: CoinMetaView | null;
-}>();
-
-const emit = defineEmits<{
-  openDetail: [market: string];
 }>();
 
 const assetCode = computed(() => props.market.split("-").at(-1) ?? props.market);
@@ -146,36 +140,6 @@ function onCoinLogoError() {
         </div>
       </div>
 
-      <div class="market-details" aria-label="선택 마켓 상세">
-        <div class="market-details__meta">
-          <div class="market-details__head">
-            <h2>선택 마켓 상세</h2>
-            <button
-              type="button"
-              class="market-details__detail-btn"
-              :aria-label="`${selectedMarketLabel} 상세 열기`"
-              @click="emit('openDetail', market)"
-            >
-              상세
-            </button>
-          </div>
-          <p class="market-details__state">
-            {{ selectedMarketStatus ? marketState : "선택 마켓 메타정보 대기중입니다." }}
-          </p>
-        </div>
-
-        <dl class="market-details__grid">
-          <div>
-            <dt>마켓</dt>
-            <dd>{{ selectedMarketSummary?.market ?? market }}</dd>
-          </div>
-          <div>
-            <dt>심볼</dt>
-            <dd>{{ selectedMarketSummary?.englishName ?? "-" }}</dd>
-          </div>
-        </dl>
-
-      </div>
     </div>
 
     <div v-if="hasError" class="hero-alerts" role="alert">
@@ -197,8 +161,8 @@ function onCoinLogoError() {
 .market-ticker {
   @include exchange-panel;
   display: grid;
-  grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
-  grid-template-areas: "primary details";
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "primary";
   align-items: stretch;
   gap: 14px;
   background: var(--panel-bg-strong);
@@ -366,92 +330,6 @@ function onCoinLogoError() {
   white-space: nowrap;
 }
 
-.market-details {
-  grid-area: details;
-  min-width: 0;
-  display: grid;
-  align-content: start;
-  grid-template-columns: 1fr;
-  gap: 12px;
-  border-left: 1px solid var(--panel-border);
-  padding-left: 14px;
-}
-
-.market-details__meta {
-  min-width: 0;
-  display: grid;
-  align-content: start;
-  gap: 6px;
-}
-
-.market-details__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.market-details__head h2 {
-  @include panel-title(15px);
-}
-
-.market-details__detail-btn {
-  align-self: center;
-  flex: 0 0 auto;
-  border: 1px solid var(--panel-border);
-  border-radius: var(--radius-sm);
-  padding: 4px 10px;
-  color: var(--text-muted);
-  background: transparent;
-  font: inherit;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  transition:
-    border-color var(--ease),
-    color var(--ease),
-    background var(--ease);
-}
-
-.market-details__detail-btn:hover,
-.market-details__detail-btn:focus-visible {
-  border-color: var(--panel-border-hover);
-  color: var(--brand-lime);
-  background: var(--panel-bg-strong);
-  outline: none;
-}
-
-.market-details dt {
-  @include muted-label;
-}
-
-.market-details__state {
-  margin: 0;
-  color: var(--text-subtle);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.market-details__grid {
-  min-width: 0;
-  margin: 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.market-details__grid > div {
-  min-width: 0;
-}
-
-.market-details dd {
-  margin: 3px 0 0;
-  color: var(--text-strong);
-  font-size: 13px;
-  font-weight: 700;
-  overflow-wrap: anywhere;
-}
-
 .hero-alerts {
   display: grid;
   gap: 6px;
@@ -475,11 +353,6 @@ function onCoinLogoError() {
   }
 }
 
-@media (max-width: 960px) {
-  .market-details__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 
 @media (max-width: 640px) {
   .exchange-hero {
@@ -489,19 +362,16 @@ function onCoinLogoError() {
 
   .market-ticker {
     grid-template-columns: 1fr;
-    grid-template-areas:
-      "primary"
-      "details";
+    grid-template-areas: "primary";
     gap: 12px;
     padding: 14px;
   }
 
   .market-id {
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
   }
 
   .market-id__quote {
-    grid-column: 2 / -1;
     width: fit-content;
   }
 
@@ -516,22 +386,6 @@ function onCoinLogoError() {
 
   .market-price strong {
     font-size: 28px;
-  }
-
-  .market-details__head {
-    display: grid;
-  }
-
-  .market-details {
-    grid-template-columns: 1fr;
-    border-top: 1px solid var(--panel-border);
-    border-left: 0;
-    padding-top: 12px;
-    padding-left: 0;
-  }
-
-  .market-details__grid {
-    grid-template-columns: 1fr;
   }
 }
 </style>

@@ -442,6 +442,7 @@ const trendOptions = computed<Options>(() => {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
+  padding: 14px;
   gap: clamp(8px, 1.4vh, 14px);
 }
 

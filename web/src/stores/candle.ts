@@ -8,11 +8,28 @@ export const useCandleStore = defineStore("candle", {
       this.candles = [...list].sort((a, b) => a.timestamp - b.timestamp);
     },
     applyCandle(candle: CandleView) {
-      const last = this.candles[this.candles.length - 1];
-      if (last && last.timestamp === candle.timestamp) {
-        this.candles.splice(this.candles.length - 1, 1, candle);
-      } else {
+      if (this.candles.length === 0) {
         this.candles.push(candle);
+        return;
+      }
+
+      const sameTimestampIndex = this.candles.findIndex((item) => item.timestamp === candle.timestamp);
+      if (sameTimestampIndex >= 0) {
+        this.candles.splice(sameTimestampIndex, 1, candle);
+        return;
+      }
+
+      let insertAt = this.candles.length;
+      while (insertAt > 0 && this.candles[insertAt - 1].timestamp > candle.timestamp) {
+        insertAt--;
+      }
+
+      if (insertAt === this.candles.length) {
+        this.candles.push(candle);
+      } else if (insertAt === 0) {
+        this.candles.unshift(candle);
+      } else {
+        this.candles.splice(insertAt, 0, candle);
       }
     },
   },

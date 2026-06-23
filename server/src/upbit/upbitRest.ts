@@ -53,6 +53,9 @@ const tickerSchema = z.array(
     trade_price: z.number(),
     signed_change_rate: z.number(),
     acc_trade_price_24h: z.number(),
+    opening_price: z.number().optional(),
+    high_price: z.number().optional(),
+    low_price: z.number().optional(),
   }),
 )
 
@@ -381,11 +384,17 @@ export async function fetchTickers(markets: string[]): Promise<TickerDto[]> {
       trade_price,
       signed_change_rate,
       acc_trade_price_24h,
+      opening_price,
+      high_price,
+      low_price,
     }) => ({
       market,
       tradePrice: trade_price,
       signedChangeRate: signed_change_rate,
       accTradePrice24h: acc_trade_price_24h,
+      openingPrice: opening_price,
+      highPrice: high_price,
+      lowPrice: low_price,
     }),
   )
 }
