@@ -436,4 +436,25 @@ export const getCoinListWithFallback = async (): Promise<MarketView[]> => {
   return getCoinList();
 };
 
+export interface GlobalMarketView {
+  provider: string;
+  totalMarketCapUsd: number | null;
+  totalVolumeUsd: number | null;
+  marketCapChangePct24h: number | null;
+  btcDominance: number | null;
+  ethDominance: number | null;
+  activeCryptocurrencies: number | null;
+  markets: number | null;
+  updatedAt?: number;
+  fetchedAt: number;
+  cacheTtlMs: number;
+  stale: boolean;
+  degraded?: boolean;
+  degradedReason?: string;
+}
+
+export const getGlobalMarket = async (): Promise<GlobalMarketView> => {
+  return getJson<GlobalMarketView>("/market/global");
+};
+
 export { TIMEFRAME_LABELS };
