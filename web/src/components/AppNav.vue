@@ -10,9 +10,7 @@
     <div class="app-nav__right">
       <div class="app-nav__links" aria-label="주요 네비게이션 메뉴">
         <router-link to="/exchange" class="app-nav__link">거래소</router-link>
-        <router-link to="/sentiment" class="app-nav__link">시장심리</router-link>
-        <router-link to="/kimchi" class="app-nav__link">김치프리미엄</router-link>
-        <router-link to="/global" class="app-nav__link">글로벌 시총</router-link>
+        <router-link to="/insights" class="app-nav__link">시장 동향</router-link>
         <router-link to="/news" class="app-nav__link">뉴스</router-link>
         <slot name="actions" />
       </div>
@@ -68,6 +66,7 @@
 
 .app-nav__link:hover,
 .app-nav__link:focus-visible,
+.app-nav__link.router-link-active,
 .app-nav__link[aria-current="page"] {
   color: var(--brand-lime);
   border-color: var(--panel-border-hover);

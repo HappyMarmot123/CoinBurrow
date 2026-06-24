@@ -10,6 +10,6 @@ describe("smoke", () => {
   });
 
   it("registers the kimchi route", () => {
-    expect(router.hasRoute("kimchi")).toBe(true);
+    expect(router.hasRoute("insights-kimchi")).toBe(true);
   });
 });
