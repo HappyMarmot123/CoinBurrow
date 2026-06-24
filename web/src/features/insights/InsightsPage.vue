@@ -7,9 +7,6 @@ import InsightsTabs, { type InsightTab } from "./InsightsTabs.vue";
 import { useGlobalStore } from "../../stores/global.js";
 import { useKimchiStore } from "../../stores/kimchi.js";
 import { useHotAlerts } from "../../composables/useHotAlerts.js";
-import GlobalView from "../global/GlobalView.vue";
-import SentimentView from "../sentiment/SentimentView.vue";
-import KimchiView from "../kimchi/KimchiView.vue";
 
 const route = useRoute();
 const globalStore = useGlobalStore();
@@ -29,12 +26,6 @@ const activeKey = computed(() => {
   return "global";
 });
 
-const childView = computed(() => {
-  const name = route.name;
-  if (name === "insights-sentiment") return SentimentView;
-  if (name === "insights-kimchi") return KimchiView;
-  return GlobalView;
-});
 </script>
 
 <template>
@@ -62,7 +53,7 @@ const childView = computed(() => {
       <InsightsTabs :tabs="tabs" :active-key="activeKey" />
 
       <div class="insights-body">
-        <component :is="childView" />
+        <router-view />
       </div>
     </section>
   </main>

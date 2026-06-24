@@ -54,7 +54,8 @@ describe("InsightsPage hub", () => {
     router.push("/insights/global");
     await router.isReady();
 
-    const wrapper = mount(InsightsPage, {
+    const Root = { template: "<router-view />" };
+    const wrapper = mount(Root, {
       global: {
         plugins: [router],
         stubs: { SentimentView: true, KimchiView: true },
