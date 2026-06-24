@@ -66,7 +66,7 @@
 
 .app-nav__link:hover,
 .app-nav__link:focus-visible,
-.app-nav__link.router-link-active,
+.app-nav__link.router-link-active:not(.app-nav__brand),
 .app-nav__link[aria-current="page"] {
   color: var(--brand-lime);
   border-color: var(--panel-border-hover);
