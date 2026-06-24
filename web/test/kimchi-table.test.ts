@@ -9,12 +9,13 @@ const rows: KimchiRow[] = [
 ];
 
 describe("KimchiTable", () => {
-  it("renders one row per item, sorted by premium desc by default", () => {
+  it("renders one row per item in the given order (presentational)", () => {
     const wrapper = mount(KimchiTable, { props: { rows } });
     const bodyRows = wrapper.findAll("tbody tr");
     expect(bodyRows).toHaveLength(2);
-    // 기본 정렬: premium 내림차순 → ETH(2.04) 먼저
-    expect(bodyRows[0].text()).toContain("이더리움");
+    // 표는 정렬하지 않고 받은 순서를 그대로 렌더 (정렬은 KimchiView 필터가 담당).
+    expect(bodyRows[0].text()).toContain("비트코인");
+    expect(bodyRows[1].text()).toContain("이더리움");
   });
 
   it("renders dash when premium is null", () => {
@@ -22,18 +23,5 @@ describe("KimchiTable", () => {
       props: { rows: [{ ...rows[0], premiumPercent: null, binanceKrw: null }] },
     });
     expect(wrapper.find("tbody tr").text()).toContain("—");
-  });
-
-  it("toggleSort: clicking 24h 거래대금 header sorts desc then asc", async () => {
-    const wrapper = mount(KimchiTable, { props: { rows } });
-    const th = wrapper.findAll("th").find((h) => h.text().includes("24h 거래대금"))!;
-    // First click: sort accTradePrice24h descending → ETH (300) first
-    await th.trigger("click");
-    await wrapper.vm.$nextTick();
-    expect(wrapper.findAll("tbody tr")[0].text()).toContain("이더리움");
-    // Second click: toggle to ascending → BTC (100) first
-    await th.trigger("click");
-    await wrapper.vm.$nextTick();
-    expect(wrapper.findAll("tbody tr")[0].text()).toContain("비트코인");
   });
 });
