@@ -57,3 +57,4 @@ docs/     설계 및 migration plan
 - `GET /market/exchange/trade-ticks?market=KRW-BTC`
 - `GET /market/exchange/market-status?markets=KRW-BTC`
 - `GET /market/exchange/exchange-rates`
+- `GET /market/global` (CoinGecko 글로벌 시총 스냅샷, keyless)
