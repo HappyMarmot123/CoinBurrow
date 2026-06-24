@@ -79,6 +79,6 @@ describe('fetchGlobalMarket provider', () => {
       .intercept({ method: 'GET', path: '/api/v3/global' })
       .reply(200, { data: { total_market_cap: { eur: 1 } } })
 
-    await expect(fetchGlobalMarket()).rejects.toBeInstanceOf(FreeApiError)
+    await expect(fetchGlobalMarket()).rejects.toMatchObject({ code: 'SCHEMA_MISMATCH' })
   })
 })
