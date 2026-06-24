@@ -43,6 +43,14 @@ web/      Vue 3 SPA
 docs/     설계 및 migration plan
 ```
 
+## 웹 라우트
+
+- `/` 랜딩
+- `/exchange` 거래소
+- `/insights` 시장 동향 허브 (탭: 글로벌 시총 / 시장심리 / 김치프리미엄)
+  - 기존 `/global`, `/sentiment`, `/kimchi`는 `/insights/*`로 redirect
+- `/news` 뉴스
+
 ## REST 엔드포인트
 
 - `GET /market/coin-list`
