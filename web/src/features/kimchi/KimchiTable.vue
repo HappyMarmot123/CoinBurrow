@@ -99,6 +99,12 @@ function fmtValue(value: number): string {
   text-align: right;
   border-bottom: 1px solid var(--panel-border);
 }
+.kimchi-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg-page-mid);
+}
 .kimchi-table th:first-child,
 .kimchi-table td:first-child {
   text-align: left;

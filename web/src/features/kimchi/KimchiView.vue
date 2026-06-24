@@ -47,7 +47,9 @@ onUnmounted(() => {
 
       <p v-if="loading && rows.length === 0" class="insights-state">불러오는 중…</p>
       <p v-else-if="error" class="insights-state insights-state--error">{{ error }}</p>
-      <KimchiTable v-else :rows="rows" />
+      <div v-else class="kimchi-view__scroll">
+        <KimchiTable :rows="rows" />
+      </div>
 
       <footer class="kimchi-view__footer">
         USDT ≈ USD 근사로 환산했습니다. ·
@@ -76,6 +78,11 @@ onUnmounted(() => {
   color: var(--text-muted);
   font-size: clamp(12px, 1.2vw, 13px);
   text-align: right;
+}
+.kimchi-view__scroll {
+  max-height: clamp(320px, 48vh, 520px);
+  overflow-y: auto;
+  @include thin-scrollbar;
 }
 .kimchi-view__banner {
   border: 1px solid var(--alert-border);

@@ -9,7 +9,7 @@ describe("smoke", () => {
     expect(wrapper.text()).toContain("CoinBurrow");
   });
 
-  it("registers the kimchi route", () => {
-    expect(router.hasRoute("insights-kimchi")).toBe(true);
+  it("registers the insights route", () => {
+    expect(router.hasRoute("insights")).toBe(true);
   });
 });

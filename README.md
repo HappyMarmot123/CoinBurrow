@@ -47,8 +47,8 @@ docs/     설계 및 migration plan
 
 - `/` 랜딩
 - `/exchange` 거래소
-- `/insights` 시장 동향 허브 (탭: 글로벌 시총 / 시장심리 / 김치프리미엄)
-  - 기존 `/global`, `/sentiment`, `/kimchi`는 `/insights/*`로 redirect
+- `/insights` 시장 동향 — 글로벌 시총 · 시장심리 · 김치프리미엄을 한 페이지에 세로 배치
+  - 기존 `/global`, `/sentiment`, `/kimchi`는 `/insights`로 redirect
 - `/news` 뉴스
 
 ## REST 엔드포인트

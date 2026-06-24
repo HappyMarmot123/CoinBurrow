@@ -3,7 +3,6 @@ import { mount, flushPromises } from "@vue/test-utils";
 import { setActivePinia, createPinia } from "pinia";
 import { createRouter, createWebHistory } from "vue-router";
 import InsightsPage from "../src/features/insights/InsightsPage.vue";
-import GlobalView from "../src/features/global/GlobalView.vue";
 import SentimentView from "../src/features/sentiment/SentimentView.vue";
 import KimchiView from "../src/features/kimchi/KimchiView.vue";
 
@@ -11,18 +10,9 @@ function makeRouter() {
   return createRouter({
     history: createWebHistory(),
     routes: [
-      {
-        path: "/insights",
-        component: InsightsPage,
-        children: [
-          { path: "", redirect: { name: "insights-global" } },
-          { path: "global", name: "insights-global", component: GlobalView },
-          { path: "sentiment", name: "insights-sentiment", component: SentimentView },
-          { path: "kimchi", name: "insights-kimchi", component: KimchiView },
-        ],
-      },
-      { path: "/global", redirect: "/insights/global" },
       { path: "/", component: { template: "<div/>" } },
+      { path: "/insights", component: InsightsPage },
+      { path: "/global", redirect: "/insights" },
     ],
   });
 }
@@ -48,14 +38,14 @@ beforeEach(() => {
 });
 afterEach(() => vi.restoreAllMocks());
 
-describe("InsightsPage hub", () => {
-  it("shows the hub header, three tabs, and the global view by default", async () => {
+describe("InsightsPage one-page hub", () => {
+  it("stacks all three sections (global content + sentiment + kimchi) on one page", async () => {
     const router = makeRouter();
-    router.push("/insights/global");
+    router.push("/insights");
     await router.isReady();
 
-    const Root = { template: "<router-view />" };
-    const wrapper = mount(Root, {
+    // SentimentView(차트)·KimchiView(WS 워커)는 jsdom에서 무거우므로 스텁.
+    const wrapper = mount(InsightsPage, {
       global: {
         plugins: [router],
         stubs: { SentimentView: true, KimchiView: true },
@@ -64,16 +54,15 @@ describe("InsightsPage hub", () => {
     await flushPromises();
 
     expect(wrapper.text()).toContain("시장 동향");
-    const tabEls = wrapper.findAll('[role="tab"]');
-    expect(tabEls).toHaveLength(3);
-    expect(tabEls[0].text()).toContain("글로벌 시총");
-    expect(wrapper.text()).toContain("총 시가총액");
+    expect(wrapper.text()).toContain("총 시가총액"); // GlobalView (not stubbed)
+    expect(wrapper.findComponent(SentimentView).exists()).toBe(true);
+    expect(wrapper.findComponent(KimchiView).exists()).toBe(true);
   });
 
-  it("redirects legacy /global to /insights/global", async () => {
+  it("redirects legacy /global to /insights", async () => {
     const router = makeRouter();
     router.push("/global");
     await router.isReady();
-    expect(router.currentRoute.value.fullPath).toBe("/insights/global");
+    expect(router.currentRoute.value.fullPath).toBe("/insights");
   });
 });
