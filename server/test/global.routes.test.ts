@@ -60,6 +60,24 @@ describe('fetchGlobalMarket provider', () => {
     expect(result.provider).toBe('coingecko')
   })
 
+  it('sends a User-Agent header (CoinGecko 403s UA-less requests)', async () => {
+    let seenUserAgent: string | string[] | undefined
+    mockAgent
+      .get('https://api.coingecko.com')
+      .intercept({
+        method: 'GET',
+        path: '/api/v3/global',
+        headers(headers) {
+          seenUserAgent = (headers as Record<string, string | string[]>)['user-agent']
+          return true
+        },
+      })
+      .reply(200, SAMPLE)
+
+    await fetchGlobalMarket()
+    expect(seenUserAgent).toBeTruthy()
+  })
+
   it('returns null for missing optional fields', async () => {
     mockAgent
       .get('https://api.coingecko.com')
