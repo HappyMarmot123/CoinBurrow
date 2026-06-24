@@ -4,6 +4,7 @@ import ExchangePage from "../features/exchange/ExchangePage.vue";
 import NewsPage from "../features/news/NewsPage.vue";
 import SentimentPage from "../features/sentiment/SentimentPage.vue";
 import KimchiPage from "../features/kimchi/KimchiPage.vue";
+import GlobalPage from "../features/global/GlobalPage.vue";
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -13,5 +14,6 @@ export const router = createRouter({
     { path: "/news", name: "news", component: NewsPage },
     { path: "/sentiment", name: "sentiment", component: SentimentPage },
     { path: "/kimchi", name: "kimchi", component: KimchiPage },
+    { path: "/global", name: "global", component: GlobalPage },
   ],
 });

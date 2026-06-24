@@ -12,6 +12,7 @@
         <router-link to="/exchange" class="app-nav__link">거래소</router-link>
         <router-link to="/sentiment" class="app-nav__link">시장심리</router-link>
         <router-link to="/kimchi" class="app-nav__link">김치프리미엄</router-link>
+        <router-link to="/global" class="app-nav__link">글로벌 시총</router-link>
         <router-link to="/news" class="app-nav__link">뉴스</router-link>
         <slot name="actions" />
       </div>
