@@ -4,8 +4,8 @@ import { z } from "zod";
 export const binanceMiniTickerSchema = z.object({
   stream: z.string(),
   data: z.object({
-    s: z.string(), // 심볼 (예: BTCUSDT)
-    c: z.string(), // 현재가(마지막 체결가)
+    s: z.string().min(1), // 심볼 (예: BTCUSDT)
+    c: z.string().min(1), // 현재가(마지막 체결가)
   }),
 });
 

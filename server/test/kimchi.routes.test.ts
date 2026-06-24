@@ -65,4 +65,40 @@ describe('GET /market/kimchi/universe', () => {
       ],
     })
   })
+
+  it('degrades (200) when Binance fails', async () => {
+    mockAgent
+      .get('https://api.upbit.com')
+      .intercept({ method: 'GET', path: '/v1/market/all?isDetails=false' })
+      .reply(200, [{ market: 'KRW-BTC', korean_name: '비트코인', english_name: 'Bitcoin' }])
+    // 400 = non-retryable FreeApiError, so resolveKimchiUniverse rejects immediately.
+    mockAgent
+      .get('https://api.binance.com')
+      .intercept({ method: 'GET', path: '/api/v3/exchangeInfo' })
+      .reply(400, {})
+
+    const response = await app.inject({ method: 'GET', url: '/market/kimchi/universe' })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toMatchObject({ degraded: true, items: [] })
+  })
+
+  it('degrades (200) when Upbit fails (UpbitError)', async () => {
+    // 400 = non-retryable UpbitError from fetchMarkets.
+    mockAgent
+      .get('https://api.upbit.com')
+      .intercept({ method: 'GET', path: '/v1/market/all?isDetails=false' })
+      .reply(400, {})
+    mockAgent
+      .get('https://api.binance.com')
+      .intercept({ method: 'GET', path: '/api/v3/exchangeInfo' })
+      .reply(200, {
+        symbols: [{ symbol: 'BTCUSDT', baseAsset: 'BTC', quoteAsset: 'USDT', status: 'TRADING' }],
+      })
+
+    const response = await app.inject({ method: 'GET', url: '/market/kimchi/universe' })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toMatchObject({ degraded: true, items: [] })
+  })
 })

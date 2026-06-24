@@ -4,7 +4,7 @@ import type { KimchiRow } from "../../stores/kimchi.js";
 
 const props = defineProps<{ rows: KimchiRow[] }>();
 
-type SortKey = "premiumPercent" | "accTradePrice24h" | "upbitKrw";
+type SortKey = "premiumPercent" | "accTradePrice24h";
 const sortKey = ref<SortKey>("premiumPercent");
 const sortDesc = ref(true);
 
@@ -15,6 +15,11 @@ function toggleSort(key: SortKey) {
     sortKey.value = key;
     sortDesc.value = true;
   }
+}
+
+function ariaSort(key: SortKey): "ascending" | "descending" | "none" {
+  if (sortKey.value !== key) return "none";
+  return sortDesc.value ? "descending" : "ascending";
 }
 
 const sortedRows = computed(() => {
@@ -48,8 +53,24 @@ function fmtValue(value: number): string {
         <th>코인</th>
         <th>업비트(KRW)</th>
         <th>바이낸스(KRW 환산)</th>
-        <th class="kimchi-table__sortable" @click="toggleSort('premiumPercent')">김프 %</th>
-        <th class="kimchi-table__sortable" @click="toggleSort('accTradePrice24h')">24h 거래대금</th>
+        <th
+          class="kimchi-table__sortable"
+          role="columnheader"
+          tabindex="0"
+          :aria-sort="ariaSort('premiumPercent')"
+          @click="toggleSort('premiumPercent')"
+          @keydown.enter="toggleSort('premiumPercent')"
+          @keydown.space.prevent="toggleSort('premiumPercent')"
+        >김프 %</th>
+        <th
+          class="kimchi-table__sortable"
+          role="columnheader"
+          tabindex="0"
+          :aria-sort="ariaSort('accTradePrice24h')"
+          @click="toggleSort('accTradePrice24h')"
+          @keydown.enter="toggleSort('accTradePrice24h')"
+          @keydown.space.prevent="toggleSort('accTradePrice24h')"
+        >24h 거래대금</th>
       </tr>
     </thead>
     <tbody>
