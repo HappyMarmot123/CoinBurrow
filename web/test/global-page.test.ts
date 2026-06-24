@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { setActivePinia, createPinia } from "pinia";
 import { createRouter, createWebHistory } from "vue-router";
-import GlobalPage from "../src/features/global/GlobalPage.vue";
+import GlobalView from "../src/features/global/GlobalView.vue";
 
 const router = createRouter({ history: createWebHistory(), routes: [{ path: "/", component: { template: "<div/>" } }] });
 
@@ -28,7 +28,7 @@ describe("GlobalPage", () => {
       }),
     })) as unknown as typeof fetch);
 
-    const wrapper = mount(GlobalPage, { global: { plugins: [router] } });
+    const wrapper = mount(GlobalView, { global: { plugins: [router] } });
     await router.isReady();
     await new Promise((r) => setTimeout(r, 0));
     await wrapper.vm.$nextTick();
@@ -58,7 +58,7 @@ describe("GlobalPage", () => {
       }),
     })) as unknown as typeof fetch);
 
-    const wrapper = mount(GlobalPage, { global: { plugins: [router] } });
+    const wrapper = mount(GlobalView, { global: { plugins: [router] } });
     await router.isReady();
     await new Promise((r) => setTimeout(r, 0));
     await wrapper.vm.$nextTick();
