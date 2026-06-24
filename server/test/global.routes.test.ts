@@ -82,3 +82,57 @@ describe('fetchGlobalMarket provider', () => {
     await expect(fetchGlobalMarket()).rejects.toMatchObject({ code: 'SCHEMA_MISMATCH' })
   })
 })
+
+describe('GET /market/global', () => {
+  let app: ReturnType<typeof buildApp>
+  let mockAgent: MockAgent
+  let originalDispatcher: Dispatcher
+
+  beforeEach(() => {
+    clearFreeApiCacheForTest()
+    originalDispatcher = getGlobalDispatcher()
+    mockAgent = new MockAgent()
+    mockAgent.disableNetConnect()
+    setGlobalDispatcher(mockAgent)
+    app = buildApp()
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+  })
+
+  afterEach(async () => {
+    await app.close()
+    setGlobalDispatcher(originalDispatcher)
+    await mockAgent.close()
+    vi.restoreAllMocks()
+  })
+
+  it('returns normalized snapshot', async () => {
+    mockAgent
+      .get('https://api.coingecko.com')
+      .intercept({ method: 'GET', path: '/api/v3/global' })
+      .reply(200, SAMPLE)
+
+    const response = await app.inject({ method: 'GET', url: '/market/global' })
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toMatchObject({
+      provider: 'coingecko',
+      totalMarketCapUsd: 2_410_000_000_000,
+      btcDominance: 54.2,
+      stale: false,
+    })
+  })
+
+  it('returns degraded when upstream fails', async () => {
+    mockAgent
+      .get('https://api.coingecko.com')
+      .intercept({ method: 'GET', path: '/api/v3/global' })
+      .reply(500, { error: 'boom' })
+
+    const response = await app.inject({ method: 'GET', url: '/market/global' })
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toMatchObject({
+      provider: 'coingecko',
+      totalMarketCapUsd: null,
+      degraded: true,
+    })
+  })
+})

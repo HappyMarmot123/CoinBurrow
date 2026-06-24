@@ -7,6 +7,7 @@ import { registerFreeApiRoutes } from './routes/freeapi.js'
 import { registerSentimentRoutes } from './routes/sentiment.js'
 import { registerFxRoutes } from './routes/fx.js'
 import { registerKimchiRoutes } from './routes/kimchi.js'
+import { registerGlobalRoutes } from './routes/global.js'
 
 export function buildApp(): FastifyInstance {
   const app = Fastify({ logger: false })
@@ -20,6 +21,7 @@ export function buildApp(): FastifyInstance {
   registerSentimentRoutes(app)
   registerFxRoutes(app)
   registerKimchiRoutes(app)
+  registerGlobalRoutes(app)
 
   return app
 }
