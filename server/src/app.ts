@@ -2,7 +2,6 @@ import cors from '@fastify/cors'
 import Fastify, { type FastifyInstance } from 'fastify'
 
 import { registerMarketRoutes } from './routes/market.js'
-import { registerNewsRoutes } from './routes/news.js'
 import { registerFreeApiRoutes } from './routes/freeapi.js'
 import { registerSentimentRoutes } from './routes/sentiment.js'
 import { registerFxRoutes } from './routes/fx.js'
@@ -16,7 +15,6 @@ export function buildApp(): FastifyInstance {
 
   app.get('/health', async () => ({ status: 'ok' }))
   registerMarketRoutes(app)
-  registerNewsRoutes(app)
   registerFreeApiRoutes(app)
   registerSentimentRoutes(app)
   registerFxRoutes(app)

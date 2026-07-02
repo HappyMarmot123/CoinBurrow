@@ -1,7 +1,4 @@
 import type {
-  CryptoNewsHealth,
-  CryptoNewsResponse,
-  CryptoNewsSourceSummary,
   MarketView,
   CandleView,
   TickerView,
@@ -95,16 +92,6 @@ export interface MarketOverviewItem {
   ticker: TickerView | null;
   orderbook: OrderbookView | null;
   status: MarketStatusView | null;
-}
-
-export interface NewsQueryOptions {
-  q?: string;
-  asset?: string;
-  category?: string;
-  language?: "all" | "ko" | "en";
-  source?: string;
-  limit?: number;
-  cursor?: string;
 }
 
 export interface CoinMetaQueryOptions {
@@ -366,28 +353,6 @@ export const getExchangeRates = async (): Promise<ExchangeRateView[]> => {
   } catch {
     return [];
   }
-};
-
-export const getNewsArticles = async (
-  options: NewsQueryOptions = {},
-): Promise<CryptoNewsResponse> => {
-  return getJson<CryptoNewsResponse>(buildPath("/market/news/articles", {
-    q: options.q,
-    asset: options.asset,
-    category: options.category,
-    language: options.language,
-    source: options.source,
-    limit: options.limit,
-    cursor: options.cursor,
-  }));
-};
-
-export const getNewsSources = async (): Promise<CryptoNewsSourceSummary> => {
-  return getJson<CryptoNewsSourceSummary>("/market/news/sources");
-};
-
-export const getNewsHealth = async (): Promise<CryptoNewsHealth> => {
-  return getJson<CryptoNewsHealth>("/market/news/health");
 };
 
 export const getCoinMetaByProvider = async (

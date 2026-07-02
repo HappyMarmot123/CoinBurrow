@@ -38,7 +38,7 @@ vi.mock("../src/composables/useExchangeData.js", () => ({
 }));
 
 describe("ExchangePage", () => {
-  it("links from the market page to news", () => {
+  it("renders exchange page layout and core hero controls", () => {
     const wrapper = mount(ExchangePage, {
       global: {
         plugins: [createPinia()],
@@ -57,8 +57,10 @@ describe("ExchangePage", () => {
       },
     });
 
-    const newsLink = wrapper.find('a[href="/news"]');
-    expect(newsLink.exists()).toBe(true);
-    expect(newsLink.text()).toBe("뉴스");
+    const exchangeLink = wrapper.find('a[href="/exchange"]');
+    const insightsLink = wrapper.find('a[href="/insights"]');
+    expect(exchangeLink.exists()).toBe(true);
+    expect(insightsLink.exists()).toBe(true);
+    expect(wrapper.find('a[href="/news"]').exists()).toBe(false);
   });
 });

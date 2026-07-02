@@ -11,7 +11,6 @@
       <div class="app-nav__links" aria-label="주요 네비게이션 메뉴">
         <router-link to="/exchange" class="app-nav__link">거래소</router-link>
         <router-link to="/insights" class="app-nav__link">시장 동향</router-link>
-        <router-link to="/news" class="app-nav__link">뉴스</router-link>
         <slot name="actions" />
       </div>
     </div>

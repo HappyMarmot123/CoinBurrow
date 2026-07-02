@@ -1,29 +1,13 @@
 <script setup lang="ts">
 import AppNav from "../../components/AppNav.vue";
-import NewsAlertsPopover from "../news/NewsAlertsPopover.vue";
 import GlobalView from "../global/GlobalView.vue";
 import SentimentView from "../sentiment/SentimentView.vue";
 import KimchiView from "../kimchi/KimchiView.vue";
-import { useHotAlerts } from "../../composables/useHotAlerts.js";
-
-const { newsStore, setHotAlertEnabled, requestHotAlertPermission, markHotAlertsSeen } = useHotAlerts();
 </script>
 
 <template>
   <main class="insights-page">
-    <AppNav class="insights-nav">
-      <template #actions>
-        <NewsAlertsPopover
-          :hot-alert-enabled="newsStore.hotAlertEnabled"
-          :hot-alert-permission="newsStore.hotAlertPermission"
-          :hot-alert-history="newsStore.hotAlertHistory"
-          :hot-alert-unseen-count="newsStore.hotAlertUnseenCount"
-          @toggle-hot-alert="setHotAlertEnabled"
-          @request-hot-alert-permission="requestHotAlertPermission"
-          @mark-seen="markHotAlertsSeen"
-        />
-      </template>
-    </AppNav>
+    <AppNav class="insights-nav" />
 
     <section class="insights-shell">
       <header class="insights-head">
