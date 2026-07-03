@@ -421,7 +421,7 @@ const trendOptions = computed<Options>(() => {
 .gauge {
   position: relative;
   width: 100%;
-  max-width: clamp(220px, 30vh, 300px);
+  max-width: min(100%, clamp(220px, 30vh, 300px));
   margin: 0 auto;
   flex: 1;
   display: flex;
@@ -567,7 +567,7 @@ const trendOptions = computed<Options>(() => {
 
 .trend-body {
   flex: 1;
-  min-height: 0;
+  min-height: 220px;
 }
 
 .trend-range {
@@ -610,6 +610,62 @@ const trendOptions = computed<Options>(() => {
 @media (max-width: 760px) {
   .grid {
     grid-template-columns: 1fr;
+  }
+
+  .gauge {
+    max-width: min(100%, 280px);
+  }
+
+  .trend-body {
+    min-height: 240px;
+  }
+}
+
+@media (max-width: 640px) {
+  .panel-sub {
+    text-align: left;
+  }
+
+  .panel-trend .panel-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .trend-range {
+    flex-wrap: wrap;
+  }
+}
+</style>
+
+<style scoped lang="scss">
+@media (max-width: 640px) {
+  .sentiment-view,
+  .grid,
+  .panel,
+  .panel-now,
+  .panel-history,
+  .panel-trend,
+  .trend-body {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gauge {
+    width: min(100%, 260px);
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .gauge-svg {
+    overflow: hidden;
+  }
+
+  .gauge-readout strong {
+    font-size: clamp(38px, 13vw, 54px);
   }
 }
 </style>

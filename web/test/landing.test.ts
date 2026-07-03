@@ -34,22 +34,25 @@ describe("LandingPage", () => {
     expect(wrapper.find(".hero-visual spline-scene-stub").exists()).toBe(true);
     expect(wrapper.find(".hero-visual spline-scene-stub.spline-layer").exists()).toBe(true);
     expect(wrapper.find(".hero-visual + .hero-copy").exists()).toBe(true);
-    expect(source).toContain(".hero-section {\n  position: relative;");
+    expect(source).toContain(".hero-section {\n  --hero-copy-top: 50%;");
+    expect(source).toContain("position: relative;");
     expect(source).toContain("min-height: 100svh;");
     expect(source).toContain(".hero-copy {\n  position: absolute;");
-    expect(source).toContain("top: 50%;");
+    expect(source).toContain("--hero-copy-top: 50%;");
     expect(source).toContain("left: 50%;");
     expect(source).toContain("transform: translate(-50%, -50%);");
-    expect(source).toContain("row-gap: clamp(28px, 4vh, 44px);");
+    expect(source).toContain("--hero-copy-row-gap: clamp(28px, 4vh, 44px);");
+    expect(source).toContain("row-gap: var(--hero-copy-row-gap);");
     expect(source).toContain("h1 {\n  margin: 0;");
     expect(source).toContain("gap: clamp(16px, 2vh, 22px);");
     expect(source).toContain("margin-bottom: 0;");
     expect(source).toContain(".hero-visual {\n  position: absolute;");
     expect(source).toContain("user-select: none;");
-    expect(source).toContain("top: 10rem;");
+    expect(source).toContain("--hero-visual-top: 10rem;");
     expect(source).toContain('class="spline-layer"');
     expect(source).toContain(".spline-layer,\n.hero-visual :deep(.spline-canvas) {\n  position: absolute;");
-    expect(source).toContain("height: 230%;");
+    expect(source).toContain("--spline-layer-height: 230%;");
+    expect(source).toContain("height: var(--spline-layer-height);");
     expect(source).not.toContain("backdrop-filter");
     expect(source).toContain("background: linear-gradient(315deg, #d9ff66, #ffb02e);");
     expect(source).toContain("drop-shadow(0 4px 0 rgba(92, 58, 6, 0.28))");
@@ -96,16 +99,31 @@ describe("LandingPage", () => {
   it("keeps the desktop hero as the source of truth while tuning responsive breakpoints", () => {
     const source = readSource(join(process.cwd(), "src/features/landing/LandingPage.vue"));
 
+    expect(source).toContain("--hero-copy-top:");
+    expect(source).toContain("--hero-visual-top:");
+    expect(source).toContain("--hero-visual-height:");
     expect(source).toContain("@media (max-width: 900px)");
     expect(source).toContain("padding: clamp(48px, 8svh, 72px) 20px clamp(36px, 7svh, 56px);");
     expect(source).toContain("font-size: clamp(68px, 15vw, 124px);");
-    expect(source).toContain("top: clamp(5.5rem, 13svh, 8rem);");
-    expect(source).toContain("width: min(760px, 116vw);");
+    expect(source).toContain("--hero-visual-top: clamp(5.5rem, 13svh, 8rem);");
+    expect(source).toContain("--hero-visual-width: min(760px, 116vw);");
     expect(source).toContain("width: min(100%, 240px);");
     expect(source).toContain("@media (max-width: 640px)");
     expect(source).toContain("font-size: clamp(48px, 15.5vw, 76px);");
-    expect(source).toContain("top: clamp(4rem, 10svh, 5.5rem);");
-    expect(source).toContain("width: min(132vw, 560px);");
+    expect(source).toContain("--hero-visual-top: clamp(4rem, 10svh, 5.5rem);");
+    expect(source).toContain("--hero-visual-width: min(132vw, 560px);");
     expect(source).not.toContain("blur(");
+  });
+
+  it("keeps responsive hero layers separated on mobile and low-height screens", () => {
+    const source = readSource(join(process.cwd(), "src/features/landing/LandingPage.vue"));
+
+    expect(source).toContain("top: var(--hero-copy-top);");
+    expect(source).toContain("top: var(--hero-visual-top);");
+    expect(source).toContain("height: var(--hero-visual-height);");
+    expect(source).toContain("--features-band-padding:");
+    expect(source).toContain("--wave-height:");
+    expect(source).toContain("@media (max-width: 900px) and (max-height: 700px)");
+    expect(source).toContain("@media (max-width: 640px) and (max-height: 700px)");
   });
 });

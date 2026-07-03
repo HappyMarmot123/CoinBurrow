@@ -44,13 +44,18 @@ function fmtValue(value: number): string {
 <style scoped lang="scss">
 .kimchi-table {
   width: 100%;
+  min-width: 720px;
   border-collapse: collapse;
+  table-layout: fixed;
   font-size: 13px;
 }
 .kimchi-table th,
 .kimchi-table td {
+  overflow: hidden;
   padding: 8px 10px;
   text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   border-bottom: 1px solid var(--panel-border);
 }
 .kimchi-table thead th {

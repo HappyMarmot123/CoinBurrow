@@ -182,7 +182,19 @@ function onOpenDetailClick() {
 }
 
 @media (max-width: 640px) {
+  .daily-stats {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .daily-stats__prices {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+    width: 100%;
+  }
+
   .daily-stats__details {
+    width: 100%;
     padding-left: 0;
     border-left: 0;
     grid-template-columns: 1fr auto;

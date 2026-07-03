@@ -68,4 +68,45 @@ import KimchiView from "../kimchi/KimchiView.vue";
   display: grid;
   gap: clamp(12px, 2vh, 20px);
 }
+
+@media (max-width: 640px) {
+  .insights-nav,
+  .insights-shell {
+    width: min(640px, calc(100% - 20px));
+  }
+
+  .insights-shell {
+    padding: 10px 0 18px;
+  }
+
+  .insights-head {
+    margin-bottom: 12px;
+  }
+
+  .insights-stack {
+    gap: clamp(12px, 4vw, 16px);
+  }
+}
+</style>
+
+<style scoped lang="scss">
+@media (max-width: 640px) {
+  .insights-nav,
+  .insights-shell {
+    width: min(370px, calc(100% - 20px));
+    margin-left: 10px;
+    margin-right: auto;
+  }
+
+  .insights-shell,
+  .insights-stack,
+  .insights-stack > * {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .insights-shell {
+    overflow-x: hidden;
+  }
+}
 </style>

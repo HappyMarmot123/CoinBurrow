@@ -118,7 +118,9 @@ const cards = computed(() => {
   margin-top: clamp(6px, 1.4vh, 12px);
 }
 .hero-readout strong {
-  font-size: clamp(34px, 6vw, 56px);
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: clamp(32px, 5.2vw, 56px);
   font-weight: 900;
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -129,7 +131,7 @@ const cards = computed(() => {
 }
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: clamp(10px, 1.4vw, 14px);
 }
 .panel-stat { display: flex; flex-direction: column; gap: 8px; }
@@ -152,4 +154,22 @@ const cards = computed(() => {
   color: var(--text-muted);
 }
 .insights-state--error { color: var(--alert-text); }
+
+@media (max-width: 640px) {
+  .panel-sub {
+    text-align: left;
+  }
+
+  .hero-readout {
+    gap: 10px;
+  }
+
+  .hero-readout strong {
+    font-size: clamp(30px, 10vw, 42px);
+  }
+
+  .grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}
 </style>

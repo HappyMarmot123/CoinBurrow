@@ -13,44 +13,6 @@ const scene =
   DEFAULT_SPLINE_SCENE;
 let cleanupCursorEffects: (() => void) | null = null;
 
-const marketSignals = [
-  {
-    label: "Ticker",
-    title: "실시간 티커",
-    description: "주요 KRW 마켓의 현재가, 등락률, 24시간 거래대금을 빠르게 비교합니다.",
-  },
-  {
-    label: "Candle",
-    title: "캔들 차트",
-    description: "초기 1분봉 데이터를 불러오고 실시간 봉 업데이트로 가격 흐름을 추적합니다.",
-  },
-  {
-    label: "Orderbook",
-    title: "호가",
-    description: "매수와 매도 잔량을 한눈에 확인해 단기 수급 변화를 읽습니다.",
-  },
-  {
-    label: "Trades",
-    title: "체결",
-    description: "최근 체결 방향과 거래량을 실시간으로 반영해 시장의 속도를 보여줍니다.",
-  },
-];
-
-const streamFeatures = [
-  {
-    title: "Web Worker 직결",
-    description: "브라우저 Worker가 Upbit WebSocket에 직접 연결해 메인 스레드 부담을 줄입니다.",
-  },
-  {
-    title: "RxJS 스트림 정리",
-    description: "고빈도 ticker, orderbook, trade 메시지를 throttle하고 최신값 중심으로 합칩니다.",
-  },
-  {
-    title: "Pinia 상태 반영",
-    description: "정규화된 실시간 데이터를 화면 상태로 반영해 차트와 패널을 일관되게 갱신합니다.",
-  },
-];
-
 function setupCursorEffects(): (() => void) | null {
   const landing = landingRef.value;
   const cursorLayer = cursorLayerRef.value;
@@ -371,6 +333,15 @@ onUnmounted(() => {
 }
 
 .hero-section {
+  --hero-copy-top: 50%;
+  --hero-copy-row-gap: clamp(28px, 4vh, 44px);
+  --hero-visual-top: 10rem;
+  --hero-visual-width: min(980px, 92vw);
+  --hero-visual-height: 21rem;
+  --spline-layer-height: 230%;
+  --features-band-padding: 2rem;
+  --wave-height: 100px;
+
   position: relative;
   display: grid;
   min-height: 100svh;
@@ -383,11 +354,11 @@ onUnmounted(() => {
 
 .hero-copy {
   position: absolute;
-  top: 50%;
+  top: var(--hero-copy-top);
   left: 50%;
   z-index: 10;
   display: grid;
-  row-gap: clamp(28px, 4vh, 44px);
+  row-gap: var(--hero-copy-row-gap);
   width: min(1120px, calc(100% - 48px));
   transform: translate(-50%, -50%);
   justify-items: center;
@@ -489,11 +460,11 @@ h1 {
 
 .hero-visual {
   position: absolute;
-  top: 10rem;
+  top: var(--hero-visual-top);
   left: 50%;
   z-index: 5;
-  width: min(980px, 92vw);
-  height: 21rem;
+  width: var(--hero-visual-width);
+  height: var(--hero-visual-height);
   transform: translateX(-50%);
   overflow: visible;
   border-radius: 24px;
@@ -506,7 +477,7 @@ h1 {
   bottom: auto;
   left: 0;
   width: 100%;
-  height: 230%;
+  height: var(--spline-layer-height);
 }
 
 .creator-link {
@@ -560,7 +531,7 @@ h1 {
 .features-band {
   position: relative;
   z-index: 4;
-  padding: 2rem;
+  padding: var(--features-band-padding);
   color: #ffffff;
   background: #5a6349;
   text-align: center;
@@ -579,7 +550,7 @@ h1 {
 .wave svg {
   display: block;
   width: 100%;
-  height: 100px;
+  height: var(--wave-height);
 }
 
 .wave path {
@@ -595,13 +566,18 @@ h1 {
 
 @media (max-width: 900px) {
   .hero-section {
+    --hero-copy-top: 52%;
+    --hero-copy-row-gap: clamp(22px, 3.4vh, 34px);
+    --hero-visual-top: clamp(5.5rem, 13svh, 8rem);
+    --hero-visual-width: min(760px, 116vw);
+    --hero-visual-height: clamp(16rem, 32svh, 20rem);
+    --spline-layer-height: 220%;
+
     min-height: 100svh;
     padding: clamp(48px, 8svh, 72px) 20px clamp(36px, 7svh, 56px);
   }
 
   .hero-copy {
-    top: 52%;
-    row-gap: clamp(22px, 3.4vh, 34px);
     width: min(760px, calc(100% - 40px));
   }
 
@@ -624,27 +600,23 @@ h1 {
     line-height: 1.65;
   }
 
-  .hero-visual {
-    top: clamp(5.5rem, 13svh, 8rem);
-    width: min(760px, 116vw);
-    height: clamp(16rem, 32svh, 20rem);
-  }
-
-  .spline-layer,
-  .hero-visual :deep(.spline-canvas) {
-    height: 220%;
-  }
-
 }
 
 @media (max-width: 640px) {
   .hero-section {
+    --hero-copy-top: 53%;
+    --hero-copy-row-gap: clamp(18px, 3svh, 26px);
+    --hero-visual-top: clamp(4rem, 10svh, 5.5rem);
+    --hero-visual-width: min(132vw, 560px);
+    --hero-visual-height: clamp(12.5rem, 30svh, 16rem);
+    --spline-layer-height: 240%;
+    --features-band-padding: 56px 18px 60px;
+    --wave-height: 76px;
+
     padding: 44px 16px 32px;
   }
 
   .hero-copy {
-    top: 53%;
-    row-gap: clamp(18px, 3svh, 26px);
     width: min(520px, calc(100% - 28px));
   }
 
@@ -674,35 +646,46 @@ h1 {
   }
 
   .hero-visual {
-    top: clamp(4rem, 10svh, 5.5rem);
-    width: min(132vw, 560px);
-    height: clamp(12.5rem, 30svh, 16rem);
     border-radius: 18px;
-  }
-
-  .spline-layer,
-  .hero-visual :deep(.spline-canvas) {
-    height: 240%;
-  }
-
-  .features-band {
-    padding: 72px 18px 76px;
-  }
-
-  .wave svg {
-    height: 100px;
   }
 }
 
 @media (max-width: 900px) and (max-height: 700px) {
-  .hero-copy {
-    top: 56%;
-    row-gap: 18px;
+  .hero-section {
+    --hero-copy-top: 56%;
+    --hero-copy-row-gap: 18px;
+    --hero-visual-top: 3.5rem;
+    --hero-visual-height: 12rem;
+  }
+}
+
+@media (max-width: 640px) and (max-height: 700px) {
+  .hero-section {
+    --hero-copy-top: 58%;
+    --hero-copy-row-gap: 14px;
+    --hero-visual-top: 2.75rem;
+    --hero-visual-height: 10.5rem;
+    --features-band-padding: 44px 16px 48px;
+  }
+}
+</style>
+
+<style scoped lang="scss">
+@media (max-width: 640px) {
+  .eyebrow {
+    max-width: 92vw;
+    font-size: clamp(34px, 10vw, 40px);
+    white-space: nowrap;
   }
 
-  .hero-visual {
-    top: 3.5rem;
-    height: 12rem;
+  .hero-subcopy h2 {
+    max-width: 92vw;
+    font-size: clamp(18px, 4.8vw, 20px);
+    white-space: nowrap;
+  }
+
+  .hero-subcopy p {
+    max-width: 92vw;
   }
 }
 </style>

@@ -173,7 +173,8 @@ onUnmounted(() => {
 }
 .kimchi-view__scroll {
   max-height: clamp(320px, 48vh, 520px);
-  overflow-y: auto;
+  overflow: auto;
+  overscroll-behavior-x: contain;
   @include thin-scrollbar;
 }
 .kimchi-view__banner {
@@ -197,4 +198,19 @@ onUnmounted(() => {
   color: var(--text-muted);
 }
 .insights-state--error { color: var(--alert-text); }
+
+@media (max-width: 640px) {
+  .panel-sub {
+    text-align: left;
+  }
+
+  .kimchi-view__filter-btn {
+    flex: 1 1 96px;
+    min-height: 36px;
+  }
+
+  .kimchi-view__scroll {
+    max-height: clamp(300px, 52vh, 480px);
+  }
+}
 </style>
