@@ -5,6 +5,10 @@ import { parseWithSchema } from "../shared/validation/parse.js";
 import { schemaForUpbitMessage } from "../shared/validation/schemas/ws/upbit.js";
 import type { NormalizedError } from "../shared/validation/error/normalized-error.js";
 
+//* WebSocket으로부터 전달받은 날것의 이벤트(raw$) 스트림을 가공, 정규화, 검증하여 최종적으로 메인 스레드로 발행하는 출력 스트림(createOutputStream)을 구성합니다.
+//* parseUpbitMessage zod 검증 진행, 에러 진행시 useMarketSocket에서 감지되어 validation-health.ts 으로 전달
+//* 스트림 데이터는 useMarketSocket의 worker.onmessage에서 Pinia 스토어로 전달.
+
 type ParsedUpbitMessage =
   | { kind: "item"; channel: Channel; item: any }
   | { kind: "error"; error: NormalizedError }

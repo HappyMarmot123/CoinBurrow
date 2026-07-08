@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import AppNav from "../../components/AppNav.vue";
 import CandleChart from "./CandleChartV2.vue";
 import DailyStatsPanel from "./DailyStatsPanel.vue";
@@ -9,7 +9,6 @@ import MarketMovementPanel from "./MarketMovementPanel.vue";
 import OrderbookPanel from "./OrderbookPanel.vue";
 import DerivativesPanel from "./DerivativesPanel.vue";
 import TradeList from "./TradeList.vue";
-import NewsAlertsPopover from "../news/NewsAlertsPopover.vue";
 import CoinMetaDrawer from "./CoinMetaDrawer.vue";
 import { useDerivatives } from "../../composables/useDerivatives.js";
 import { useExchangeData } from "../../composables/useExchangeData.js";
@@ -17,10 +16,8 @@ import { useMarketMeta } from "../../composables/useMarketMeta.js";
 import { useCoinMeta } from "../../composables/useCoinMeta.js";
 import { useFreeApiPolicy } from "../../composables/useFreeApiPolicy.js";
 import { useCandleStore } from "../../stores/candle.js";
-import { useNewsStore } from "../../stores/news.js";
 import { CANDLE_COUNT_OPTIONS, TIMEFRAME_OPTIONS } from "../../constants/exchange.js";
 import { DEFAULT_MARKET } from "../../constants/market.js";
-import { NEWS_HOT_ALERT_POLL_INTERVAL_MS } from "../../constants/news.js";
 import type { CandleTimeframe } from "../../api/rest.js";
 import { toTradingViewChartUrl } from "./tradingViewSymbol.js";
 
@@ -29,7 +26,6 @@ const selectedQuote = ref("KRW");
 const candleTimeframe = ref<CandleTimeframe>("1m");
 const candleCount = ref(200);
 const candleStore = useCandleStore();
-const newsStore = useNewsStore();
 
 const timeframeOptions = TIMEFRAME_OPTIONS;
 const countOptions = CANDLE_COUNT_OPTIONS;
@@ -45,7 +41,6 @@ const primaryTimeframeOptions = timeframeOptions.filter(({ value }) =>
 );
 let initializingExchange = true;
 let loadingMarketFromQuote = false;
-let hotAlertPollTimer: number | undefined;
 
 const {
   availableQuotes,
@@ -103,7 +98,6 @@ const policy = computed(() => findPolicy(coinMetaSource.value));
 const isCoinDetailOpen = ref(false);
 const detailMarket = ref("");
 
-
 async function loadQuoteMarkets(nextQuote: string) {
   loadingMarketFromQuote = true;
   let nextMarket = market.value;
@@ -118,51 +112,13 @@ async function loadQuoteMarkets(nextQuote: string) {
   void loadMeta();
 }
 
-async function initializeHotAlertState() {
-  await newsStore.loadHotAlertState();
-
-  if (newsStore.hotAlertHasUserPreference) {
-    if (!newsStore.hotAlertEnabled) {
-      return;
-    }
-    if (newsStore.hotAlertPermission !== "granted") {
-      newsStore.hotAlertEnabled = false;
-      newsStore.persistHotAlertState();
-    }
-    return;
-  }
-
-  if (newsStore.hotAlertPermission === "default") {
-    await requestHotAlertPermission();
-    return;
-  }
-
-  if (newsStore.hotAlertPermission === "granted") {
-    await setHotAlertEnabled(true);
-  }
-}
-
 onMounted(async () => {
   try {
     await loadAvailableQuotes();
     await loadQuoteMarkets(selectedQuote.value);
     await loadPolicy();
-    await initializeHotAlertState();
-    await newsStore.refreshHotAlertSnapshot();
-    hotAlertPollTimer = window.setInterval(() => {
-      if (newsStore.loading) {
-        return;
-      }
-      void newsStore.refreshHotAlertSnapshot();
-    }, NEWS_HOT_ALERT_POLL_INTERVAL_MS);
   } finally {
     initializingExchange = false;
-  }
-});
-
-onBeforeUnmount(() => {
-  if (hotAlertPollTimer) {
-    window.clearInterval(hotAlertPollTimer);
   }
 });
 
@@ -199,35 +155,11 @@ function closeCoinDetail() {
   isCoinDetailOpen.value = false;
   detailMarket.value = "";
 }
-
-function setHotAlertEnabled(enabled: boolean) {
-  void newsStore.setHotAlertEnabled(enabled);
-}
-
-function requestHotAlertPermission() {
-  void newsStore.requestNotificationPermission();
-}
-
-function markHotAlertsSeen() {
-  newsStore.markHotAlertsSeen();
-}
 </script>
 
 <template>
   <main class="exchange-page">
-    <AppNav class="exchange-nav">
-      <template #actions>
-        <NewsAlertsPopover
-          :hot-alert-enabled="newsStore.hotAlertEnabled"
-          :hot-alert-permission="newsStore.hotAlertPermission"
-          :hot-alert-history="newsStore.hotAlertHistory"
-          :hot-alert-unseen-count="newsStore.hotAlertUnseenCount"
-          @toggle-hot-alert="setHotAlertEnabled"
-          @request-hot-alert-permission="requestHotAlertPermission"
-          @mark-seen="markHotAlertsSeen"
-        />
-      </template>
-    </AppNav>
+    <AppNav class="exchange-nav" />
 
     <section class="exchange-layout">
       <section class="panel-stack">
@@ -390,7 +322,7 @@ function markHotAlertsSeen() {
 
 .exchange-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  grid-template-columns: minmax(0, 1fr) clamp(280px, 22vw, 340px);
   padding: 14px;
   gap: 14px;
 }
@@ -429,7 +361,7 @@ function markHotAlertsSeen() {
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 700;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .chart-panel-head {
@@ -446,7 +378,7 @@ function markHotAlertsSeen() {
   align-items: baseline;
   gap: 8px;
   flex-direction: row;
-  white-space: nowrap;
+  flex-wrap: wrap;
 }
 
 .chart-tradingview-link {
@@ -541,6 +473,7 @@ function markHotAlertsSeen() {
 }
 
 .timeframe-tabs button {
+  min-height: 38px;
   border: 1px solid var(--panel-border);
   border-radius: var(--radius-sm);
   padding: 8px 10px;
@@ -568,7 +501,7 @@ function markHotAlertsSeen() {
 .split-grid {
   display: grid;
   gap: 14px;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .panel-sidebar {
@@ -720,11 +653,12 @@ function markHotAlertsSeen() {
   }
 
   .panel-sidebar {
+    order: -1;
     position: relative;
     top: auto;
     height: auto;
-    max-height: none;
-    overflow: visible;
+    max-height: min(52dvh, 460px);
+    overflow: hidden;
   }
 
   .split-grid {
@@ -749,8 +683,49 @@ function markHotAlertsSeen() {
     width: 100%;
   }
 
+  .chart-control--timeframe[data-row],
+  .timeframe-group {
+    align-items: stretch;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .chart-control--count {
+    width: 100%;
+  }
+
+  .chart-control--count select {
+    width: 100%;
+  }
+
   .panel {
     padding: 14px;
+  }
+}
+</style>
+
+<style scoped lang="scss">
+@media (max-width: 640px) {
+  .exchange-nav,
+  .exchange-hero,
+  .exchange-layout {
+    width: min(370px, calc(100% - 20px));
+    margin-left: 10px;
+    margin-right: auto;
+  }
+
+  .exchange-page,
+  .exchange-layout,
+  .main-column,
+  .panel-sidebar,
+  .chart-panel,
+  .market-strip {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .exchange-shell {
+    overflow-x: hidden;
   }
 }
 </style>

@@ -1,15 +1,18 @@
 import { createRouter, createWebHistory } from "vue-router";
 import LandingPage from "../features/landing/LandingPage.vue";
 import ExchangePage from "../features/exchange/ExchangePage.vue";
-import NewsPage from "../features/news/NewsPage.vue";
-import SentimentPage from "../features/sentiment/SentimentPage.vue";
+import InsightsPage from "../features/insights/InsightsPage.vue";
 
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: "/", name: "landing", component: LandingPage },
     { path: "/exchange", name: "exchange", component: ExchangePage },
-    { path: "/news", name: "news", component: NewsPage },
-    { path: "/sentiment", name: "sentiment", component: SentimentPage },
+    { path: "/insights", name: "insights", component: InsightsPage },
+    // 기존/구 경로 호환 — 모두 단일 시장 동향 페이지로
+    { path: "/global", redirect: "/insights" },
+    { path: "/sentiment", redirect: "/insights" },
+    { path: "/kimchi", redirect: "/insights" },
+    { path: "/insights/:rest(.*)", redirect: "/insights" },
   ],
 });

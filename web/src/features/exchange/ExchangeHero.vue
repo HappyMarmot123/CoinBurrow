@@ -190,6 +190,7 @@ function onCoinLogoError() {
 }
 
 .market-id__icon {
+  grid-area: icon;
   width: 28px;
   height: 28px;
   flex: 0 0 28px;
@@ -215,6 +216,7 @@ function onCoinLogoError() {
 }
 
 .market-id__name {
+  grid-area: name;
   min-width: 0;
   overflow: hidden;
   color: var(--text-strong);
@@ -235,8 +237,13 @@ function onCoinLogoError() {
 }
 
 .market-id__quote {
+  grid-area: quote;
   border-color: var(--panel-border-hover);
   color: var(--brand-lime);
+}
+
+.market-id__code {
+  grid-area: code;
 }
 
 .market-price {
@@ -367,8 +374,20 @@ function onCoinLogoError() {
     padding: 14px;
   }
 
+  .market-ticker__primary {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "id"
+      "price"
+      "chips";
+  }
+
   .market-id {
-    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "icon name quote"
+      ". code quote";
   }
 
   .market-id__quote {
@@ -378,6 +397,7 @@ function onCoinLogoError() {
   .market-price {
     grid-template-columns: 1fr auto;
     justify-content: start;
+    width: 100%;
   }
 
   .market-price span {
@@ -386,6 +406,15 @@ function onCoinLogoError() {
 
   .market-price strong {
     font-size: 28px;
+  }
+
+  .ticker-chips {
+    justify-content: stretch;
+  }
+
+  .ticker-chip {
+    flex: 1 1 132px;
+    min-width: 0;
   }
 }
 </style>

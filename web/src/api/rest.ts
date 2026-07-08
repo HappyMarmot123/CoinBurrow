@@ -1,7 +1,4 @@
 import type {
-  CryptoNewsHealth,
-  CryptoNewsResponse,
-  CryptoNewsSourceSummary,
   MarketView,
   CandleView,
   TickerView,
@@ -95,16 +92,6 @@ export interface MarketOverviewItem {
   ticker: TickerView | null;
   orderbook: OrderbookView | null;
   status: MarketStatusView | null;
-}
-
-export interface NewsQueryOptions {
-  q?: string;
-  asset?: string;
-  category?: string;
-  language?: "all" | "ko" | "en";
-  source?: string;
-  limit?: number;
-  cursor?: string;
 }
 
 export interface CoinMetaQueryOptions {
@@ -313,6 +300,43 @@ export const getMarketSentiment = async (days = 30): Promise<SentimentView> => {
   return getJson<SentimentView>(buildPath("/market/sentiment", { days }));
 };
 
+export interface FxView {
+  base: string;
+  krw: number | null;
+  source: string | null;
+  fetchedAt: number;
+  cacheTtlMs: number;
+  next?: number;
+  stale: boolean;
+  degraded?: boolean;
+  degradedReason?: string;
+}
+
+export interface KimchiUniverseItemView {
+  upbitMarket: string;
+  binanceSymbol: string;
+  base: string;
+  koreanName: string;
+  accTradePrice24h: number;
+}
+
+export interface KimchiUniverseView {
+  items: KimchiUniverseItemView[];
+  fetchedAt: number;
+  cacheTtlMs: number;
+  stale: boolean;
+  degraded?: boolean;
+  degradedReason?: string;
+}
+
+export const getFx = async (): Promise<FxView> => {
+  return getJson<FxView>("/market/fx");
+};
+
+export const getKimchiUniverse = async (): Promise<KimchiUniverseView> => {
+  return getJson<KimchiUniverseView>("/market/kimchi/universe");
+};
+
 export const getMarketStatus = async (
   markets?: string[],
 ): Promise<MarketStatusView[]> => {
@@ -329,28 +353,6 @@ export const getExchangeRates = async (): Promise<ExchangeRateView[]> => {
   } catch {
     return [];
   }
-};
-
-export const getNewsArticles = async (
-  options: NewsQueryOptions = {},
-): Promise<CryptoNewsResponse> => {
-  return getJson<CryptoNewsResponse>(buildPath("/market/news/articles", {
-    q: options.q,
-    asset: options.asset,
-    category: options.category,
-    language: options.language,
-    source: options.source,
-    limit: options.limit,
-    cursor: options.cursor,
-  }));
-};
-
-export const getNewsSources = async (): Promise<CryptoNewsSourceSummary> => {
-  return getJson<CryptoNewsSourceSummary>("/market/news/sources");
-};
-
-export const getNewsHealth = async (): Promise<CryptoNewsHealth> => {
-  return getJson<CryptoNewsHealth>("/market/news/health");
 };
 
 export const getCoinMetaByProvider = async (
@@ -397,6 +399,27 @@ export const getFreeApiPolicy = async (): Promise<FreeApiPolicyResponse> => {
 
 export const getCoinListWithFallback = async (): Promise<MarketView[]> => {
   return getCoinList();
+};
+
+export interface GlobalMarketView {
+  provider: string;
+  totalMarketCapUsd: number | null;
+  totalVolumeUsd: number | null;
+  marketCapChangePct24h: number | null;
+  btcDominance: number | null;
+  ethDominance: number | null;
+  activeCryptocurrencies: number | null;
+  markets: number | null;
+  updatedAt?: number;
+  fetchedAt: number;
+  cacheTtlMs: number;
+  stale: boolean;
+  degraded?: boolean;
+  degradedReason?: string;
+}
+
+export const getGlobalMarket = async (): Promise<GlobalMarketView> => {
+  return getJson<GlobalMarketView>("/market/global");
 };
 
 export { TIMEFRAME_LABELS };

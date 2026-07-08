@@ -146,6 +146,7 @@ function selectMidPrice() {
   background: transparent;
   font: inherit;
   cursor: pointer;
+  isolation: isolate;
   transition:
     background var(--ease),
     transform var(--ease);
@@ -155,6 +156,7 @@ function selectMidPrice() {
   position: absolute;
   inset: 0;
   width: var(--depth);
+  z-index: 0;
   content: "";
   pointer-events: none;
 }
@@ -167,7 +169,7 @@ function selectMidPrice() {
 
 .ladder-row--ask,
 .ladder-row--bid {
-  grid-template-columns: minmax(80px, auto) minmax(0, 1fr);
+  grid-template-columns: minmax(88px, 0.9fr) minmax(0, 1fr);
 }
 
 .ladder-row--bid::before {
@@ -213,7 +215,7 @@ function selectMidPrice() {
   grid-area: mid;
   position: relative;
   display: grid;
-  grid-template-columns: minmax(80px, auto) minmax(0, 1fr);
+  grid-template-columns: minmax(88px, 0.9fr) minmax(0, 1fr);
   align-items: center;
   gap: 8px;
   border: 1px solid var(--panel-border-hover);
@@ -288,6 +290,20 @@ function selectMidPrice() {
       "bid"
       "mid"
       "ask";
+  }
+
+  .ladder-row--ask,
+  .ladder-row--bid,
+  .orderbook-mid {
+    grid-template-columns: minmax(82px, 0.9fr) minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .ladder-price,
+  .orderbook-mid strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 </style>

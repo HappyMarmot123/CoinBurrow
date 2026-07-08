@@ -10,8 +10,7 @@
     <div class="app-nav__right">
       <div class="app-nav__links" aria-label="주요 네비게이션 메뉴">
         <router-link to="/exchange" class="app-nav__link">거래소</router-link>
-        <router-link to="/sentiment" class="app-nav__link">시장심리</router-link>
-        <router-link to="/news" class="app-nav__link">뉴스</router-link>
+        <router-link to="/insights" class="app-nav__link">시장 동향</router-link>
         <slot name="actions" />
       </div>
     </div>
@@ -23,7 +22,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 10px 14px;
+  flex-wrap: wrap;
 }
 
 .app-nav__left {
@@ -34,8 +34,10 @@
 
 .app-nav__links {
   display: flex;
-  gap: 8px;
   align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .app-nav__right {
@@ -50,6 +52,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-height: 34px;
   padding: 8px 10px;
   color: var(--text-muted);
   font-size: 13px;
@@ -66,6 +69,7 @@
 
 .app-nav__link:hover,
 .app-nav__link:focus-visible,
+.app-nav__link.router-link-active:not(.app-nav__brand),
 .app-nav__link[aria-current="page"] {
   color: var(--brand-lime);
   border-color: var(--panel-border-hover);
@@ -101,29 +105,73 @@
 
 @media (max-width: 640px) {
   .app-nav {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-
-  .app-nav__left,
-  .app-nav__links,
-  .app-nav__right {
-    width: 100%;
+    align-items: center;
+    gap: 8px 10px;
   }
 
   .app-nav__left {
-    width: auto;
-    flex-wrap: nowrap;
-  }
-
-  .app-nav__links a {
-    flex: 1 1 0;
-    text-align: center;
+    flex: 1 1 auto;
+    min-width: 120px;
   }
 
   .app-nav__right {
+    flex: 999 1 220px;
+    min-width: 0;
     margin-left: 0;
+    justify-content: flex-end;
+  }
+
+  .app-nav__links {
+    width: 100%;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  .app-nav__links a {
+    flex: 1 1 96px;
+    min-height: 38px;
+    text-align: center;
+  }
+
+  .app-nav__brand {
+    min-height: 38px;
+    align-items: center;
+  }
+}
+</style>
+
+<style scoped lang="scss">
+@media (max-width: 640px) {
+  .app-nav {
+    align-items: stretch;
+    width: min(100%, 370px);
+    max-width: 100%;
+  }
+
+  .app-nav__left,
+  .app-nav__right {
+    flex: 0 0 100%;
+    min-width: 0;
+    margin-left: 0;
+  }
+
+  .app-nav__right {
+    justify-content: stretch;
+  }
+
+  .app-nav__brand {
+    width: fit-content;
+  }
+
+  .app-nav__links {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .app-nav__link {
+    min-width: 0;
+    justify-content: center;
   }
 }
 </style>

@@ -3,6 +3,12 @@ import { buildUpbitSubscription, type Channel, type WorkerCommand } from "./prot
 import { createOutputStream } from "./pipeline.js";
 import { UPBIT_WS_URL } from "../constants/upbit.js";
 
+//* 백그라운드 스레드에서 돌아가며 WebSocket 연결 유지 및 구독 목록 관리를 수행합니다.
+//* subs 객체에 채널별 구독 중인 마켓 리스트(Set<string>)를 유지합니다.
+//* 메인스레드 메세지에 따라  subs 상태를 업데이트 합니다.
+//* 웹소켓 이벤트 데이터를 TextDecoder 디코딩 후 JSON.parse를 거쳐 RxJS Subject인 raw$ 스트림에 push합니다.
+//* Next step is pipeline.js
+
 const subs: Record<string, Set<string>> = {
   ticker: new Set(),
   orderbook: new Set(),
