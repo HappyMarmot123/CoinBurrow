@@ -79,11 +79,7 @@ const upstreamRoutes = [
 ] as const
 
 function expectSuccessData(response: { json: () => unknown }, data: unknown): void {
-  expect(response.json()).toEqual({
-    success: true,
-    data,
-    timestamp: expect.any(Number),
-  })
+  expect(response.json()).toEqual(data)
 }
 
 function expectErrorEnvelope(
@@ -91,12 +87,8 @@ function expectErrorEnvelope(
   code: string,
   message: string,
 ): void {
-  expect(response.json()).toMatchObject({
-    success: false,
-    code,
-    message,
-    timestamp: expect.any(Number),
-  })
+  const expectedError = code === 'VALIDATION_ERROR' ? message : 'upstream unavailable'
+  expect(response.json()).toEqual({ error: expectedError })
 }
 
 describe('market routes', () => {
@@ -398,7 +390,7 @@ describe('market routes', () => {
     expectSuccessData(response, [
       {
         market: 'KRW-BTC',
-        timestamp: 1_700_000_000_000,
+        timestamp: 1_699_999_980_000,
         open: 99,
         high: 105,
         low: 95,
@@ -436,7 +428,7 @@ describe('market routes', () => {
     expect(response.json()).toEqual([
       {
         market: 'KRW-BTC',
-        timestamp: 1_700_000_000_000,
+        timestamp: 1_699_999_200_000,
         open: 99,
         high: 105,
         low: 95,

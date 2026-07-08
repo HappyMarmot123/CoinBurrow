@@ -62,6 +62,7 @@ const tickerSchema = z.array(
 const candleSchema = z.array(
   z.object({
     market: z.string(),
+    candle_date_time_utc: z.string().optional(),
     timestamp: z.number(),
     opening_price: z.number(),
     high_price: z.number(),
@@ -121,6 +122,20 @@ const candleIntervalMap = {
   '1y': 'years/1',
 } as const
 
+const candleIntervalMsMap = {
+  '1s': 1_000,
+  '1m': 60_000,
+  '3m': 180_000,
+  '5m': 300_000,
+  '10m': 600_000,
+  '15m': 900_000,
+  '30m': 1_800_000,
+  '60m': 3_600_000,
+  '240m': 14_400_000,
+  '1h': 3_600_000,
+  '4h': 14_400_000,
+} as const
+
 type CandleTimeframe = keyof typeof candleIntervalMap
 type QueryValue = string | undefined
 type UpbitRequestPriority = Parameters<typeof enqueueUpbitRequest>[1]
@@ -138,18 +153,62 @@ export function clearUpbitCacheForTest(): void {
   resetUpbitRequestQueueForTest()
 }
 
-function resolveCandlePath(timeframe?: string): string {
+function resolveCandleTimeframe(timeframe?: string): CandleTimeframe {
   if (!timeframe) {
-    return candleIntervalMap['1m']
+    return '1m'
   }
 
   const normalized = timeframe.trim() === '1M' ? '1mo' : timeframe.trim().toLowerCase()
   if (normalized in candleIntervalMap) {
-    const key = normalized as keyof typeof candleIntervalMap
-    return candleIntervalMap[key]
+    return normalized as CandleTimeframe
   }
 
   throw new UpbitError(`Unsupported candle timeframe: ${timeframe}`)
+}
+
+function resolveCandlePath(timeframe?: string): string {
+  return candleIntervalMap[resolveCandleTimeframe(timeframe)]
+}
+
+function parseUpbitUtcMs(value: string | undefined): number | null {
+  if (!value) return null
+  const parsed = Date.parse(value.endsWith('Z') ? value : `${value}Z`)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function startOfUtcDay(timestamp: number): number {
+  const date = new Date(timestamp)
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+}
+
+function startOfUtcWeek(timestamp: number): number {
+  const dayStart = startOfUtcDay(timestamp)
+  const day = new Date(dayStart).getUTCDay()
+  const daysSinceMonday = (day + 6) % 7
+  return dayStart - daysSinceMonday * 86_400_000
+}
+
+function normalizeCandleTimestamp(
+  candleDateTimeUtc: string | undefined,
+  fallback: number,
+  timeframe: CandleTimeframe,
+): number {
+  const parsed = parseUpbitUtcMs(candleDateTimeUtc)
+  if (parsed !== null) return parsed
+
+  if (timeframe === '1d') return startOfUtcDay(fallback)
+  if (timeframe === '1w') return startOfUtcWeek(fallback)
+  if (timeframe === '1mo') {
+    const date = new Date(fallback)
+    return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1)
+  }
+  if (timeframe === '1y') {
+    const date = new Date(fallback)
+    return Date.UTC(date.getUTCFullYear(), 0, 1)
+  }
+
+  const interval = candleIntervalMsMap[timeframe]
+  return Math.floor(fallback / interval) * interval
 }
 
 function buildQueryString(overrides: Record<string, QueryValue>): string {
@@ -410,7 +469,8 @@ export async function fetchCandles(
     : timeframeOrCount ?? '1m'
   const resolvedCount = typeof timeframeOrCount === 'number' ? timeframeOrCount : count
 
-  const candlePath = resolveCandlePath(timeframe)
+  const normalizedTimeframe = resolveCandleTimeframe(timeframe)
+  const candlePath = candleIntervalMap[normalizedTimeframe]
   const path = buildPath(`/candles/${candlePath}`, {
     market,
     count: String(resolvedCount),
@@ -421,6 +481,7 @@ export async function fetchCandles(
   return candles.map(
     ({
       market: candleMarket,
+      candle_date_time_utc,
       timestamp,
       opening_price,
       high_price,
@@ -429,7 +490,7 @@ export async function fetchCandles(
       candle_acc_trade_volume,
     }) => ({
       market: candleMarket,
-      timestamp,
+      timestamp: normalizeCandleTimestamp(candle_date_time_utc, timestamp, normalizedTimeframe),
       open: opening_price,
       high: high_price,
       low: low_price,

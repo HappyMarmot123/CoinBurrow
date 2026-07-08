@@ -14,11 +14,9 @@ import {
   createChart,
   type IChartApi,
   type ISeriesApi,
-  type UTCTimestamp,
   HistogramSeries,
 } from "lightweight-charts";
 import {
-  TF_SECONDS,
   formatAmount,
   readCssToken,
   tickFormatter,
@@ -26,9 +24,8 @@ import {
   toVolumeBar,
 } from "./candleChartData.js";
 import { useCandleStore } from "../../stores/candle.js";
-import { useTradeStore } from "../../stores/trade.js";
 import type { CandleTimeframe } from "../../api/rest.js";
-import type { CandleView, TradeView } from "../../stores/types.js";
+import type { CandleView } from "../../stores/types.js";
 import { createTradingViewLogoGuard } from "./tradingViewLogoGuard.js";
 
 const chartHeight = 460;
@@ -46,7 +43,6 @@ const props = withDefaults(
 );
 
 const candleStore = useCandleStore();
-const tradeStore = useTradeStore();
 const container = ref<HTMLElement | null>(null);
 // lightweight-charts 인스턴스는 Vue 반응형 프록시로 감싸지 않는다(shallowRef + markRaw).
 const chart = shallowRef<IChartApi | null>(null);
@@ -254,11 +250,6 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  if (liveRafId !== null && typeof cancelAnimationFrame !== "undefined") {
-    cancelAnimationFrame(liveRafId);
-  }
-  liveRafId = null;
-  pendingTick = null;
   stopTradingViewLogoGuard();
   resizeObserver.value?.disconnect();
   chart.value?.remove();
@@ -289,53 +280,6 @@ watch(
         secondsVisible: props.timeframe === "1s",
       },
     });
-  },
-);
-
-// 실시간 틱 오버레이: 체결(trade)마다 형성 중인 봉의 close/high/low를 갱신.
-// store는 건드리지 않고 차트 로컬로만 반영 → candle WS가 권위값으로 reconcile.
-let pendingTick: TradeView | null = null;
-let liveRafId: number | null = null;
-
-function applyLiveTick(trade: TradeView) {
-  if (!candleSeries.value || trade.market !== props.market) return;
-  if (renderedSnapshot.length === 0) return;
-
-  const last = renderedSnapshot[renderedSnapshot.length - 1];
-  const bucketSec = TF_SECONDS[props.timeframe] ?? 60;
-  const lastTime = Math.floor(last.timestamp / 1000);
-  const tickBucket = Math.floor(trade.timestamp / 1000 / bucketSec) * bucketSec;
-  // 버킷 경계 가드: 다른(새) 버킷이면 틱으로 새 봉을 만들지 않고 candle WS를 기다림.
-  if (tickBucket !== lastTime) return;
-
-  const price = trade.price;
-  candleSeries.value.update({
-    time: lastTime as UTCTimestamp,
-    open: last.open,
-    high: Math.max(last.high, price),
-    low: Math.min(last.low, price),
-    close: price,
-  });
-}
-
-function flushLiveTick() {
-  liveRafId = null;
-  const trade = pendingTick;
-  pendingTick = null;
-  if (trade) applyLiveTick(trade);
-}
-
-watch(
-  () => tradeStore.recent[0],
-  (trade) => {
-    if (!trade) return;
-    pendingTick = trade;
-    if (liveRafId !== null) return;
-    if (typeof requestAnimationFrame === "undefined") {
-      flushLiveTick();
-      return;
-    }
-    liveRafId = requestAnimationFrame(flushLiveTick);
   },
 );
 </script>
