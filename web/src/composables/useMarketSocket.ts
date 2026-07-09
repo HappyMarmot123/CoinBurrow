@@ -37,7 +37,9 @@ export function useMarketSocket() {
     } else if (message.type === "candle" || message.type.startsWith("candle.")) {
       (message.data as CandleView[]).forEach((item) => candle.applyCandle(item));
     } else if (message.type === "trade") {
-      (message.data as TradeView[]).forEach((item) => trade.applyTrade(item));
+      const trades = message.data as TradeView[];
+      trade.applyTrades(trades);
+      trades.forEach((item) => ticker.applyTradeTick(item));
     }
   };
 

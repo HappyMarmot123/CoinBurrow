@@ -215,11 +215,13 @@ export function useExchangeData({
   }
 
   watch(
-    () => tradeStore.recent[0],
-    (trade) => {
-      if (!trade || trade.market !== market.value) return;
-      candleStore.applyTradeTick(trade, candleTimeframe.value, candleCount.value);
+    () => tradeStore.latestBatch,
+    (trades) => {
+      const marketTrades = trades.filter((trade) => trade.market === market.value);
+      if (marketTrades.length === 0) return;
+      candleStore.applyTradeTicks(marketTrades, candleTimeframe.value, candleCount.value);
     },
+    { flush: "sync" },
   );
 
   return {

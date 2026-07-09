@@ -15,6 +15,31 @@ describe("stores", () => {
     expect(store.byMarket["KRW-BTC"].tradePrice).toBe(1);
   });
 
+  it("ticker store updates an existing market from live trade ticks", () => {
+    const store = useTickerStore();
+    store.applyTicker([
+      {
+        market: "KRW-BTC",
+        tradePrice: 100,
+        signedChangeRate: 0,
+        accTradePrice24h: 1_000,
+        openingPrice: 100,
+        highPrice: 105,
+        lowPrice: 95,
+      },
+    ]);
+
+    store.applyTradeTick({ market: "KRW-BTC", price: 110, volume: 0.1, side: "BID", timestamp: 1 });
+
+    expect(store.byMarket["KRW-BTC"]).toMatchObject({
+      tradePrice: 110,
+      signedChangeRate: 0.1,
+      accTradePrice24h: 1_000,
+      highPrice: 110,
+      lowPrice: 95,
+    });
+  });
+
   it("candle store updates same timestamp, pushes new", () => {
     const store = useCandleStore();
     store.setInitial([{ market: "KRW-BTC", timestamp: 1, open: 1, high: 1, low: 1, close: 1, volume: 1 }]);
@@ -157,6 +182,28 @@ describe("stores", () => {
     ]);
   });
 
+  it("candle store applies live trade batches in timestamp order", () => {
+    const store = useCandleStore();
+    const bucketStart = Date.parse("2026-07-08T01:23:00Z");
+    store.setInitial([
+      { market: "KRW-BTC", timestamp: bucketStart, open: 100, high: 100, low: 100, close: 100, volume: 1 },
+    ]);
+
+    store.applyTradeTicks(
+      [
+        { market: "KRW-BTC", price: 90, volume: 0.1, side: "ASK", timestamp: bucketStart + 40_000 },
+        { market: "KRW-BTC", price: 110, volume: 0.1, side: "BID", timestamp: bucketStart + 20_000 },
+      ],
+      "1m",
+    );
+
+    expect(store.candles[0]).toMatchObject({
+      high: 110,
+      low: 90,
+      close: 90,
+    });
+  });
+
   it("trade store keeps newest first, caps at 50", () => {
     const store = useTradeStore();
     for (let i = 0; i < 60; i++) {
@@ -165,6 +212,18 @@ describe("stores", () => {
 
     expect(store.recent).toHaveLength(50);
     expect(store.recent[0].price).toBe(59);
+  });
+
+  it("trade store exposes live batches in timestamp order", () => {
+    const store = useTradeStore();
+
+    store.applyTrades([
+      { market: "KRW-BTC", price: 2, volume: 1, side: "BID", timestamp: 2 },
+      { market: "KRW-BTC", price: 1, volume: 1, side: "ASK", timestamp: 1 },
+    ]);
+
+    expect(store.latestBatch.map((trade) => trade.timestamp)).toEqual([1, 2]);
+    expect(store.recent.map((trade) => trade.timestamp)).toEqual([2, 1]);
   });
 
   it("validation health tracks mismatch, retry, fallback, and stale state", () => {

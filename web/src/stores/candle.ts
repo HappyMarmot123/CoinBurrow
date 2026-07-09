@@ -139,5 +139,10 @@ export const useCandleStore = defineStore("candle", {
         this.candles = this.candles.slice(-Math.max(maxCount, 1));
       }
     },
+    applyTradeTicks(trades: TradeView[], timeframe: CandleTimeframe, maxCount = 200) {
+      [...trades]
+        .sort((a, b) => a.timestamp - b.timestamp)
+        .forEach((trade) => this.applyTradeTick(trade, timeframe, maxCount));
+    },
   },
 });
