@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@splinetool/runtime": "^1.9.0",
+    "@supabase/supabase-js": "^2.110.1",
     "gsap": "^3.12.5",
     "highcharts": "^11.4.6",
     "highcharts-vue": "^2.0.1",
