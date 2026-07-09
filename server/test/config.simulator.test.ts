@@ -1,6 +1,10 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 describe('simulator config', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   it('exposes simulator env values when configured', async () => {
     vi.stubEnv('SUPABASE_URL', 'https://example.supabase.co')
     vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY', 'service-role')
