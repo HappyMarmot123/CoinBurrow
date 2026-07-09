@@ -361,7 +361,7 @@ function closeCoinDetail() {
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 700;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .chart-panel-head {
@@ -378,7 +378,7 @@ function closeCoinDetail() {
   align-items: baseline;
   gap: 8px;
   flex-direction: row;
-  white-space: nowrap;
+  flex-wrap: wrap;
 }
 
 .chart-tradingview-link {
@@ -473,6 +473,7 @@ function closeCoinDetail() {
 }
 
 .timeframe-tabs button {
+  min-height: 38px;
   border: 1px solid var(--panel-border);
   border-radius: var(--radius-sm);
   padding: 8px 10px;
@@ -678,6 +679,21 @@ function closeCoinDetail() {
   }
 
   .chart-control {
+    width: 100%;
+  }
+
+  .chart-control--timeframe[data-row],
+  .timeframe-group {
+    align-items: stretch;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .chart-control--count {
+    width: 100%;
+  }
+
+  .chart-control--count select {
     width: 100%;
   }
 

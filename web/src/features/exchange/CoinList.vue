@@ -103,7 +103,7 @@ function formatSignedRate(ticker?: TickerView) {
         </div>
         <div class="coin-price">
           <strong>{{ formatPrice(row.ticker?.tradePrice) }}</strong>
-          <small>{{ formatCompact(row.ticker?.accTradePrice24h) }}</small>
+          <small class="coin-price__volume">{{ formatCompact(row.ticker?.accTradePrice24h) }}</small>
         </div>
           <span class="coin-change">
             {{ formatSignedRate(row.ticker) }}
@@ -228,6 +228,7 @@ input::placeholder {
   cursor: pointer;
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(82px, 0.8fr) minmax(58px, auto);
+  grid-template-areas: "main price change";
   align-items: center;
   gap: 10px;
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -260,6 +261,19 @@ input::placeholder {
   min-width: 0;
   gap: 2px;
 }
+
+.coin-main {
+  grid-area: main;
+}
+
+.coin-price {
+  grid-area: price;
+}
+
+.coin-change {
+  grid-area: change;
+}
+
 .coin-main__name {
   overflow: hidden;
   color: #f5f8ff;
@@ -268,13 +282,18 @@ input::placeholder {
   white-space: nowrap;
 }
 
-.coin-main__code,
-.coin-price small {
+.coin-main__code {
   overflow: hidden;
   color: #96a4be;
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.coin-price__volume {
+  color: #96a4be;
+  font-size: 12px;
+  overflow-wrap: anywhere;
 }
 
 .coin-price {
@@ -334,18 +353,19 @@ input::placeholder {
 @media (max-width: 640px) {
   .coin-row {
     grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "main change"
+      "price change";
     column-gap: 8px;
+    row-gap: 6px;
   }
 
   .coin-price {
-    grid-column: 1 / 2;
-    grid-row: 1 / 2;
     text-align: left;
   }
 
   .coin-change {
-    grid-column: 2 / 3;
-    grid-row: 1 / 3;
+    align-self: center;
   }
 }
 </style>
