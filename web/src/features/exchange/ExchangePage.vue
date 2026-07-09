@@ -322,7 +322,7 @@ function closeCoinDetail() {
 
 .exchange-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(280px, 22vw, 340px);
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
   padding: 14px;
   gap: 14px;
 }
@@ -361,7 +361,7 @@ function closeCoinDetail() {
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 700;
-  white-space: normal;
+  white-space: nowrap;
 }
 
 .chart-panel-head {
@@ -378,7 +378,7 @@ function closeCoinDetail() {
   align-items: baseline;
   gap: 8px;
   flex-direction: row;
-  flex-wrap: wrap;
+  white-space: nowrap;
 }
 
 .chart-tradingview-link {
@@ -473,7 +473,6 @@ function closeCoinDetail() {
 }
 
 .timeframe-tabs button {
-  min-height: 38px;
   border: 1px solid var(--panel-border);
   border-radius: var(--radius-sm);
   padding: 8px 10px;
@@ -501,7 +500,7 @@ function closeCoinDetail() {
 .split-grid {
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
 }
 
 .panel-sidebar {
@@ -653,12 +652,11 @@ function closeCoinDetail() {
   }
 
   .panel-sidebar {
-    order: -1;
     position: relative;
     top: auto;
     height: auto;
-    max-height: min(52dvh, 460px);
-    overflow: hidden;
+    max-height: none;
+    overflow: visible;
   }
 
   .split-grid {
@@ -683,49 +681,9 @@ function closeCoinDetail() {
     width: 100%;
   }
 
-  .chart-control--timeframe[data-row],
-  .timeframe-group {
-    align-items: stretch;
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .chart-control--count {
-    width: 100%;
-  }
-
-  .chart-control--count select {
-    width: 100%;
-  }
-
   .panel {
     padding: 14px;
   }
 }
 </style>
 
-<style scoped lang="scss">
-@media (max-width: 640px) {
-  .exchange-nav,
-  .exchange-hero,
-  .exchange-layout {
-    width: min(370px, calc(100% - 20px));
-    margin-left: 10px;
-    margin-right: auto;
-  }
-
-  .exchange-page,
-  .exchange-layout,
-  .main-column,
-  .panel-sidebar,
-  .chart-panel,
-  .market-strip {
-    max-width: 100%;
-    min-width: 0;
-  }
-
-  .exchange-shell {
-    overflow-x: hidden;
-  }
-}
-</style>

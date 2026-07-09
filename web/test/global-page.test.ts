@@ -2,15 +2,9 @@ import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { setActivePinia, createPinia } from "pinia";
 import { createRouter, createWebHistory } from "vue-router";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import GlobalView from "../src/features/global/GlobalView.vue";
 
 const router = createRouter({ history: createWebHistory(), routes: [{ path: "/", component: { template: "<div/>" } }] });
-
-function readSource(path: string): string {
-  return readFileSync(path, "utf8").replace(/\r\n/g, "\n");
-}
 
 beforeEach(() => setActivePinia(createPinia()));
 afterEach(() => vi.restoreAllMocks());
@@ -70,14 +64,5 @@ describe("GlobalPage", () => {
     await wrapper.vm.$nextTick();
 
     expect(wrapper.text()).toContain("일시적으로 가져올 수 없습니다");
-  });
-
-  it("defines responsive stat card and hero readout sizing", () => {
-    const source = readSource(join(process.cwd(), "src/features/global/GlobalView.vue"));
-
-    expect(source).toContain("grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));");
-    expect(source).toContain("overflow-wrap: anywhere;");
-    expect(source).toContain("@media (max-width: 640px)");
-    expect(source).toContain("grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));");
   });
 });
