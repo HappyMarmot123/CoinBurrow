@@ -325,11 +325,12 @@ const trendOptions = computed<Options>(() => {
           </div>
         </div>
         <div ref="trendBodyRef" class="trend-body">
-          <Chart
-            v-if="history.length > 0"
-            :options="trendOptions"
-            :highcharts="Highcharts"
-          />
+          <div v-if="history.length > 0" class="trend-chart">
+            <Chart
+              :options="trendOptions"
+              :highcharts="Highcharts"
+            />
+          </div>
           <p v-else class="sentiment-state">추세 데이터가 없습니다.</p>
         </div>
       </article>
@@ -341,9 +342,11 @@ const trendOptions = computed<Options>(() => {
 .sentiment-view {
   flex: 1;
   min-height: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: clamp(8px, 1.4vh, 14px);
+  overflow: hidden;
 }
 
 .sentiment-state {
@@ -366,6 +369,7 @@ const trendOptions = computed<Options>(() => {
 .panel {
   @include exchange-panel;
   padding: clamp(12px, 1.8vh, 18px);
+  overflow: hidden;
 }
 
 .panel-head {
@@ -559,6 +563,7 @@ const trendOptions = computed<Options>(() => {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .panel-trend .panel-head {
@@ -568,6 +573,24 @@ const trendOptions = computed<Options>(() => {
 .trend-body {
   flex: 1;
   min-height: 0;
+  overflow: hidden;
+}
+
+.trend-chart {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.trend-chart :deep(.highcharts-container) {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+.trend-chart :deep(.highcharts-container svg) {
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 .trend-range {

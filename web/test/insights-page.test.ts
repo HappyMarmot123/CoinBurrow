@@ -54,7 +54,13 @@ describe("InsightsPage one-page hub", () => {
     await flushPromises();
 
     expect(wrapper.text()).toContain("시장 동향");
+    expect(wrapper.text()).toContain("시총");
+    expect(wrapper.text()).toContain("심리");
+    expect(wrapper.text()).toContain("김치프리미엄");
     expect(wrapper.text()).toContain("총 시가총액"); // GlobalView (not stubbed)
+    expect(wrapper.find('[aria-labelledby="insights-global-title"]').exists()).toBe(true);
+    expect(wrapper.find('[aria-labelledby="insights-sentiment-title"]').exists()).toBe(true);
+    expect(wrapper.find('[aria-labelledby="insights-kimchi-title"]').exists()).toBe(true);
     expect(wrapper.findComponent(SentimentView).exists()).toBe(true);
     expect(wrapper.findComponent(KimchiView).exists()).toBe(true);
   });
