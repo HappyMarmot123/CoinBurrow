@@ -233,7 +233,7 @@ function closeCoinDetail() {
             <div class="panel-head">
               <h3>호가</h3>
             </div>
-            <OrderbookPanel />
+            <OrderbookPanel :current-price="liveTicker?.tradePrice" />
           </section>
           <section class="panel">
             <div class="panel-head">

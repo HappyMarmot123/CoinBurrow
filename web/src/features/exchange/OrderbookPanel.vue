@@ -3,6 +3,7 @@ import { useOrderbookStore } from "../../stores/orderbook.js";
 import { computed } from "vue";
 import { formatNumber } from "../../utils/format.js";
 
+const props = defineProps<{ currentPrice?: number }>();
 const orderbookStore = useOrderbookStore();
 const emit = defineEmits<{ "select-price": [price: number] }>();
 const ORDERBOOK_SIDE_LIMIT = 10;
@@ -29,6 +30,11 @@ const midPrice = computed(() => {
   if (typeof bestAsk.value !== "number" || typeof bestBid.value !== "number") return undefined;
   return (bestAsk.value + bestBid.value) / 2;
 });
+const displayPrice = computed(() => (
+  typeof props.currentPrice === "number" && Number.isFinite(props.currentPrice)
+    ? props.currentPrice
+    : midPrice.value
+));
 const spread = computed(() => {
   if (typeof bestAsk.value !== "number" || typeof bestBid.value !== "number") return undefined;
   return bestAsk.value - bestBid.value;
@@ -39,8 +45,8 @@ function depthStyle(size: number) {
 }
 
 function selectMidPrice() {
-  if (midPrice.value === undefined) return;
-  emit("select-price", midPrice.value);
+  if (displayPrice.value === undefined) return;
+  emit("select-price", displayPrice.value);
 }
 </script>
 
@@ -68,13 +74,13 @@ function selectMidPrice() {
       <button
         class="orderbook-mid"
         type="button"
-        :aria-label="`중간가 ${midPrice !== undefined ? formatNumber(midPrice) : '-'}, 스프레드 ${
+        :aria-label="`현재가 ${displayPrice !== undefined ? formatNumber(displayPrice) : '-'}, 스프레드 ${
           spread !== undefined ? formatNumber(spread) : '-'
         }`"
-        :disabled="midPrice === undefined"
+        :disabled="displayPrice === undefined"
         @click="selectMidPrice"
       >
-        <strong>{{ midPrice !== undefined ? formatNumber(midPrice) : "-" }}</strong>
+        <strong>{{ displayPrice !== undefined ? formatNumber(displayPrice) : "-" }}</strong>
         <em>스프레드: {{ spread !== undefined ? formatNumber(spread) : "-" }}</em>
       </button>
 
