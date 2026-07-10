@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
+    "db:generate": "drizzle-kit generate --config drizzle.config.ts",
+    "db:migrate": "drizzle-kit migrate --config drizzle.config.ts",
+    "db:studio": "drizzle-kit studio --config drizzle.config.ts",
     "test": "vitest run"
   },
   "dependencies": {
