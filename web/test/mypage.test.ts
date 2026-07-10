@@ -1,5 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { mount } from '@vue/test-utils'
+import process from 'node:process'
+import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import MyPage from '../src/features/mypage/MyPage.vue'
 import { useAuthStore } from '../src/stores/auth.js'
@@ -41,15 +42,30 @@ describe('MyPage', () => {
     expect(refreshSession).toHaveBeenCalledTimes(1)
   })
 
-  it('handles a rejected auth session refresh when mounted', () => {
+  it('handles a rejected auth session refresh when mounted', async () => {
     const pinia = createPinia()
     setActivePinia(pinia)
-    const refreshSessionResult = new Promise<void>(() => {})
-    const catchHandler = vi.spyOn(refreshSessionResult, 'catch')
-    vi.spyOn(useAuthStore(), 'refreshSession').mockReturnValue(refreshSessionResult)
+    const refreshSession = vi
+      .spyOn(useAuthStore(), 'refreshSession')
+      .mockRejectedValueOnce(new Error('refresh failed'))
+    const unhandledRejections: unknown[] = []
+    const recordUnhandledRejection = (reason: unknown) => {
+      unhandledRejections.push(reason)
+    }
 
-    mountMyPage(pinia)
+    process.on('unhandledRejection', recordUnhandledRejection)
 
-    expect(catchHandler).toHaveBeenCalledWith(expect.any(Function))
+    try {
+      const wrapper = mountMyPage(pinia)
+      await flushPromises()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      expect(refreshSession).toHaveBeenCalledTimes(1)
+      expect(wrapper.text()).toContain('마이페이지')
+      expect(wrapper.text()).toContain('로그인 상태')
+      expect(unhandledRejections).toEqual([])
+    } finally {
+      process.off('unhandledRejection', recordUnhandledRejection)
+    }
   })
 })
