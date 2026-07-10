@@ -12,6 +12,7 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
+        api: "modern-compiler",
         additionalData: (source: string, filename: string) => {
           const normalized = filename.replaceAll("\\", "/");
           if (normalized.endsWith("/src/styles/index.scss")) return source;
