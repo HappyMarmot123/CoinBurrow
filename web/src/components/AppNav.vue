@@ -10,8 +10,7 @@
     <div class="app-nav__right">
       <div class="app-nav__links" aria-label="주요 네비게이션 메뉴">
         <router-link to="/exchange" class="app-nav__link">거래소</router-link>
-        <router-link to="/insights" class="app-nav__link">시장 동향</router-link>
-        <slot name="actions" />
+        <router-link to="/insights" class="app-nav__link">시장 동향</router-link>`r`n        <router-link to="/mypage" class="app-nav__link">마이페이지</router-link>`r`n        <slot name="actions" />
       </div>
     </div>
   </nav>
