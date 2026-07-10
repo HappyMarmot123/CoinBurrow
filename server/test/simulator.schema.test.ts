@@ -1,4 +1,5 @@
 import { getTableName } from 'drizzle-orm'
+import { getTableConfig } from 'drizzle-orm/pg-core'
 import { describe, expect, it } from 'vitest'
 import {
   profiles,
@@ -52,6 +53,15 @@ describe('simulator schema', () => {
     expectColumn(simAccounts.mode, { name: 'mode', notNull: true, hasDefault: true, default: 'paper' })
     expectColumn(simAccounts.createdAt, { name: 'created_at', notNull: true, hasDefault: true })
     expectColumn(simAccounts.updatedAt, { name: 'updated_at', notNull: true, hasDefault: true })
+  })
+
+  it('prevents duplicate simulator accounts per user and mode', () => {
+    const { uniqueConstraints } = getTableConfig(simAccounts)
+    const uniqueColumnSets = uniqueConstraints.map((constraint) =>
+      constraint.columns.map((column) => column.name),
+    )
+
+    expect(uniqueColumnSets).toContainEqual(['user_id', 'mode'])
   })
 
   it('defines simulator audit event column contract', () => {

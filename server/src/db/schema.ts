@@ -1,4 +1,4 @@
-import { numeric, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { numeric, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
 
 export const profiles = pgTable('profiles', {
   id: uuid('id').primaryKey(),
@@ -17,7 +17,9 @@ export const simAccounts = pgTable('sim_accounts', {
   mode: text('mode').default('paper').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-})
+}, (table) => [
+  unique('sim_accounts_user_id_mode_unique').on(table.userId, table.mode),
+])
 
 export const simAuditEvents = pgTable('sim_audit_events', {
   id: uuid('id').primaryKey().defaultRandom(),
