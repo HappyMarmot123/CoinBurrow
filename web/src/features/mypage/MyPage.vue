@@ -7,7 +7,7 @@ const authStore = useAuthStore();
 const authStatus = computed(() => (authStore.authenticated ? "로그인됨" : "로그인이 필요합니다."));
 
 onMounted(() => {
-  void authStore.refreshSession();
+  void authStore.refreshSession().catch(() => undefined);
 });
 </script>
 

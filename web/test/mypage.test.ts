@@ -40,4 +40,16 @@ describe('MyPage', () => {
 
     expect(refreshSession).toHaveBeenCalledTimes(1)
   })
+
+  it('handles a rejected auth session refresh when mounted', () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const refreshSessionResult = new Promise<void>(() => {})
+    const catchHandler = vi.spyOn(refreshSessionResult, 'catch')
+    vi.spyOn(useAuthStore(), 'refreshSession').mockReturnValue(refreshSessionResult)
+
+    mountMyPage(pinia)
+
+    expect(catchHandler).toHaveBeenCalledWith(expect.any(Function))
+  })
 })
