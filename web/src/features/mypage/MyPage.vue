@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import AppNav from "../../components/AppNav.vue";
 import { useAuthStore } from "../../stores/auth.js";
 
 const authStore = useAuthStore();
 const authStatus = computed(() => (authStore.authenticated ? "로그인됨" : "로그인이 필요합니다."));
+
+onMounted(() => {
+  void authStore.refreshSession();
+});
 </script>
 
 <template>
