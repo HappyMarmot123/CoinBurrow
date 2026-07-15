@@ -2,6 +2,9 @@ import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 
+const apiProxyTarget = process.env.API_PROXY_TARGET ?? "http://localhost:4000";
+const usePolling = process.env.CHOKIDAR_USEPOLLING === "true";
+
 export default defineConfig({
   plugins: [vue()],
   resolve: {
@@ -21,11 +24,19 @@ export default defineConfig({
     },
   },
   server: {
+    host: "0.0.0.0",
     port: 3000,
+    strictPort: true,
+    watch: usePolling
+      ? {
+          usePolling: true,
+          interval: 100,
+        }
+      : undefined,
     proxy: {
-      "/market": "http://localhost:4000",
+      "/market": apiProxyTarget,
       "/api": {
-        target: "http://localhost:4000",
+        target: apiProxyTarget,
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ""),
       },
