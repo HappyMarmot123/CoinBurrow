@@ -13,8 +13,10 @@ import {
   CandlestickSeries,
   createChart,
   type IChartApi,
+  type IPriceLine,
   type ISeriesApi,
   HistogramSeries,
+  LineStyle,
 } from "lightweight-charts";
 import {
   formatAmount,
@@ -36,6 +38,7 @@ const props = withDefaults(
   defineProps<{
     timeframe?: CandleTimeframe;
     market: string;
+    buyPrice?: number;
   }>(),
   {
     timeframe: "1m",
@@ -48,6 +51,7 @@ const container = ref<HTMLElement | null>(null);
 const chart = shallowRef<IChartApi | null>(null);
 const candleSeries = shallowRef<ISeriesApi<"Candlestick"> | null>(null);
 const volumeSeries = shallowRef<ISeriesApi<"Histogram"> | null>(null);
+const buyPriceLine = shallowRef<IPriceLine | null>(null);
 const resizeObserver = ref<ResizeObserver | null>(null);
 const hasCandles = computed(() => candleStore.candles.length > 0);
 const { hideTradingViewLogoAfterMount, stopTradingViewLogoGuard } = createTradingViewLogoGuard(container);
@@ -58,9 +62,41 @@ const chartColors = computed(() => ({
   axisSoft: readCssToken("--chart-axis-soft", "rgba(255, 255, 255, 0.16)"),
   grid: readCssToken("--chart-grid", "rgba(255, 255, 255, 0.11)"),
   label: readCssToken("--text-muted", "#9fb0c6"),
+  buy: readCssToken("--brand-lime", "#d9ff66"),
   up: readCssToken("--c-up", "#9be15d"),
   down: readCssToken("--c-down", "#ffb02e"),
 }));
+
+function syncBuyPriceLine() {
+  const series = candleSeries.value;
+  if (!series) return;
+
+  const price = props.buyPrice;
+  if (typeof price !== "number" || !Number.isFinite(price) || price <= 0) {
+    if (buyPriceLine.value) {
+      series.removePriceLine(buyPriceLine.value);
+      buyPriceLine.value = null;
+    }
+    return;
+  }
+
+  const options = {
+    price,
+    color: chartColors.value.buy,
+    lineWidth: 1 as const,
+    lineStyle: LineStyle.Dashed,
+    lineVisible: true,
+    axisLabelVisible: true,
+    title: "매수가",
+  };
+
+  if (buyPriceLine.value) {
+    buyPriceLine.value.applyOptions(options);
+    return;
+  }
+
+  buyPriceLine.value = markRaw(series.createPriceLine(options));
+}
 
 function applyChartTheme() {
   if (!chart.value) return;
@@ -238,6 +274,7 @@ function setupChart() {
 
   applyChartTheme();
   setFullData(candleStore.candles);
+  syncBuyPriceLine();
   observeResize();
   syncSize();
 }
@@ -252,6 +289,10 @@ onMounted(() => {
 onUnmounted(() => {
   stopTradingViewLogoGuard();
   resizeObserver.value?.disconnect();
+  if (candleSeries.value && buyPriceLine.value) {
+    candleSeries.value.removePriceLine(buyPriceLine.value);
+  }
+  buyPriceLine.value = null;
   chart.value?.remove();
   chart.value = null;
   candleSeries.value = null;
@@ -262,8 +303,14 @@ watch(
   () => chartColors.value,
   () => {
     applyChartTheme();
+    syncBuyPriceLine();
   },
   { deep: true },
+);
+
+watch(
+  () => props.buyPrice,
+  () => syncBuyPriceLine(),
 );
 
 watch(
