@@ -7,8 +7,16 @@ import { registerSentimentRoutes } from './routes/sentiment.js'
 import { registerFxRoutes } from './routes/fx.js'
 import { registerKimchiRoutes } from './routes/kimchi.js'
 import { registerGlobalRoutes } from './routes/global.js'
+import {
+  registerSimulatorRoutes,
+  type SimulatorRouteDependencies,
+} from './routes/simulator.js'
 
-export function buildApp(): FastifyInstance {
+export interface BuildAppOptions {
+  simulatorDependencies?: SimulatorRouteDependencies
+}
+
+export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   const app = Fastify({ logger: false })
 
   void app.register(cors, { origin: true })
@@ -20,6 +28,7 @@ export function buildApp(): FastifyInstance {
   registerFxRoutes(app)
   registerKimchiRoutes(app)
   registerGlobalRoutes(app)
+  registerSimulatorRoutes(app, options.simulatorDependencies)
 
   return app
 }
