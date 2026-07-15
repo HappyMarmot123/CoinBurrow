@@ -23,6 +23,12 @@ describe("responsive layout source contracts", () => {
   it("keeps exchange responsive changes scoped away from reverted risky patterns", () => {
     const source = readSource("src/features/exchange/ExchangePage.vue");
     expect(hasDeclaration(source, ".exchange-layout", "grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);")).toBe(true);
+    expect(hasDeclaration(source, ".trade-workspace", "grid-template-columns: minmax(0, 1fr) minmax(390px, 0.92fr);")).toBe(true);
+    expect(source).toContain(`@media (max-width: 1120px) {
+  .trade-workspace {
+    grid-template-columns: 1fr;
+  }
+}`);
     expect(hasDeclaration(source, ".chart-sub", "white-space: normal;")).toBe(true);
     expect(hasDeclaration(source, ".chart-panel-head__main", "flex-wrap: wrap;")).toBe(true);
     expect(hasDeclaration(source, ".timeframe-tabs button", "min-height: 38px;")).toBe(true);
@@ -47,5 +53,18 @@ describe("responsive layout source contracts", () => {
     expect(coinPriceVolumeBlocks.some((block) => block.includes("overflow: hidden;"))).toBe(false);
     expect(coinPriceVolumeBlocks.some((block) => block.includes("text-overflow: ellipsis;"))).toBe(false);
     expect(coinPriceVolumeBlocks.some((block) => block.includes("white-space: nowrap;"))).toBe(false);
+  });
+
+  it("keeps mypage centered and free of trading controls", () => {
+    const source = readSource("src/features/simulator/MyPage.vue");
+
+    expect(hasDeclaration(source, ".mypage-shell", "width: min(1120px, calc(100% - 32px));")).toBe(true);
+    expect(hasDeclaration(source, ".mypage-shell", "margin-inline: auto;")).toBe(true);
+    expect(hasDeclaration(source, ".mypage-heading", "text-align: center;")).toBe(true);
+    expect(source).toContain("<h1>마이페이지</h1>");
+    expect(source).not.toContain("SimulatorOrderForm");
+    expect(source).not.toContain("Paper portfolio");
+    expect(source).not.toContain("Single player vault");
+    expect(source).not.toContain("simulator-hero__seal");
   });
 });

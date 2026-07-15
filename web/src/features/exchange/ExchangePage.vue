@@ -10,12 +10,15 @@ import OrderbookPanel from "./OrderbookPanel.vue";
 import DerivativesPanel from "./DerivativesPanel.vue";
 import TradeList from "./TradeList.vue";
 import CoinMetaDrawer from "./CoinMetaDrawer.vue";
+import ExchangeSimulatorPanel from "../simulator/ExchangeSimulatorPanel.vue";
 import { useDerivatives } from "../../composables/useDerivatives.js";
 import { useExchangeData } from "../../composables/useExchangeData.js";
 import { useMarketMeta } from "../../composables/useMarketMeta.js";
 import { useCoinMeta } from "../../composables/useCoinMeta.js";
 import { useFreeApiPolicy } from "../../composables/useFreeApiPolicy.js";
 import { useCandleStore } from "../../stores/candle.js";
+import { useSimulatorStore } from "../../stores/simulator.js";
+import { toSimulatorSymbol } from "../simulator/simulatorMarket.js";
 import { CANDLE_COUNT_OPTIONS, TIMEFRAME_OPTIONS } from "../../constants/exchange.js";
 import { DEFAULT_MARKET } from "../../constants/market.js";
 import type { CandleTimeframe } from "../../api/rest.js";
@@ -26,10 +29,17 @@ const selectedQuote = ref("KRW");
 const candleTimeframe = ref<CandleTimeframe>("1m");
 const candleCount = ref(200);
 const candleStore = useCandleStore();
+const simulatorStore = useSimulatorStore();
 
 const timeframeOptions = TIMEFRAME_OPTIONS;
 const countOptions = CANDLE_COUNT_OPTIONS;
 const visibleCandleCount = computed(() => candleStore.candles.length);
+const selectedBuyPrice = computed(() => {
+  const symbol = toSimulatorSymbol(market.value);
+  if (!symbol) return undefined;
+
+  return simulatorStore.state?.positions.find((position) => position.symbol === symbol)?.avgPrice;
+});
 const tradingViewChartUrl = computed(() => toTradingViewChartUrl(market.value));
 const chartSubLabel = computed(() =>
   visibleCandleCount.value > 0
@@ -225,16 +235,30 @@ function closeCoinDetail() {
               </label>
             </div>
           </div>
-          <CandleChart :timeframe="candleTimeframe" :market="market" />
+          <CandleChart
+            :timeframe="candleTimeframe"
+            :market="market"
+            :buy-price="selectedBuyPrice"
+          />
         </section>
 
-        <div class="split-grid">
-          <section class="panel">
+        <section class="trade-workspace" aria-label="호가와 주문">
+          <section class="panel trade-workspace__orderbook">
             <div class="panel-head">
               <h3>호가</h3>
             </div>
             <OrderbookPanel :current-price="liveTicker?.tradePrice" />
           </section>
+
+          <ExchangeSimulatorPanel
+            class="trade-workspace__order"
+            :market="market"
+            :market-price="liveTicker?.tradePrice"
+            :market-change-rate="liveTicker?.signedChangeRate"
+          />
+        </section>
+
+        <div class="split-grid">
           <section class="panel">
             <div class="panel-head">
               <h3>체결</h3>
@@ -504,6 +528,27 @@ function closeCoinDetail() {
   grid-template-columns: 1fr;
 }
 
+.trade-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(390px, 0.92fr);
+  align-items: stretch;
+  gap: 14px;
+}
+
+.trade-workspace__orderbook,
+.trade-workspace__order {
+  min-width: 0;
+}
+
+.trade-workspace__orderbook {
+  display: flex;
+  flex-direction: column;
+}
+
+.trade-workspace__orderbook :deep(.orderbook) {
+  flex: 1 1 auto;
+}
+
 .panel-sidebar {
   position: sticky;
   top: 14px;
@@ -643,6 +688,12 @@ function closeCoinDetail() {
   }
 }
 
+@media (max-width: 1120px) {
+  .trade-workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 960px) {
   .exchange-page {
     padding-bottom: 24px;
@@ -673,6 +724,7 @@ function closeCoinDetail() {
     width: min(640px, calc(100% - 20px));
   }
 
+  .trade-workspace,
   .split-grid,
   .panel-head {
     gap: 10px;
