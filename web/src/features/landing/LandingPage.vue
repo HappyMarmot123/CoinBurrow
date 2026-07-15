@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from "vue";
 import gsap from "gsap";
-import SplineScene from "./SplineScene.vue";
+
+import AppNav from "../../components/AppNav.vue";
 import { DEFAULT_SPLINE_SCENE } from "../../constants/landing.js";
+import SplineScene from "./SplineScene.vue";
 import "./legacyHeroStars.scss";
 
 const heroRef = ref<HTMLElement | null>(null);
@@ -190,6 +192,7 @@ onUnmounted(() => {
 
 <template>
   <main id="landing-widget" ref="landingRef" class="landing">
+    <AppNav class="landing-nav" />
     <div id="noise" aria-hidden="true" />
     <div ref="cursorLayerRef" class="cursor-effects" aria-hidden="true">
       <span class="cursor-ring" />
@@ -274,6 +277,15 @@ onUnmounted(() => {
     "Segoe UI",
     sans-serif;
   user-select: none;
+}
+
+.landing-nav {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  z-index: 40;
+  width: min(1120px, calc(100% - 32px));
+  transform: translateX(-50%);
 }
 
 :global(body) {
@@ -638,6 +650,10 @@ h1 {
 }
 
 @media (max-width: 640px) {
+  .landing-nav {
+    width: min(640px, calc(100% - 20px));
+  }
+
   .hero-section {
     padding: 44px 16px 32px;
   }

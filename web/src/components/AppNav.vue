@@ -1,4 +1,48 @@
 <script setup lang="ts">
+import { storeToRefs } from "pinia";
+import { computed, onMounted } from "vue";
+
+import { useAuthStore } from "../stores/auth.js";
+
+const auth = useAuthStore();
+const {
+  session,
+  initialized,
+  loading,
+  googleProviderEnabled,
+  displayName,
+} = storeToRefs(auth);
+
+const authActionLabel = computed(() => {
+  if (!initialized.value) return "확인 중";
+  if (loading.value) return session.value ? "로그아웃 중" : "로그인 중";
+  return session.value ? "로그아웃" : "로그인";
+});
+const authActionDisabled = computed(() => (
+  !initialized.value
+  || loading.value
+  || (!session.value && (!auth.isConfigured || googleProviderEnabled.value === false))
+));
+const authActionDescription = computed(() => {
+  if (!initialized.value) return "로그인 상태를 확인하고 있습니다.";
+  if (!session.value && !auth.isConfigured) return "Supabase 웹 설정이 필요합니다.";
+  if (!session.value && googleProviderEnabled.value === false) {
+    return "Google 로그인 설정이 필요합니다.";
+  }
+  return session.value
+    ? `${displayName.value} 계정에서 로그아웃`
+    : "Google 계정으로 로그인";
+});
+
+onMounted(() => {
+  void auth.initialize();
+});
+
+function handleAuthAction(): void {
+  if (authActionDisabled.value) return;
+  if (session.value) void auth.signOut();
+  else void auth.signInWithGoogle();
+}
 </script>
 
 <template>
@@ -11,7 +55,19 @@
       <div class="app-nav__links" aria-label="주요 네비게이션 메뉴">
         <router-link to="/exchange" class="app-nav__link">거래소</router-link>
         <router-link to="/insights" class="app-nav__link">시장 동향</router-link>
+        <router-link to="/mypage" class="app-nav__link">마이페이지</router-link>
         <slot name="actions" />
+        <button
+          class="app-nav__auth"
+          type="button"
+          :disabled="authActionDisabled"
+          :aria-label="authActionDescription"
+          :title="authActionDescription"
+          @click="handleAuthAction"
+        >
+          <span class="app-nav__auth-status" :class="{ 'is-online': session }" aria-hidden="true" />
+          {{ authActionLabel }}
+        </button>
       </div>
     </div>
   </nav>
@@ -43,7 +99,8 @@
   align-items: center;
 }
 
-.app-nav__link {
+.app-nav__link,
+.app-nav__auth {
   border: 1px solid var(--panel-border);
   border-radius: var(--radius-sm);
   display: inline-flex;
@@ -71,6 +128,38 @@
   border-color: var(--panel-border-hover);
   background: var(--panel-bg-strong);
   outline: none;
+}
+
+.app-nav__auth {
+  gap: 6px;
+  min-width: 76px;
+  font-family: inherit;
+}
+
+.app-nav__auth:hover:not(:disabled),
+.app-nav__auth:focus-visible:not(:disabled) {
+  border-color: var(--panel-border-hover);
+  color: var(--text);
+  background: var(--panel-bg-strong);
+  outline: none;
+}
+
+.app-nav__auth:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.app-nav__auth-status {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--text-dim);
+}
+
+.app-nav__auth-status.is-online {
+  background: var(--c-up);
+  box-shadow: 0 0 0 3px var(--c-up-bg);
 }
 
 .app-nav__brand {
@@ -117,8 +206,11 @@
     flex-wrap: nowrap;
   }
 
-  .app-nav__links a {
+  .app-nav__links > .app-nav__link,
+  .app-nav__links > .app-nav__auth {
     flex: 1 1 0;
+    min-width: 0;
+    padding-inline: 6px;
     text-align: center;
   }
 

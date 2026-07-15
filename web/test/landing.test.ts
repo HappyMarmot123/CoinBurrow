@@ -11,7 +11,13 @@ function readSource(path: string): string {
 describe("LandingPage", () => {
   it("presents CoinBurrow as a real-time crypto dashboard", () => {
     const wrapper = mount(LandingPage, {
-      global: { stubs: { "router-link": { template: "<a><slot /></a>" }, SplineScene: true } },
+      global: {
+        stubs: {
+          AppNav: true,
+          "router-link": { template: "<a><slot /></a>" },
+          SplineScene: true,
+        },
+      },
     });
     const text = wrapper.text();
     const source = readSource(join(process.cwd(), "src/features/landing/LandingPage.vue"));
@@ -29,6 +35,7 @@ describe("LandingPage", () => {
     expect(creatorLink.find(".github-icon").exists()).toBe(true);
     expect(wrapper.find(".cursor-effects").exists()).toBe(true);
     expect(wrapper.find(".cursor-ring").exists()).toBe(true);
+    expect(wrapper.find("app-nav-stub.landing-nav").exists()).toBe(true);
     expect(wrapper.find(".cursor-dot").exists()).toBe(false);
     expect(wrapper.find(".market-strip").exists()).toBe(false);
     expect(wrapper.find(".hero-visual spline-scene-stub").exists()).toBe(true);
@@ -76,7 +83,13 @@ describe("LandingPage", () => {
 
   it("restores the legacy hero star and noise visual layers", () => {
     const wrapper = mount(LandingPage, {
-      global: { stubs: { "router-link": { template: "<a><slot /></a>" }, SplineScene: true } },
+      global: {
+        stubs: {
+          AppNav: true,
+          "router-link": { template: "<a><slot /></a>" },
+          SplineScene: true,
+        },
+      },
     });
     const source = readSource(join(process.cwd(), "src/features/landing/LandingPage.vue"));
     const legacyStyles = readFileSync(join(process.cwd(), "src/features/landing/legacyHeroStars.scss"), "utf8");
