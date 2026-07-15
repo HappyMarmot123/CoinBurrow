@@ -20,16 +20,6 @@
   <img src="https://img.shields.io/badge/TESTS-256_PASS-70A7FF?style=for-the-badge&labelColor=111827" alt="256 tests passing" />
 </p>
 
-<p align="center">
-  <a href="https://coinburrow.vercel.app"><strong>라이브 데모</strong></a>
-  ·
-  <a href="#완성된-mvp">완성된 MVP</a>
-  ·
-  <a href="#사용-흐름">사용 흐름</a>
-  ·
-  <a href="#mvp-이후">MVP 이후</a>
-</p>
-
 ---
 
 ## CoinBurrow란?
