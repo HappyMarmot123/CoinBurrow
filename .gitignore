@@ -33,3 +33,4 @@
 # 로컬 Git worktree
 /.tmp/
 /.worktrees/
+/.vercel/

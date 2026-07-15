@@ -53,6 +53,7 @@ vi.mock('../src/app.js', () => ({
 
 const apiModulePath = '../../api/[...path].js'
 const marketApiModulePath = '../../api/market.js'
+const simulatorApiModulePath = '../../api/simulator.js'
 let normalizeApiUrl: (url: string | undefined) => string | undefined
 let normalizeRequestUrl: (url: string | undefined) => string | undefined
 
@@ -149,6 +150,14 @@ describe('normalizeApiUrl', () => {
       ),
     ).toBe('/market/exchange/candle?market=KRW-BTC&timeframe=1m')
   })
+
+  it('expands the Vercel simulator rewrite query', () => {
+    expect(
+      normalizeRequestUrl(
+        '/api/simulator?__coinburrow_path=simulator/state',
+      ),
+    ).toBe('/simulator/state')
+  })
 })
 
 describe('Vercel rewrites', () => {
@@ -162,14 +171,20 @@ describe('Vercel rewrites', () => {
   })
 
   it('exposes a stable market API function entry', async () => {
-    const [apiModule, marketApiModule] = await Promise.all([
+    const [apiModule, marketApiModule, simulatorApiModule] = await Promise.all([
       import(apiModulePath),
       import(marketApiModulePath),
+      import(simulatorApiModulePath),
     ])
 
     expect(marketApiModule.default).toBe(apiModule.default)
     expect(marketApiModule.normalizeApiUrl).toBe(apiModule.normalizeApiUrl)
     expect(marketApiModule.normalizeRequestUrl).toBe(
+      apiModule.normalizeRequestUrl,
+    )
+    expect(simulatorApiModule.default).toBe(apiModule.default)
+    expect(simulatorApiModule.normalizeApiUrl).toBe(apiModule.normalizeApiUrl)
+    expect(simulatorApiModule.normalizeRequestUrl).toBe(
       apiModule.normalizeRequestUrl,
     )
   })
@@ -187,6 +202,16 @@ describe('Vercel rewrites', () => {
       rewrites.find((rewrite) => rewrite.source === '/api/market/:path*')
         ?.destination,
     ).toBe('/api/market?__coinburrow_path=market/:path*')
+  })
+
+  it('routes simulator requests through the stable simulator API entry', () => {
+    const config = readVercelConfig()
+    const rewrites = config.rewrites ?? []
+
+    expect(
+      rewrites.find((rewrite) => rewrite.source === '/api/simulator/:path*')
+        ?.destination,
+    ).toBe('/api/simulator?__coinburrow_path=simulator/:path*')
   })
 })
 

@@ -11,6 +11,10 @@
       "destination": "/api/market?__coinburrow_path=market/:path*"
     },
     {
+      "source": "/api/simulator/:path*",
+      "destination": "/api/simulator?__coinburrow_path=simulator/:path*"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
