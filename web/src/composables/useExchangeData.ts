@@ -1,4 +1,4 @@
-import { computed, ref, type Ref } from "vue";
+import { computed, ref, watch, type Ref } from "vue";
 import { getCandles, getCoinList, getTradeSnapshot, type CandleTimeframe } from "../api/rest.js";
 import { DEFAULT_MARKET } from "../constants/market.js";
 import { useMarketSocket } from "./useMarketSocket.js";
@@ -49,6 +49,7 @@ export function useExchangeData({
   const exchangeError = ref("");
   const activeCandleChannel = ref<CandleSubscriptionChannel | null>(null);
   const activeTickerMarkets = ref<string[]>([]);
+  let marketLoadRequestId = 0;
 
   const selectedMarketLabel = computed(() => {
     const current = marketStore.list.find((item) => item.market === market.value);
@@ -140,51 +141,67 @@ export function useExchangeData({
   }
 
   async function loadMarket(nextMarket: string) {
+    const requestId = ++marketLoadRequestId;
+    const requestTimeframe = candleTimeframe.value;
+    const requestCount = candleCount.value;
+    const isStaleRequest = () =>
+      requestId !== marketLoadRequestId
+      || nextMarket !== market.value
+      || requestTimeframe !== candleTimeframe.value
+      || requestCount !== candleCount.value;
+
     if (!nextMarket) {
-      candleStore.setInitial([]);
+      if (!isStaleRequest()) {
+        candleStore.setInitial([]);
+      }
       return;
     }
 
     try {
-      candleStore.setInitial(
-        await getCandles(nextMarket, {
-          timeframe: candleTimeframe.value,
-          count: candleCount.value,
-        }),
-      );
+      const candles = await getCandles(nextMarket, {
+        timeframe: requestTimeframe,
+        count: requestCount,
+      });
+      if (isStaleRequest()) return;
+      candleStore.setInitial(candles);
       exchangeError.value = "";
     } catch (error) {
+      if (isStaleRequest()) return;
       candleStore.setInitial([]);
       exchangeError.value = `캔들 로딩 실패: ${error instanceof Error ? error.message : "알 수 없는 오류"}`;
-    } finally {
-      const nextCandleChannel = resolveCandleSubscriptionChannel(candleTimeframe.value);
-
-      if (activeCandleChannel.value && activeCandleChannel.value !== nextCandleChannel) {
-        unsubscribe(activeCandleChannel.value, [nextMarket]);
-      }
-
-      subscribe("orderbook", [nextMarket]);
-      subscribe("trade", [nextMarket]);
-
-      if (nextCandleChannel) {
-        subscribe(nextCandleChannel, [nextMarket]);
-      } else if (activeCandleChannel.value) {
-        unsubscribe(activeCandleChannel.value, [nextMarket]);
-      }
-      activeCandleChannel.value = nextCandleChannel;
-
-      try {
-        tradeStore.setInitial(
-          await getTradeSnapshot(nextMarket, {
-            count: Math.min(candleCount.value, 50),
-          }),
-        );
-      } catch {
-        tradeStore.setInitial([]);
-      }
-
-      await loadMarketStatus(nextMarket);
     }
+
+    if (isStaleRequest()) return;
+
+    const nextCandleChannel = resolveCandleSubscriptionChannel(requestTimeframe);
+
+    if (activeCandleChannel.value && activeCandleChannel.value !== nextCandleChannel) {
+      unsubscribe(activeCandleChannel.value, [nextMarket]);
+    }
+
+    subscribe("orderbook", [nextMarket]);
+    subscribe("trade", [nextMarket]);
+
+    if (nextCandleChannel) {
+      subscribe(nextCandleChannel, [nextMarket]);
+    } else if (activeCandleChannel.value) {
+      unsubscribe(activeCandleChannel.value, [nextMarket]);
+    }
+    activeCandleChannel.value = nextCandleChannel;
+
+    try {
+      const trades = await getTradeSnapshot(nextMarket, {
+        count: Math.min(requestCount, 50),
+      });
+      if (isStaleRequest()) return;
+      tradeStore.setInitial(trades);
+    } catch {
+      if (isStaleRequest()) return;
+      tradeStore.setInitial([]);
+    }
+
+    if (isStaleRequest()) return;
+    await loadMarketStatus(nextMarket);
   }
 
   function unsubscribeMarket(previousMarket: string | undefined) {
@@ -196,6 +213,16 @@ export function useExchangeData({
     }
     activeCandleChannel.value = null;
   }
+
+  watch(
+    () => tradeStore.latestBatch,
+    (trades) => {
+      const marketTrades = trades.filter((trade) => trade.market === market.value);
+      if (marketTrades.length === 0) return;
+      candleStore.applyTradeTicks(marketTrades, candleTimeframe.value, candleCount.value);
+    },
+    { flush: "sync" },
+  );
 
   return {
     market,

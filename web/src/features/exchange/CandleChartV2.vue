@@ -13,12 +13,12 @@ import {
   CandlestickSeries,
   createChart,
   type IChartApi,
+  type IPriceLine,
   type ISeriesApi,
-  type UTCTimestamp,
   HistogramSeries,
+  LineStyle,
 } from "lightweight-charts";
 import {
-  TF_SECONDS,
   formatAmount,
   readCssToken,
   tickFormatter,
@@ -26,9 +26,8 @@ import {
   toVolumeBar,
 } from "./candleChartData.js";
 import { useCandleStore } from "../../stores/candle.js";
-import { useTradeStore } from "../../stores/trade.js";
 import type { CandleTimeframe } from "../../api/rest.js";
-import type { CandleView, TradeView } from "../../stores/types.js";
+import type { CandleView } from "../../stores/types.js";
 import { createTradingViewLogoGuard } from "./tradingViewLogoGuard.js";
 
 const chartHeight = 460;
@@ -39,6 +38,7 @@ const props = withDefaults(
   defineProps<{
     timeframe?: CandleTimeframe;
     market: string;
+    buyPrice?: number;
   }>(),
   {
     timeframe: "1m",
@@ -46,12 +46,12 @@ const props = withDefaults(
 );
 
 const candleStore = useCandleStore();
-const tradeStore = useTradeStore();
 const container = ref<HTMLElement | null>(null);
 // lightweight-charts 인스턴스는 Vue 반응형 프록시로 감싸지 않는다(shallowRef + markRaw).
 const chart = shallowRef<IChartApi | null>(null);
 const candleSeries = shallowRef<ISeriesApi<"Candlestick"> | null>(null);
 const volumeSeries = shallowRef<ISeriesApi<"Histogram"> | null>(null);
+const buyPriceLine = shallowRef<IPriceLine | null>(null);
 const resizeObserver = ref<ResizeObserver | null>(null);
 const hasCandles = computed(() => candleStore.candles.length > 0);
 const { hideTradingViewLogoAfterMount, stopTradingViewLogoGuard } = createTradingViewLogoGuard(container);
@@ -62,9 +62,41 @@ const chartColors = computed(() => ({
   axisSoft: readCssToken("--chart-axis-soft", "rgba(255, 255, 255, 0.16)"),
   grid: readCssToken("--chart-grid", "rgba(255, 255, 255, 0.11)"),
   label: readCssToken("--text-muted", "#9fb0c6"),
+  buy: readCssToken("--brand-lime", "#d9ff66"),
   up: readCssToken("--c-up", "#9be15d"),
   down: readCssToken("--c-down", "#ffb02e"),
 }));
+
+function syncBuyPriceLine() {
+  const series = candleSeries.value;
+  if (!series) return;
+
+  const price = props.buyPrice;
+  if (typeof price !== "number" || !Number.isFinite(price) || price <= 0) {
+    if (buyPriceLine.value) {
+      series.removePriceLine(buyPriceLine.value);
+      buyPriceLine.value = null;
+    }
+    return;
+  }
+
+  const options = {
+    price,
+    color: chartColors.value.buy,
+    lineWidth: 1 as const,
+    lineStyle: LineStyle.Dashed,
+    lineVisible: true,
+    axisLabelVisible: true,
+    title: "매수가",
+  };
+
+  if (buyPriceLine.value) {
+    buyPriceLine.value.applyOptions(options);
+    return;
+  }
+
+  buyPriceLine.value = markRaw(series.createPriceLine(options));
+}
 
 function applyChartTheme() {
   if (!chart.value) return;
@@ -242,6 +274,7 @@ function setupChart() {
 
   applyChartTheme();
   setFullData(candleStore.candles);
+  syncBuyPriceLine();
   observeResize();
   syncSize();
 }
@@ -254,13 +287,12 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  if (liveRafId !== null && typeof cancelAnimationFrame !== "undefined") {
-    cancelAnimationFrame(liveRafId);
-  }
-  liveRafId = null;
-  pendingTick = null;
   stopTradingViewLogoGuard();
   resizeObserver.value?.disconnect();
+  if (candleSeries.value && buyPriceLine.value) {
+    candleSeries.value.removePriceLine(buyPriceLine.value);
+  }
+  buyPriceLine.value = null;
   chart.value?.remove();
   chart.value = null;
   candleSeries.value = null;
@@ -271,8 +303,14 @@ watch(
   () => chartColors.value,
   () => {
     applyChartTheme();
+    syncBuyPriceLine();
   },
   { deep: true },
+);
+
+watch(
+  () => props.buyPrice,
+  () => syncBuyPriceLine(),
 );
 
 watch(
@@ -289,53 +327,6 @@ watch(
         secondsVisible: props.timeframe === "1s",
       },
     });
-  },
-);
-
-// 실시간 틱 오버레이: 체결(trade)마다 형성 중인 봉의 close/high/low를 갱신.
-// store는 건드리지 않고 차트 로컬로만 반영 → candle WS가 권위값으로 reconcile.
-let pendingTick: TradeView | null = null;
-let liveRafId: number | null = null;
-
-function applyLiveTick(trade: TradeView) {
-  if (!candleSeries.value || trade.market !== props.market) return;
-  if (renderedSnapshot.length === 0) return;
-
-  const last = renderedSnapshot[renderedSnapshot.length - 1];
-  const bucketSec = TF_SECONDS[props.timeframe] ?? 60;
-  const lastTime = Math.floor(last.timestamp / 1000);
-  const tickBucket = Math.floor(trade.timestamp / 1000 / bucketSec) * bucketSec;
-  // 버킷 경계 가드: 다른(새) 버킷이면 틱으로 새 봉을 만들지 않고 candle WS를 기다림.
-  if (tickBucket !== lastTime) return;
-
-  const price = trade.price;
-  candleSeries.value.update({
-    time: lastTime as UTCTimestamp,
-    open: last.open,
-    high: Math.max(last.high, price),
-    low: Math.min(last.low, price),
-    close: price,
-  });
-}
-
-function flushLiveTick() {
-  liveRafId = null;
-  const trade = pendingTick;
-  pendingTick = null;
-  if (trade) applyLiveTick(trade);
-}
-
-watch(
-  () => tradeStore.recent[0],
-  (trade) => {
-    if (!trade) return;
-    pendingTick = trade;
-    if (liveRafId !== null) return;
-    if (typeof requestAnimationFrame === "undefined") {
-      flushLiveTick();
-      return;
-    }
-    liveRafId = requestAnimationFrame(flushLiveTick);
   },
 );
 </script>

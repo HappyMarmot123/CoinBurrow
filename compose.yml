@@ -1,0 +1,66 @@
+name: coinburrow
+
+services:
+  backend:
+    image: coinburrow-backend:dev
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+      target: development
+    env_file:
+      - ./server/.env
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./server:/app/server
+      - backend_node_modules:/app/server/node_modules
+    init: true
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:4000/health').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  frontend:
+    image: coinburrow-frontend:dev
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+      target: development
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      API_PROXY_TARGET: http://backend:4000
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./web:/app/web
+      - frontend_node_modules:/app/web/node_modules
+    init: true
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  backend_node_modules:
+  frontend_node_modules:

@@ -407,7 +407,7 @@ describe('Upbit REST client', () => {
     )
   })
 
-  it('fetches minute candles and normalizes OHLCV fields', async () => {
+  it('fetches minute candles using the period-start timestamp', async () => {
     mockAgent
       .get('https://api.upbit.com')
       .intercept({
@@ -417,7 +417,8 @@ describe('Upbit REST client', () => {
       .reply(200, [
         {
           market: 'KRW-BTC',
-          timestamp: 1_700_000_000_000,
+          candle_date_time_utc: '2026-07-08T01:23:00',
+          timestamp: 1_783_476_789_123,
           opening_price: 99,
           high_price: 105,
           low_price: 95,
@@ -429,7 +430,7 @@ describe('Upbit REST client', () => {
     await expect(fetchCandles('KRW-BTC')).resolves.toEqual([
       {
         market: 'KRW-BTC',
-        timestamp: 1_700_000_000_000,
+        timestamp: Date.parse('2026-07-08T01:23:00Z'),
         open: 99,
         high: 105,
         low: 95,
@@ -473,7 +474,7 @@ describe('Upbit REST client', () => {
     await expect(fetchCandles('KRW-BTC', '15m', 150)).resolves.toEqual([
       {
         market: 'KRW-BTC',
-        timestamp: 1_700_000_000_000,
+        timestamp: 1_699_999_200_000,
         open: 99,
         high: 105,
         low: 95,

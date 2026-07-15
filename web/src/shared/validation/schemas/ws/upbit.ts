@@ -40,6 +40,7 @@ export const upbitCandleMessageSchema = z
   .object({
     type: z.string().startsWith("candle"),
     timestamp: z.number(),
+    candle_date_time_utc: z.string().optional(),
     opening_price: z.number(),
     high_price: z.number(),
     low_price: z.number(),
@@ -56,6 +57,7 @@ export const upbitTradeMessageSchema = z
     trade_volume: z.number(),
     ask_bid: z.enum(["ASK", "BID"]),
     timestamp: z.number(),
+    trade_timestamp: z.number().optional(),
   })
   .passthrough()
   .and(marketCodeSchema);

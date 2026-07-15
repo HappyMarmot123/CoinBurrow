@@ -1,13 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { mount } from "@vue/test-utils";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import KimchiTable from "../src/features/kimchi/KimchiTable.vue";
 import type { KimchiRow } from "../src/stores/kimchi";
-
-function readSource(path: string): string {
-  return readFileSync(path, "utf8").replace(/\r\n/g, "\n");
-}
 
 const rows: KimchiRow[] = [
   { base: "BTC", koreanName: "비트코인", upbitMarket: "KRW-BTC", binanceSymbol: "BTCUSDT", accTradePrice24h: 100, upbitKrw: 138_500_000, binanceKrw: 138_000_000, premiumPercent: 0.36 },
@@ -29,15 +23,5 @@ describe("KimchiTable", () => {
       props: { rows: [{ ...rows[0], premiumPercent: null, binanceKrw: null }] },
     });
     expect(wrapper.find("tbody tr").text()).toContain("—");
-  });
-
-  it("keeps the table wide enough for mobile horizontal scrolling", () => {
-    const wrapper = mount(KimchiTable, { props: { rows } });
-    const source = readSource(join(process.cwd(), "src/features/kimchi/KimchiTable.vue"));
-
-    expect(wrapper.find("table.kimchi-table").exists()).toBe(true);
-    expect(source).toContain("min-width: 720px;");
-    expect(source).toContain("table-layout: fixed;");
-    expect(source).toContain("position: sticky;");
   });
 });

@@ -103,7 +103,7 @@ function formatSignedRate(ticker?: TickerView) {
         </div>
         <div class="coin-price">
           <strong>{{ formatPrice(row.ticker?.tradePrice) }}</strong>
-          <small>{{ formatCompact(row.ticker?.accTradePrice24h) }}</small>
+          <small class="coin-price__volume">{{ formatCompact(row.ticker?.accTradePrice24h) }}</small>
         </div>
           <span class="coin-change">
             {{ formatSignedRate(row.ticker) }}
@@ -282,13 +282,18 @@ input::placeholder {
   white-space: nowrap;
 }
 
-.coin-main__code,
-.coin-price small {
+.coin-main__code {
   overflow: hidden;
   color: #96a4be;
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.coin-price__volume {
+  color: #96a4be;
+  font-size: 12px;
+  overflow-wrap: anywhere;
 }
 
 .coin-price {

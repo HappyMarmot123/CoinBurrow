@@ -26,18 +26,50 @@ const CANDLE_INTERVALS_MS: Record<string, number> = {
   "240m": 14_400_000,
   "1h": 3_600_000,
   "4h": 14_400_000,
-  "1d": 86_400_000,
-  "1w": 604_800_000,
-  "1M": 2_419_200_000,
-  "1mo": 2_419_200_000,
 };
 
 function normalizeCandleTimestamp(type: string, timestamp: number): number {
-  const interval = CANDLE_INTERVALS_MS[type.replace("candle.", "")] || CANDLE_INTERVALS_MS[type];
+  const timeframe = type.replace("candle.", "");
+  if (timeframe === "1d") return startOfUtcDay(timestamp);
+  if (timeframe === "1w") return startOfUtcWeek(timestamp);
+  if (timeframe === "1M" || timeframe === "1mo") return startOfUtcMonth(timestamp);
+  if (timeframe === "1y") return startOfUtcYear(timestamp);
+
+  const interval = CANDLE_INTERVALS_MS[timeframe] || CANDLE_INTERVALS_MS[type];
   if (!Number.isFinite(interval) || interval <= 0) {
     return timestamp;
   }
   return Math.floor(timestamp / interval) * interval;
+}
+
+function startOfUtcDay(timestamp: number): number {
+  const date = new Date(timestamp);
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+}
+
+function startOfUtcWeek(timestamp: number): number {
+  const dayStart = startOfUtcDay(timestamp);
+  const day = new Date(dayStart).getUTCDay();
+  const daysSinceMonday = (day + 6) % 7;
+  return dayStart - daysSinceMonday * 86_400_000;
+}
+
+function startOfUtcMonth(timestamp: number): number {
+  const date = new Date(timestamp);
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1);
+}
+
+function startOfUtcYear(timestamp: number): number {
+  const date = new Date(timestamp);
+  return Date.UTC(date.getUTCFullYear(), 0, 1);
+}
+
+function parseUpbitUtcMs(value: string | undefined): number | null {
+  if (!value) {
+    return null;
+  }
+  const parsed = Date.parse(value.endsWith("Z") ? value : `${value}Z`);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 export function normalizeUpbit(raw: any): { channel: Channel; item: any } | null {
@@ -99,9 +131,7 @@ function parseUpbitMessage(raw: any): ParsedUpbitMessage {
       channel: "candle",
       item: {
         market,
-        // Normalize to candle bucket start to avoid duplicate bars on realtime updates
-        // that arrive with moving timestamps in the same candle interval.
-        timestamp: normalizeCandleTimestamp(type, raw.timestamp),
+        timestamp: parseUpbitUtcMs(raw.candle_date_time_utc) ?? normalizeCandleTimestamp(type, raw.timestamp),
         open: raw.opening_price,
         high: raw.high_price,
         low: raw.low_price,
@@ -120,7 +150,7 @@ function parseUpbitMessage(raw: any): ParsedUpbitMessage {
         price: raw.trade_price,
         volume: raw.trade_volume,
         side: raw.ask_bid,
-        timestamp: raw.timestamp,
+        timestamp: raw.trade_timestamp ?? raw.timestamp,
       },
     };
   }

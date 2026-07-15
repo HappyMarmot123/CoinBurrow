@@ -325,11 +325,12 @@ const trendOptions = computed<Options>(() => {
           </div>
         </div>
         <div ref="trendBodyRef" class="trend-body">
-          <Chart
-            v-if="history.length > 0"
-            :options="trendOptions"
-            :highcharts="Highcharts"
-          />
+          <div v-if="history.length > 0" class="trend-chart">
+            <Chart
+              :options="trendOptions"
+              :highcharts="Highcharts"
+            />
+          </div>
           <p v-else class="sentiment-state">추세 데이터가 없습니다.</p>
         </div>
       </article>
@@ -341,9 +342,11 @@ const trendOptions = computed<Options>(() => {
 .sentiment-view {
   flex: 1;
   min-height: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: clamp(8px, 1.4vh, 14px);
+  overflow: hidden;
 }
 
 .sentiment-state {
@@ -366,6 +369,7 @@ const trendOptions = computed<Options>(() => {
 .panel {
   @include exchange-panel;
   padding: clamp(12px, 1.8vh, 18px);
+  overflow: hidden;
 }
 
 .panel-head {
@@ -421,7 +425,7 @@ const trendOptions = computed<Options>(() => {
 .gauge {
   position: relative;
   width: 100%;
-  max-width: min(100%, clamp(220px, 30vh, 300px));
+  max-width: clamp(220px, 30vh, 300px);
   margin: 0 auto;
   flex: 1;
   display: flex;
@@ -559,6 +563,7 @@ const trendOptions = computed<Options>(() => {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .panel-trend .panel-head {
@@ -567,7 +572,25 @@ const trendOptions = computed<Options>(() => {
 
 .trend-body {
   flex: 1;
-  min-height: 220px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.trend-chart {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.trend-chart :deep(.highcharts-container) {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+.trend-chart :deep(.highcharts-container svg) {
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 .trend-range {
@@ -610,62 +633,6 @@ const trendOptions = computed<Options>(() => {
 @media (max-width: 760px) {
   .grid {
     grid-template-columns: 1fr;
-  }
-
-  .gauge {
-    max-width: min(100%, 280px);
-  }
-
-  .trend-body {
-    min-height: 240px;
-  }
-}
-
-@media (max-width: 640px) {
-  .panel-sub {
-    text-align: left;
-  }
-
-  .panel-trend .panel-head {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .trend-range {
-    flex-wrap: wrap;
-  }
-}
-</style>
-
-<style scoped lang="scss">
-@media (max-width: 640px) {
-  .sentiment-view,
-  .grid,
-  .panel,
-  .panel-now,
-  .panel-history,
-  .panel-trend,
-  .trend-body {
-    max-width: 100%;
-    min-width: 0;
-  }
-
-  .grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .gauge {
-    width: min(100%, 260px);
-    max-width: 100%;
-    overflow: hidden;
-  }
-
-  .gauge-svg {
-    overflow: hidden;
-  }
-
-  .gauge-readout strong {
-    font-size: clamp(38px, 13vw, 54px);
   }
 }
 </style>

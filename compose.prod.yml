@@ -1,0 +1,52 @@
+name: coinburrow
+
+services:
+  backend:
+    image: coinburrow-backend:local
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+      target: runtime
+    env_file:
+      - ./server/.env
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+    ports:
+      - "4000:4000"
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:4000/health').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  frontend:
+    image: coinburrow-frontend:local
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+      target: runtime
+      secrets:
+        - web_env
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+secrets:
+  web_env:
+    file: ./web/.env.local

@@ -181,12 +181,8 @@ li:first-child {
 li > .trades-side,
 li > .trades-time,
 li > .trades-volume {
-  min-width: 0;
-  overflow: hidden;
   font-size: 12px;
   color: var(--text-muted);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .trades-time {
@@ -214,13 +210,9 @@ li > .trades-volume {
 
 .up strong,
 .down strong {
-  min-width: 0;
-  overflow: hidden;
   color: inherit;
   font-size: 13px;
   text-align: right;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .trades-empty {
@@ -246,19 +238,8 @@ li > .trades-volume {
 
 @media (max-width: 640px) {
   li {
-    grid-template-columns: 4px minmax(44px, 0.65fr) minmax(34px, 0.45fr) minmax(50px, 0.75fr) minmax(68px, 1fr);
+    grid-template-columns: 4px minmax(48px, 0.7fr) minmax(30px, 0.5fr) minmax(54px, 0.8fr) minmax(72px, 1fr);
     gap: 6px;
-  }
-}
-
-@media (max-width: 520px) {
-  .trades-head {
-    align-items: stretch;
-  }
-
-  li {
-    grid-template-columns: 4px minmax(42px, 0.6fr) minmax(32px, 0.42fr) minmax(46px, 0.7fr) minmax(64px, 1fr);
-    gap: 5px;
   }
 }
 </style>

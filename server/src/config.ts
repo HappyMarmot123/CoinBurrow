@@ -4,4 +4,7 @@ export const config = {
   port: Number(process.env.PORT ?? 4000),
   upbitRestUrl: UPBIT_REST_URL,
   targetCoins: TARGET_COINS,
+  supabaseUrl: process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
+  supabaseServiceRoleKey:
+    process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
 }

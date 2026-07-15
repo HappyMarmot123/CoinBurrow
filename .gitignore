@@ -11,10 +11,14 @@
 
 # env
 /back-end/.env
+/server/.env
 /mobile-native/.env
 /mobile-native/.env.development
 /mobile-native/.env.production
+/web/.env
 /web-front-end/.env
+/web/.env.local
+/vercel.env
 
 # 빌드 파일
 /back-end/dist/
@@ -29,3 +33,4 @@
 # 로컬 Git worktree
 /.tmp/
 /.worktrees/
+/.vercel/
